@@ -57,7 +57,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T01 | Build and play the pinned game headless | 1 | none | yes | done (#3) |
 | T02 | Schemas | 1 | none | yes | done (#5) |
 | T03 | C bridge | 2 | T01, T02 | yes | done (#8) |
-| T04 | Recording and replay | 2 | T03 | yes | todo |
+| T04 | Recording and replay | 2 | T03 | yes | in review (#11) |
 | T05 | Executor primitives | 2 | T03 | yes | todo |
 | T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
 | T07 | Knowledge store | 3 | T02 | yes | todo |
@@ -314,13 +314,17 @@ neutralized; or make replay set the recorded date. With a test that plays one
 seed under two controlled dates. This blocks nothing today but it threatens
 T08's post-mortem replay, T10's `verify` and the zoo's CI (R6.2).
 
-**`run-record@1` under-requires what R5 names (3).** Birth rule and options,
-settings and their hash, content identity, the repository commit and dirty
-state, the birth input's hash, the calendar, and for an `api` mind the
-budget, context size and knowledge hash. Also: `mind` is one block but R2.4
-asks per job; `mode: consolidate` should not force a seed and a cap; the
-runner's `saved` outcome is not representable. With a test that a minimal
-record cannot validate.
+**`run-record@1` under-requires what R5 names (3).** **Done in T04**, which
+is what writes those records: the birth rule and options, the settings and
+their hash, the content identity, the repository's commit and dirty state, the
+birth input's hash and the calendar are required; an `api` mind must also name
+its budget, context size, knowledge hash and the rest; `game` is required only
+for a mode that plays one; `saved` is in the vocabulary; `endpoint_host` is
+constrained to a host, so a URL with credentials cannot be recorded (part of
+finding 5). The examples are generated from real runs, and a test checks that a
+record missing any of it is refused. What is left of the finding: `mind` is
+still one block, where R2.4 speaks of three jobs — that becomes real in T06,
+when one run may call more than one model.
 
 **`claim@1` does not enforce the R4.3 promotion rule (4).** A model-produced
 claim can reach `supported` with no review; a `corroborated` claim can rest

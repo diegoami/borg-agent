@@ -1,0 +1,137 @@
+{
+  "action_stream": {
+    "count": 101,
+    "schema": "borg-agent/action@1",
+    "sha256": "f121f284e369052ffd67f95a74c57db0fa29ce1d7a63ddbc7fe58efe2249ae13"
+  },
+  "calendar": {
+    "TZ_environment": null,
+    "local": "2026-11-08T21:36:45.497246+01:00",
+    "timezone_name": "CET",
+    "utc": "2026-11-08T20:36:45.497246+00:00"
+  },
+  "created": "2026-11-08T20:36:45.497246+00:00",
+  "deterministic": true,
+  "engine": {
+    "binary_sha256": "b38ab55ee1b27d2811589db016378ca4e412d0243f6c426f9c54511d0a813cec",
+    "build_key": "3c1a4a8b879756e6",
+    "commit": "0fd4af4000000000000000000000000000000000",
+    "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "dirty": "",
+    "name": "c-4.2.6",
+    "patch_sha256": {
+      "agent-bridge.c": "677001ce3cfe44481bf5975a52998f1e817be8c2c550093dfc01d3c03dd22a55",
+      "agent-bridge.h": "f634bf096ed76d2883710f1430cb180cb1022be0198e0452503834674e2994a6",
+      "native-observer.c": "9c10fcedd8b2f44e211f63235b38bad7cec351ec45216366689e73cb3f0a9ad7",
+      "native-observer.h": "faa6a800ce6fb6e73795b044663ff36d39cc7eae837f9a53aae1ef04f3241730"
+    },
+    "pins": {
+      "better-borg-c": "b3c825c97c8aef18b252a7fb7d9b7dceef83d586",
+      "borg-spec": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
+      "borg-zoo": "4c675343fa6aed8aeb9ff265d9d10a22054e0ac5",
+      "original": "e473720ed88a0f0c7ca66815cef3000eb4a38bc3",
+      "runner": "fc9d97cb46aa0aaa27773e5c83a41ec395d515fc"
+    },
+    "platform": "Linux x86_64"
+  },
+  "evidence": {
+    "observations_sha256": "74830ce9934773843488e0c12261cafe6281adbb2b91c3cc9a2c6c7512aaa8cb",
+    "state_hashes_sha256": "6bdd9e1524a38973f137512256c4e06a1ab15d1f7c2e0a4cd20f589c2e9dae6b",
+    "trace_sha256": "06e6c1f42ed5a06c6c4ba1e762175dfb023517f7e6f30283dc3f610826fce95b"
+  },
+  "game": {
+    "birth": {
+      "class": "Warrior",
+      "name": "Measure",
+      "options": {
+        "birth_ai_learn": 1,
+        "birth_connect_stairs": 1,
+        "birth_feelings": 1,
+        "birth_force_descend": 0,
+        "birth_know_flavors": 0,
+        "birth_know_runes": 0,
+        "birth_levels_persist": 0,
+        "birth_lose_arts": 0,
+        "birth_no_artifacts": 0,
+        "birth_no_recall": 0,
+        "birth_no_selling": 1,
+        "birth_percent_damage": 0,
+        "birth_randarts": 0,
+        "birth_stacking": 1,
+        "birth_start_kit": 1
+      },
+      "race": "Human",
+      "rule": "fixed"
+    },
+    "decision_cap": 100000,
+    "input_sha256": "092a1075b723b9b4e1bf867049efc18acf74591971f46658340ba615cd0d7c74",
+    "seed": 1,
+    "settings": {
+      "borg_allow_strange_opts": 0,
+      "borg_autosave": 0,
+      "borg_cheat_death": 0,
+      "borg_chest_fail_tolerance": 7,
+      "borg_delay_factor": 0,
+      "borg_dump_level": 1,
+      "borg_enchant_limit": 12,
+      "borg_kills_uniques": 0,
+      "borg_lunal_mode": 0,
+      "borg_money_scum_amount": 0,
+      "borg_munchkin_depth": 16,
+      "borg_munchkin_level": 12,
+      "borg_munchkin_start": 0,
+      "borg_no_deeper": 127,
+      "borg_plays_risky": 0,
+      "borg_respawn_class": -1,
+      "borg_respawn_race": -1,
+      "borg_respawn_winners": 0,
+      "borg_restore_ignore_settings": 0,
+      "borg_save_death": 1,
+      "borg_self_lunal": 0,
+      "borg_self_scum": 1,
+      "borg_stop_clevel": 51,
+      "borg_stop_dlevel": 128,
+      "borg_stop_king": 1,
+      "borg_stop_on_bell": 0,
+      "borg_uses_dynamic_calcs": 0,
+      "borg_uses_swaps": 1,
+      "borg_verbose": 0,
+      "borg_worships_ac": 0,
+      "borg_worships_damage": 0,
+      "borg_worships_gold": 0,
+      "borg_worships_hp": 0,
+      "borg_worships_mana": 0,
+      "borg_worships_speed": 0
+    },
+    "settings_sha256": "02dcae7a69bb52253ec2a3241f2223e88c3cc6c520c34df753ddc8655c10c5a9",
+    "turn_cap": 1000
+  },
+  "intervention": false,
+  "mind": {
+    "chosen_by": "not-applicable",
+    "kind": "scripted"
+  },
+  "mode": "play",
+  "outcome": {
+    "cause": null,
+    "depth": 1,
+    "depth_marks": {
+      "0": 1,
+      "1": 981
+    },
+    "kind": "turn_cap",
+    "level": 1,
+    "max_depth": 1,
+    "max_level": 1,
+    "reason": null,
+    "turn": 1000
+  },
+  "parent": null,
+  "run_id": "play-20261108-seed1-cap1000",
+  "schema": "borg-agent/run-record@1",
+  "usage": {
+    "decisions": 101,
+    "model_calls": 0,
+    "wall_seconds": 0.518
+  }
+}

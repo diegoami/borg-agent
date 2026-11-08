@@ -1,4 +1,6 @@
-"""The command line: build the pinned game, play it, and check determinism."""
+"""The command line: build the pinned game, play it with a mind, and work on the
+runs it leaves - record, verify, branch, view, dump and explain (R5).
+"""
 import argparse
 import json
 import shutil
@@ -9,6 +11,8 @@ from . import agent as agent_module
 from . import build as build_module
 from . import mind as mind_module
 from . import play as play_module
+from . import record as record_module
+from . import replay as replay_module
 
 MINDS = {'scripted': mind_module.ScriptedMind}
 
@@ -124,6 +128,63 @@ def cmd_agent_determinism(args):
     return 0 if ok else 1
 
 
+def cmd_record(args):
+    """Write the run record of a finished run (R5)."""
+    path = record_module.write_record(args.run, mode=args.mode, intervention=args.intervention)
+    print(path)
+    return 0
+
+
+def cmd_verify(args):
+    """Replay a run without its mind and confirm it reproduces (R5)."""
+    output = Path(args.output) if args.output else run_dir(f'verify-{Path(args.run).name}')
+    verdict = replay_module.verify(args.run, output, timeout=args.timeout,
+                                  stall_timeout=args.stall_timeout, lock=not args.no_lock)
+    print(json.dumps(verdict, indent=2, sort_keys=True))
+    return 0 if verdict['verified'] else 1
+
+
+def cmd_branch(args):
+    """Replay to a turn, then play on with another mind (R5, mode B)."""
+    output = Path(args.output) if args.output else run_dir(
+        f'branch-{Path(args.run).name}-turn{args.turn}-{args.mind}')
+    result, parent = replay_module.branch(
+        args.run, args.turn, output, MINDS[args.mind](), timeout=args.timeout,
+        stall_timeout=args.stall_timeout, lock=not args.no_lock)
+    record_module.write_record(output, mode='post_mortem', parent=parent)
+    print(output)
+    return 0 if result['outcome'] in play_module.GOOD_OUTCOMES else 1
+
+
+def cmd_view(args):
+    """Show the screen at a turn (R5)."""
+    index, observation, screen = replay_module.view(args.run, args.turn)
+    print(f'decision {observation["decision"]} at turn {observation["turn"]} '
+          f'(observation {index})')
+    print(screen)
+    return 0
+
+
+def cmd_dump(args):
+    """Write the observation at a turn (R5)."""
+    _index, observation = replay_module.dump(args.run, args.turn)
+    text = json.dumps(observation, indent=2, sort_keys=True) + '\n'
+    if args.output:
+        Path(args.output).write_text(text)
+        print(args.output)
+    else:
+        print(text, end='')
+    return 0
+
+
+def cmd_explain(args):
+    """Show what was decided around a turn, and why (R5)."""
+    for line in replay_module.explain(args.run, args.turn, window=args.window):
+        mark = '>' if line.pop('current') else ' '
+        print(mark, json.dumps(line, sort_keys=True))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='borg-agent', description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -164,6 +225,45 @@ def main(argv=None):
                        help='skip validating observations and actions against the schemas')
         p.add_argument('--no-lock', action='store_true', help='skip /tmp/angband-validation.lock')
         p.set_defaults(func=handler)
+
+    recorder = sub.add_parser('record', help='write the run record of a finished run')
+    recorder.add_argument('--run', type=Path, required=True)
+    recorder.add_argument('--mode', default='play',
+                          choices=['play', 'post_mortem', 'probe', 'consolidate', 'trial'])
+    recorder.add_argument('--intervention', action='store_true',
+                          help='the run was set up with debug commands (decision D4)')
+    recorder.set_defaults(func=cmd_record)
+
+    verifier = sub.add_parser('verify', help='replay a run without its mind and compare')
+    verifier.add_argument('--run', type=Path, required=True)
+    verifier.add_argument('--output', type=Path)
+    verifier.add_argument('--timeout', type=int, default=900)
+    verifier.add_argument('--stall-timeout', type=int, default=120)
+    verifier.add_argument('--no-lock', action='store_true')
+    verifier.set_defaults(func=cmd_verify)
+
+    brancher = sub.add_parser('branch', help='replay to a turn, then play on with another mind')
+    brancher.add_argument('--run', type=Path, required=True)
+    brancher.add_argument('--turn', type=int, required=True)
+    brancher.add_argument('--mind', choices=sorted(MINDS), default='scripted')
+    brancher.add_argument('--output', type=Path)
+    brancher.add_argument('--timeout', type=int, default=900)
+    brancher.add_argument('--stall-timeout', type=int, default=120)
+    brancher.add_argument('--no-lock', action='store_true')
+    brancher.set_defaults(func=cmd_branch)
+
+    for name, handler, help_text in (('view', cmd_view, 'show the screen at a turn'),
+                                     ('dump', cmd_dump, 'write the observation at a turn'),
+                                     ('explain', cmd_explain, 'show what was decided around a turn')):
+        reader = sub.add_parser(name, help=help_text)
+        reader.add_argument('--run', type=Path, required=True)
+        reader.add_argument('--turn', type=int, required=True)
+        if name == 'dump':
+            reader.add_argument('--output', type=Path)
+        if name == 'explain':
+            reader.add_argument('--window', type=int, default=3,
+                                help='how many decisions either side to show')
+        reader.set_defaults(func=handler)
 
     args = parser.parse_args(argv)
     if args.command in ('play', 'determinism', 'agent', 'agent-determinism') and (

@@ -20,6 +20,8 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
   the only model rule here, and holds no keys.
 - [Schemas](docs/SCHEMAS.md): the observation, action, run record and claim.
 - [The bridge](docs/BRIDGE.md): how an agent gets the Borg's hands and eyes.
+- [Records and replay](docs/RECORDS.md): what makes a run evidence, and the
+  five tools that work on it.
 
 ## Status
 

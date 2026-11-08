@@ -19,7 +19,8 @@ NAMES = ('observation', 'action', 'run-record', 'claim')
 # repository's own, which R5 names.
 ZOO_OUTCOMES = {'death', 'completion', 'turn_cap', 'stalled', 'wall_timeout', 'crash',
                 'harness_failure', 'config_error', 'decision_cap'}
-AGENT_OUTCOMES = {'agent_stopped', 'budget_cap'}
+# 'saved' is the runner's own, for a run stopped at a save (T08 needs it).
+AGENT_OUTCOMES = {'agent_stopped', 'budget_cap', 'saved'}
 
 
 def load(path):
