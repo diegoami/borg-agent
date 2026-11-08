@@ -11,9 +11,9 @@ work and updates "Current state".
   `task/T06-models-profiles`, stacked on #3): the agent's models come from a
   profile in `models.yaml`, decision D7. T06's loader is still to write, and
   needs T02 and T05 first.
-- **T02** is in review (PR #TBD, branch `task/T02-schemas`, stacked on #4):
+- **T02** is in review ([#5](https://github.com/diegoami/borg-agent/pull/5), branch `task/T02-schemas`, stacked on #4):
   the four schemas and their examples.
-- **The stack is at three unmerged PRs** (#3, #4 and T02's), so this session
+- **The stack is at three unmerged PRs** (#3, #4 and #5), so this session
   stopped there (RULES 5). The next tasks are **T07** (knowledge store),
   which needs nothing, and **T03** (the bridge), which needs T01 and T02.
 - Open owner questions: which models do which job. The models are not fixed
@@ -23,7 +23,7 @@ work and updates "Current state".
 
 ## 2026-11-08: T02, the schemas
 
-Branch `task/T02-schemas`, PR #TBD, stacked on #4.
+Branch `task/T02-schemas`, PR [#5](https://github.com/diegoami/borg-agent/pull/5), stacked on #4.
 
 What exists now:
 - `schemas/observation@1.json`, `action@1.json`, `run-record@1.json` and
