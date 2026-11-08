@@ -14,11 +14,14 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [Sources](docs/SOURCES.md): what the playing agent may read, and what the
   developer must keep out of it.
 - [Handover](docs/HANDOVER.md): where the work stands, for the next session.
+- [Building and playing](docs/BUILD-AND-PLAY.md): the pinned game headless,
+  and how a run is checked for determinism.
 
 ## Status
 
-Initialized on 2026-11-08. Nothing is built yet. The next task is T01 in the
-plan.
+Initialized on 2026-11-08. T01 builds the pinned game headless and plays it
+with the stock Borg; see [building and playing](docs/BUILD-AND-PLAY.md). The
+bridge that gives the game's input to an agent (T03) is not written yet.
 
 ## Related repositories
 

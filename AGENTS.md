@@ -16,9 +16,21 @@ session, a local one, or a different model. Read it first, then:
 git status --short
 git log --oneline -5
 bash scripts/setup.sh          # tools check and pinned clones; safe to rerun
-pip install -e '.[test]'
+pip install -e '.[test]'       # no system pip? see below
 python -m pytest -q
 ```
+
+The owner's WSL has no system `pip` and no system pytest, so there make a
+virtual environment first and use it for every command:
+
+```sh
+uv venv .venv && uv pip install -e '.[test]' --python .venv/bin/python
+.venv/bin/python -m pytest -q
+```
+
+`python -m pytest -q` leaves out the `slow` tests, which build the pinned
+game and play it (a few minutes). Run those with `pytest -m slow`; see
+[docs/BUILD-AND-PLAY.md](docs/BUILD-AND-PLAY.md).
 
 `scripts/setup.sh` clones the pinned repositories into `vendor/`, which git
 ignores, and checks the build tools. In a cloud session it also installs
