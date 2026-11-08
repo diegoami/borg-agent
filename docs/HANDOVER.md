@@ -5,35 +5,71 @@ work and updates "Current state".
 
 ## Current state
 
-- **Milestone 2 is in progress.** PLAN.md's milestone table is the map:
-  milestone 1 (foundation) is **reviewed**, milestone 2 (the connection) has
-  T03, T13, T04 and T05 merged and **T12 left**, milestones 3 and 4 have not
-  started. When T12 is merged the milestone 2 review PR goes up and this
-  session stops.
-- **How reviews work** (RULES 7, the owner on 2026-11-08): inside a milestone
-  a session merges its own task PRs as soon as CI is green, with no approval.
-  When the milestone's last task is merged it **stops** and opens the review
-  PR, `gh pr create --base reviewed --head main`. The `reviewed` branch stands
-  at the last reviewed state of `main` — today `11c8303`, milestone 1 — so
-  that PR's diff is exactly the milestone's work. The owner merges it, which
-  advances `reviewed`.
-- Merged so far: #3 (T01), #4 (T06's documents, D7), #5 (T02), #6, #8 (T03,
-  the bridge), #9 (T13, D8).
-- Milestone 1's review is issue
-  [#7](https://github.com/diegoami/borg-agent/issues/7), with the prompt, the
-  review itself and a triage table. Six of its findings are fixed, two partly;
-  the rest are **T12**, in milestone 2.
+- **Milestone 2 is complete and waiting for the owner's review.** Its review
+  PR is `main` into `reviewed` ([#15](https://github.com/diegoami/borg-agent/pull/15)); the owner merges it, which advances
+  `reviewed`. **A session does not start milestone 3 until then** (RULES 7).
+- Milestone 2 delivered, all merged: **T03** the bridge (#8), **T13** the open
+  sources, decision D8 (#9), **T04** records and replay (#11), **T05** the
+  executor's primitives (#12), **T12** the milestone-1 review findings (#13).
+- Milestone 1 (foundation) was reviewed at `11c8303`, issue
+  [#7](https://github.com/diegoami/borg-agent/issues/7). All thirteen of its
+  findings are now answered: eleven fixed, one (the mind block versus R2.4's
+  three jobs) carried into T06, and one left to the owner — see below.
+- **What works end to end today:** the pinned game builds; the stock Borg
+  plays it reproducibly; an agent plays through the Borg's own connection with
+  the eight primitives of R2; every run can be recorded, replayed with
+  `verify`, branched at a turn, and read with `view`, `dump` and `explain`.
+  No model has played yet: that is milestone 3.
 - Open owner questions:
+  - **the seasonal window** (review finding 1): neutralizing the game's one
+    `time()` read would make replay independent of the calendar, at the price
+    of play differing from the unpatched build on 24-26 December. That is a
+    RULES 9 exception, so it is the owner's call. Today every run records
+    `calendar.seasonal` and `verify` refuses to compare across the window;
   - which models do which job (T09 measures the `trial:` candidates, then
     decision D6);
   - whether the OpenRouter reviewer is `nvidia/nemotron-3-ultra-550b-a55b` or
-    the `:free` variant — **the owner will decide later**;
+    the `:free` variant — the owner will decide later;
   - whether `claim@1` should carry `superseded` as a status as well as the
     `superseded_by` field.
-- Settled on 2026-11-08: `default_profile: alibaba` **stays**. The owner's
-  general notes about that provider (not recommended, not monitored) do not
-  apply here; decision D7 makes the profile the only model rule in this
-  repository.
+- Settled: `default_profile: alibaba` stays (the owner, 2026-11-08 — the
+  general notes about that provider do not apply here, since D7 makes the
+  profile the only model rule).
+
+## 2026-11-08: T12, the milestone-1 review findings
+
+Branch `task/T12-review-findings`, PR
+[#13](https://github.com/diegoami/borg-agent/pull/13).
+
+What changed: the calendar's `seasonal` flag and `verify`'s refusal to compare
+across the window; the claim lifecycle in the schema plus
+`src/borg_agent/checks.py` for the two rules that are comparisons; the
+observation's true-state naming rule, checked on every observation the bridge
+writes; runner parity (the recipe is now byte-identical to
+`tools/measure-native.py` at the pin, with four tests that read it there); a
+key guard over the whole run record; the build key covering the include line,
+the CMake lines, the version suffix, the compiler and the platform;
+`schemas/examples/README.md`; `scripts/refresh-examples.py`; and the weak or
+missing tests the review listed.
+
+Facts the next sessions will need:
+- **`borg_agent.checks` is where a rule goes when it compares two fields.** A
+  JSON Schema cannot say "the reviewer is of another family" or "`fields` names
+  exactly these keys". T07 must run both checks when a claim enters the store;
+  the agent already runs the observation one.
+- **The stall clock starts when the action goes out**, not when the
+  observation came in. The slow-mind test found the earlier version still
+  spanned the mind's thinking, which would have killed real model runs.
+- **The recipe is the runner's, byte for byte**, and tests parse the runner at
+  its pin to prove it. If the runner pin moves, those tests fail first and
+  tell you what changed.
+- The build key now includes the **compiler and platform**, so a build
+  directory is per machine and a record from another machine cannot be
+  `verify`-ed locally. That is honest: the binary differs.
+- `scripts/refresh-examples.py` regenerates the run-record examples from real
+  runs. Never hand-edit them.
+
+Left for the owner: the seasonal-window decision above.
 
 ## 2026-11-08: T05, the executor's primitives
 
