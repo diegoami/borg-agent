@@ -16,6 +16,8 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [Handover](docs/HANDOVER.md): where the work stands, for the next session.
 - [Building and playing](docs/BUILD-AND-PLAY.md): the pinned game headless,
   and how a run is checked for determinism.
+- [models.yaml](models.yaml): which model does which job, by profile. It is
+  the only model rule here, and holds no keys.
 
 ## Status
 

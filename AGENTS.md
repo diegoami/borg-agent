@@ -53,45 +53,58 @@ At the end of a task:
 
 Then take the next task, or stop if the stack is at three unmerged PRs.
 
+## Choosing models
+
+**The models the agent plays and reviews with come from `models.yaml` and the
+active profile, and from nothing else** (requirements, decision D7). No
+recommendation service, no ranking, no fallback chain: the owner's general
+model-choice rule does not apply in this repository.
+
+- `models.yaml`, at the root and committed, holds the providers (base URL and
+  the name of the environment variable that holds the key), the models per
+  job (`play`, `consolidate`, `review`) in each named profile, and the model
+  trial's candidates. **It never holds a key.**
+- The active profile is the first of: `BORG_AGENT_PROFILE`; `profile:` in
+  `models.local.yaml` at the root, which git ignores and which may also
+  override single jobs; `default_profile` in `models.yaml`.
+- Keys are read from the environment at run time. A missing variable fails
+  before play, naming the variable, never its value. Nothing logs or records
+  a key, a request header or a URL with credentials.
+- Every run record names, per job, the profile, provider, model and family,
+  how they were chosen, and the hashes of the model files.
+- The loader and its tests are T06; until then nothing reads this file at
+  run time.
+
+This is about the models the **agent** uses. Which model writes the code in a
+session, and which reviews a PR, stays with the owner.
+
 ## Cloud sessions
 
 A cloud session has GitHub and the package registries but none of the
 owner's local services. In particular:
-- **Model access only through the environment.** The owner's quota
-  service isn't reachable, so the model rule below can't run. Instead the
-  owner configures the cloud environment with:
-  - `BORG_AGENT_BASE_URL`: an OpenAI-compatible chat endpoint;
-  - `BORG_AGENT_API_KEY`: its key;
-  - `BORG_AGENT_MODEL`: the model id;
-  - network access to that endpoint's domain (the default allowlist covers
+- **A profile and its keys come from the environment.** To run the `api`
+  mind, the model trial (T09) or the pilot (T10) there, the owner sets:
+  - `BORG_AGENT_PROFILE`, or leaves `default_profile` as it is;
+  - the key variables that profile's providers name (`api_key_env`);
+  - network access to those providers' domains (the default allowlist covers
     GitHub and the package registries, not model APIs).
 
-  The model is then the owner's choice. Record it as
-  `"chosen_by": "environment"`, with the endpoint's host and the model id.
-  Never record or log the key or the request headers.
-
-  With those set, the `api` mind, the model trial (T09) and the pilot
-  (T10) can run in a cloud session; the trial needs one set per candidate,
-  so the owner configures it as the trial needs. Without
-  them, use the `scripted` mind for tests and the `external` mind for
-  debugging, and leave real-model runs to the owner's machine with the exact
-  commands in the handover.
-- **No reviewer from another model family.** Say in the PR that it still
-  needs one; the owner arranges it.
+  The record then says the profile was chosen by `environment`. Never record
+  or log a key or the request headers. Without those variables, use the
+  `scripted` mind for tests and the `external` mind for debugging, and leave
+  real-model runs to the owner's machine with the exact commands in the
+  handover.
+- **No reviewer from another model family** for the code. Say in the PR that
+  it still needs one; the owner arranges it.
 - The `gh` CLI may be missing or unauthenticated. All task state is in this
   repository, so nothing depends on issues.
 
 ## Local sessions (the owner's machine)
 
-Models for play and for reviews follow the owner's model rule: ask the local
-quota service, `curl -s "http://localhost:8765/recommend?tier=light"` for
-play decisions and `tier=heavy` for consolidation and hard reviews, use the
-`pick` (or `pair` for an implementer and a reviewer), and record the rows
-used and their reasons in the run record. Don't choose a model any other
-way. Keys come from the environment, which the owner fills from
-`~/.config/ai-keys.env`; `providers.json` (T06) maps each provider to its
-endpoint and the name of its key variable. If the service doesn't answer, run `systemctl --user restart
-quota-tracker` and retry; if it still doesn't, tell the owner.
+Switch profile by writing one line in `models.local.yaml` (git-ignored), for
+example `profile: openrouter`; the same file may override a single job. The
+keys come from the environment, which the owner fills from
+`~/.config/ai-keys.env`.
 
 Heavy local runs take the lock `/tmp/angband-validation.lock` with `flock`,
 as the owner's other Angband work does.
@@ -101,6 +114,7 @@ as the owner's other Angband work does.
 | Path | What |
 |---|---|
 | `pins.json` | the pinned commits of every repository used, and the manual files |
+| `models.yaml` | the providers, the models per job and the profiles (no keys) |
 | `scripts/setup.sh` | tools check and pinned clones into `vendor/` |
 | `src/borg_agent/` | the Python package: connector, executor, mind, records, knowledge |
 | `bridge/` | the C patch applied to the pinned game tree (from T03) |

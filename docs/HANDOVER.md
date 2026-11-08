@@ -9,11 +9,68 @@ work and updates "Current state".
   game builds headless and the stock Borg plays it reproducibly. The next
   tasks are **T02** (schemas) and **T07** (knowledge store), which need
   nothing, and then **T03** (the bridge), which needs T01 and T02.
-- Open owner questions: which models do which job. The owner's note of
-  2026-11-08: the models are not fixed in advance; T09 measures the
-  candidates on this task's own inputs and outputs first, and the owner then
-  records the choice as decision D6. So T06 keeps the model configurable per
-  run and nothing earlier than T09 assumes a model.
+- **T06's documents** are in review (PR #TBD, branch
+  `task/T06-models-profiles`, stacked on #3): the agent's models come from a
+  profile in `models.yaml`, decision D7. T06's loader is still to write, and
+  needs T02 and T05 first.
+- Open owner questions: which models do which job. The models are not fixed
+  in advance; T09 measures the candidates from `trial:` in `models.yaml` on
+  this project's own inputs and outputs, and the owner then records the
+  choice as decision D6.
+
+## 2026-11-08: models by profile, in models.yaml (T06, documents)
+
+Branch `task/T06-models-profiles`, PR #TBD, stacked on #3. Documents and
+configuration only; the loader is the rest of T06.
+
+The owner's decision of 2026-11-08, recorded as **D7**: the agent's models
+come from a profile in `models.yaml` at the root, and from nothing else. That
+replaces the three `BORG_AGENT_*` variables and the planned
+`providers.json`, and **this repository no longer uses the owner's local
+recommendation service at all**, locally or in the cloud. AGENTS.md now
+states the profile rule as the project's own model-choice rule, so the
+owner's general rule doesn't apply here.
+
+What exists now:
+- `models.yaml`: four providers (alibaba, openrouter, zai, minimax), four
+  profiles of the same names, and the model trial's candidates per job. No
+  keys: each provider names the environment variable that holds its key.
+- `models.local.yaml` is git-ignored; one line (`profile: openrouter`)
+  switches profile on the owner's machine, and it may also override a single
+  job.
+- The requirements (R2.2, R2.4, D3 and the new D7), PLAN.md (T06's
+  description, T09's candidates, the cloud column of T09 and T10) and
+  AGENTS.md (a "Choosing models" section, and rewritten cloud and local
+  sections) all follow the profile rule.
+
+Facts the next sessions will need:
+- **Base URLs were checked against each provider's own documentation** on
+  2026-11-08 and cited in the file: Alibaba's Token Plan host
+  (`token-plan.ap-southeast-1.maas.aliyuncs.com`, which the plan's key is
+  bound to: a pay-as-you-go key gets 401 there, and the reverse), OpenRouter,
+  Z.ai's **coding** endpoint (`/api/coding/paas/v4`; a coding-plan key fails
+  on the general endpoint) and MiniMax's international host.
+- **The model ids are not all verified.** The owner gave and checked the
+  Alibaba and OpenRouter ids. The zai and minimax ids (`glm-5.3`,
+  `glm-5.3-flash`, `MiniMax-M3`, `MiniMax-M2.7`) come from the owner's own
+  provider table and were not checked against those providers' catalogues
+  here. T06's loader can't check them either; the first real call will.
+- **`context_k` is set only where there is a number to stand on** (the
+  Alibaba profile, as the owner gave it). The other profiles leave it out,
+  so the loader's default applies; T06 chooses that default and says so.
+- The one-family plans (zai, minimax) take their **reviewer from OpenRouter**
+  (`nvidia/nemotron-3-ultra-550b-a55b`), because a review must be of a
+  different family from the consolidator (R4.3). Those two profiles
+  therefore need `OPENROUTER_API_KEY` as well as their own key.
+- Nothing reads `models.yaml` at run time yet, and `pyyaml` is not a
+  dependency yet; T06 adds both with the loader. The repository test only
+  checks the file's shape with a line-based reader and that it holds no
+  key-looking field.
+
+Left for the owner:
+- a review by another model family for this PR;
+- whether the four profiles are the ones wanted, and whether to pin the zai
+  and minimax model ids after checking them.
 
 ## 2026-11-08: T01, the pinned game headless
 
@@ -112,8 +169,8 @@ Facts the next sessions will need:
   100,000. The owner wants strategy by class in the remake.
 
 Left for the owner:
-- T09 (model trial) and T10 (pilot) need model access: the owner's
-  machine, or a cloud environment with `BORG_AGENT_BASE_URL`,
-  `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` set. The owner picks the
-  models per job after T09.
+- T09 (model trial) and T10 (pilot) need model access. (Superseded on
+  2026-11-08 by decision D7: a profile in `models.yaml`, with its providers'
+  key variables set in the environment. This entry originally named three
+  `BORG_AGENT_*` variables.) The owner picks the models per job after T09.
 - Reviews by a different model family are arranged by the owner.

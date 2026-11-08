@@ -107,16 +107,26 @@ Requirements:
 1. Per run, record every model call: the observation hash, the prompt-pack
    version, the model, the provider, the effort setting, the reply, the
    reason, and the tokens and time used.
-2. Retrieve relevant knowledge into each prompt, within a bounded context
-   size (see quota-tracker's `/models/context`).
+2. Retrieve relevant knowledge into each prompt, within the context size the
+   active profile gives for that job (`context_k` in `models.yaml`, with a
+   default when it is missing).
 3. Each run has a budget of model calls and tokens. Hitting it is an outcome,
    `budget_cap`, not a failure.
-4. On the owner's machine, models are chosen by the owner's model rule
-   (quota-tracker `/recommend`), with the rows used and their reasons
-   recorded. In a cloud session the owner sets the model in the
-   environment, and the record says so. Prompts carry public game
-   content and game state only, so free models may play; they must not get
-   the repository's private material, if it has any.
+4. Models come from the active profile in `models.yaml`, and from nothing
+   else (decision D7), locally and in a cloud session alike. A profile names
+   one model per job: `play`, `consolidate` and `review`, with `review` of a
+   different family from `consolidate` (R4.3). The active profile is the
+   first of `BORG_AGENT_PROFILE`, `profile:` in the git-ignored
+   `models.local.yaml`, and `default_profile`. Keys are read at run time from
+   the environment variable each provider names; the file holds no key, and a
+   missing variable fails before play, naming the variable and never its
+   value. Every run record names, per job, the profile, the provider, the
+   model and the family, how they were chosen (`profile`, `local override` or
+   `environment`), and the SHA-256 of `models.yaml` and of
+   `models.local.yaml` when it exists — never a key, a request header or a
+   URL with credentials. Prompts carry public game content and game state
+   only, so free models may play; they must not get the repository's private
+   material, if it has any.
 
 ## R3. Modes of learning
 
@@ -255,6 +265,13 @@ All five were accepted as recommended on 2026-11-08.
 |---|---|---|
 | D1 | First engine: C 4.2.6 or Neo | **C 4.2.6.** The Rust remake will play the C game. The Borg's own state-reading code fills the observation in the Borg's own terms, and the replay tools exist. Neo second: Squire and Mandos have already done the structured view. |
 | D2 | Phase 1 sources: the manual only, or the manual plus public spoilers | **The manual and the in-game help only**, as you described. Spoilers come in phase 2. |
-| D3 | Where agent runs execute | **Locally** (the owner's machine, models chosen by the quota rule), **or in a cloud session** whose environment provides a model endpoint, key and model id chosen by the owner (amended 2026-11-08). The zoo imports the runs and verifies them by replay in CI. |
+| D3 | Where agent runs execute | **Locally** (the owner's machine) **or in a cloud session**; either way the models come from the active profile in `models.yaml` and the keys from the environment variables it names (amended 2026-11-08; see D7). The zoo imports the runs and verifies them by replay in CI. |
 | D4 | Debug-set probe scenarios | **Allowed, marked as interventions,** and kept out of survival figures. |
 | D5 | Adopt harness_imperial and the game-archaeologist method formally | **Reuse the claim lifecycle and the review rule now.** Adopt the harness only if the repository gets several agents working at once. |
+
+D6 is reserved: it records which model does which job, once the model trial
+(PLAN.md T09) has measured the candidates. Added on 2026-11-08:
+
+| # | Decision | Decided |
+|---|---|---|
+| D7 | How models are configured | **By profile, in `models.yaml` at the root.** It holds the providers, the models per job and named profiles, and never a key; a provider names the environment variable that holds its key. Switching profile is one line: `BORG_AGENT_PROFILE`, or `profile:` in the git-ignored `models.local.yaml`, else `default_profile`. This replaces the `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` variables and the planned `providers.json`. **The profile is the only model rule in this repository**: the owner's general model rule, which asks their local quota service (quota-tracker) for a recommendation, does not apply here, and this repository does not use that service, locally or in the cloud. |
