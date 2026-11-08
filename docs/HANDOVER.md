@@ -7,7 +7,7 @@ work and updates "Current state".
 
 - **Milestone 2 is in progress.** PLAN.md's milestone table is the map:
   milestone 1 (foundation) is **reviewed**, milestone 2 (the connection) has
-  T03 and T13 merged and **T04, T05 and T12 left**, milestones 3 and 4 have
+  T03, T13 and T04 merged and **T05 and T12 left**, milestones 3 and 4 have
   not started.
 - **How reviews work** (RULES 7, the owner on 2026-11-08): inside a milestone
   a session merges its own task PRs as soon as CI is green, with no approval.
@@ -33,6 +33,51 @@ work and updates "Current state".
   general notes about that provider (not recommended, not monitored) do not
   apply here; decision D7 makes the profile the only model rule in this
   repository.
+
+## 2026-11-08: T04, run records and replay
+
+Branch `task/T04-record-and-replay`, PR #TBD.
+
+What exists now:
+- `src/borg_agent/record.py`: builds a run record from a finished run and
+  validates it. A record is immutable — `write_record` refuses to overwrite
+  one (R4.1).
+- `src/borg_agent/replay.py`: the `replay` mind, `verify`, `branch`, and the
+  readers behind `view`, `dump` and `explain`.
+- `python -m borg_agent record | verify | branch | view | dump | explain`.
+- `docs/RECORDS.md`, `tests/test_record_and_replay.py`, and the run-record
+  examples **generated from real runs** so they cannot drift from the
+  recorder.
+
+**The gates.** A 101-decision scripted run on seed 1 at cap 1,000: `verify`
+replayed it with no mind and matched the state hash at **all 101
+observations**, the decisions, the outcome, the cause, the final turn and the
+trace hash. `branch` at turn 500 replayed 51 actions, handed over at turn 501
+to a differently-headed mind, played on to the cap, and its record names
+`parent: {run_id, turn}`.
+
+Facts the next sessions will need:
+- **The state hash leaves out `run_id` and nothing else.** That is what lets a
+  replay in another directory match; it was the first thing that went wrong
+  here (every hash differed at decision 0). Key order cannot change it.
+  `record.state_hash` is the only place that decides what counts as state, so
+  anything added to an observation becomes part of it automatically.
+- **A branch hands over at the first observation at or after the turn asked
+  for**, because turns advance in steps of ten; the record stores both the
+  requested turn and `handed_over_at`.
+- **`verify` needs the build the run used.** It looks for `build/<build_key>`
+  and refuses if the recipe does not match, rather than verifying against a
+  different binary.
+- A replay that runs out of recorded actions raises and names the decision; it
+  never invents one.
+- `verify` does not apply to a stock-Borg run (T01): there is no action stream.
+  That determinism is checked by replaying the seed.
+- The run-record schema is now strict (review finding 3). If a field is
+  missing from a record, the recorder is what has to learn it — the examples
+  are generated from real runs, so regenerate them rather than hand-editing.
+
+Left for the owner:
+- nothing new; the milestone 2 review PR comes when T05 and T12 are merged.
 
 ## 2026-11-08: the milestone process
 
