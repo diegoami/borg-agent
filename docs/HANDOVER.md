@@ -45,6 +45,8 @@ Facts the next sessions will need:
   100,000. The owner wants strategy by class in the remake.
 
 Left for the owner:
-- T09 needs model access: the owner's machine, or a cloud environment with
-  `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` set.
+- T09 (model trial) and T10 (pilot) need model access: the owner's
+  machine, or a cloud environment with `BORG_AGENT_BASE_URL`,
+  `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` set. The owner picks the
+  models per job after T09.
 - Reviews by a different model family are arranged by the owner.

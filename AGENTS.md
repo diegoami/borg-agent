@@ -58,7 +58,9 @@ owner's local services. In particular:
   `"chosen_by": "environment"`, with the endpoint's host and the model id.
   Never record or log the key or the request headers.
 
-  With those set, the `api` mind and T09 can run in a cloud session. Without
+  With those set, the `api` mind, the model trial (T09) and the pilot
+  (T10) can run in a cloud session; the trial needs one set per candidate,
+  so the owner configures it as the trial needs. Without
   them, use the `scripted` mind for tests and the `external` mind for
   debugging, and leave real-model runs to the owner's machine with the exact
   commands in the handover.
@@ -74,7 +76,9 @@ quota service, `curl -s "http://localhost:8765/recommend?tier=light"` for
 play decisions and `tier=heavy` for consolidation and hard reviews, use the
 `pick` (or `pair` for an implementer and a reviewer), and record the rows
 used and their reasons in the run record. Don't choose a model any other
-way. If the service doesn't answer, run `systemctl --user restart
+way. Keys come from the environment, which the owner fills from
+`~/.config/ai-keys.env`; `providers.json` (T06) maps each provider to its
+endpoint and the name of its key variable. If the service doesn't answer, run `systemctl --user restart
 quota-tracker` and retry; if it still doesn't, tell the owner.
 
 Heavy local runs take the lock `/tmp/angband-validation.lock` with `flock`,
