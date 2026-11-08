@@ -19,6 +19,7 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [models.yaml](models.yaml): which model does which job, by profile. It is
   the only model rule here, and holds no keys.
 - [Schemas](docs/SCHEMAS.md): the observation, action, run record and claim.
+- [The bridge](docs/BRIDGE.md): how an agent gets the Borg's hands and eyes.
 
 ## Status
 

@@ -1,5 +1,6 @@
 """The instrumentation recipe, checked against the pinned sources without building."""
 import json
+import re
 
 import pytest
 
@@ -52,22 +53,72 @@ def test_build_key_is_a_hash_of_the_recipe_only():
     json.dumps(build.recipe(), sort_keys=True)
 
 
-def test_instrumentation_applies_once_to_a_copy_of_the_pinned_files(tmp_path):
+def pinned_tree(tmp_path):
     tree = tmp_path / 'source'
-    for name in build.INCLUDE_SITES + (build.ACTIVATION[0],):
+    for name in set(build.INCLUDE_SITES) | {build.ACTIVATION[0]} | set(build.BRIDGE_INCLUDE_SITES):
         path = tree / 'src' / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(source(name))
     (tree / 'CMakeLists.txt').write_text('project(x)\n')
+    return tree
+
+
+def test_instrumentation_applies_once_to_a_copy_of_the_pinned_files(tmp_path):
+    tree = pinned_tree(tmp_path)
     build.instrument(tree)
     for name in build.INCLUDE_SITES:
-        assert (tree / 'src' / name).read_text().startswith('#include "native-observer.h"\n')
+        assert '#include "native-observer.h"\n' in (tree / 'src' / name).read_text()
+    superseded = {old for _name, old, _new in build.BRIDGE_REPLACEMENTS}
     for name, _old, new in build.REPLACEMENTS:
-        assert new in (tree / 'src' / name).read_text()
+        text = (tree / 'src' / name).read_text()
+        if new in superseded:
+            # The bridge layer rewrote this very line; its own test checks it.
+            continue
+        assert new in text
     assert build.ACTIVATION[1] in (tree / 'src' / build.ACTIVATION[0]).read_text()
-    assert 'native-observer.c' in (tree / 'CMakeLists.txt').read_text()
     for name in build.OBSERVER_FILES:
         assert (tree / 'src' / name).exists()
+    cmake = (tree / 'CMakeLists.txt').read_text()
+    assert 'native-observer.c' in cmake and 'agent-bridge.c' in cmake
+
+
+def test_the_bridge_goes_on_top_of_the_observer(tmp_path):
+    # The bridge's site is the line the observer writes, so the order of the
+    # two layers is part of the recipe, not an accident.
+    tree = pinned_tree(tmp_path)
+    build.instrument(tree)
+    for name in build.BRIDGE_INCLUDE_SITES:
+        assert (tree / 'src' / name).read_text().startswith('#include "agent-bridge.h"\n')
+    for name, _old, new in build.BRIDGE_REPLACEMENTS:
+        text = (tree / 'src' / name).read_text()
+        assert new in text
+        # The Borg's own thinking is still there, behind the agent-mode branch.
+        assert 'borg_think()' in new and 'agent_active()' in new
+    for name in build.BRIDGE_FILES:
+        assert (tree / 'src' / name).exists()
+
+
+def test_the_bridge_replacement_needs_the_observer_first(tmp_path):
+    tree = pinned_tree(tmp_path)
+    name, old, new = build.BRIDGE_REPLACEMENTS[0]
+    # Without the observer layer the site does not exist, and that must fail
+    # loudly rather than quietly leave the bridge unreachable.
+    with pytest.raises(ValueError):
+        build.replace_once(tree / 'src' / name, old, new)
+
+
+def test_the_bridge_sources_are_this_repositorys_own(tmp_path):
+    sources = build.bridge_sources()
+    assert set(sources) == set(build.BRIDGE_FILES)
+    assert b'agent_active' in sources['agent-bridge.h']
+    body = sources['agent-bridge.c'].decode()
+    # It reads state and writes keys, and holds no tactics of its own
+    # (docs/SOURCES.md): the only Borg functions it may call are the key queue,
+    # the note log and the screen reader.
+    allowed = {'borg_keypress', 'borg_keypresses', 'borg_note', 'borg_what_text'}
+    code = re.sub(r'/\*.*?\*/', '', body, flags=re.S)  # comments may name anything
+    called = set(re.findall(r'\b(borg_\w+)\s*\(', code))
+    assert called <= allowed, called - allowed
 
 
 def test_a_moved_site_is_an_error_not_a_silent_skip(tmp_path):

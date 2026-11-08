@@ -5,22 +5,100 @@ work and updates "Current state".
 
 ## Current state
 
-- **Merged on 2026-11-08: #3 (T01), #4 (T06's documents) and #5 (T02).** The
-  owner asked for all three to be merged and said reviews happen at
-  milestones, not per PR, so none of the three was reviewed by another model
-  family. Nothing is unmerged now; the next session starts with a clean
-  stack.
-- **Done:** T01 (build and play the pinned game headless) and T02 (the four
-  schemas). T06's documents are in, but **T06 itself is still `todo`**: the
-  loader for `models.yaml`, the three minds and the prompt pack are left, and
-  it needs T02 (done) and T05.
-- The next tasks are **T07** (knowledge store), which needs nothing, and
-  **T03** (the bridge), which needs T01 and T02 — both done.
-- Open owner questions: which models do which job (T09 measures the
-  candidates from `trial:` in `models.yaml`, then the owner records decision
-  D6); whether the four profiles are the ones wanted and whether to pin the
-  zai and minimax model ids; and whether `claim@1` should carry `superseded`
-  as a status as well as the `superseded_by` field.
+- **Merged on 2026-11-08: #3 (T01), #4 (T06's documents), #5 (T02) and #6**
+  (bookkeeping). **T03 is in review** (PR #TBD, branch `task/T03-c-bridge`).
+- **Reviews happen at milestones, not per PR** (the owner, RULES 6a). The
+  first milestone review is issue
+  [#7](https://github.com/diegoami/borg-agent/issues/7): it holds the prompt
+  and the review of `main` at `11c8303` by a model of another family, with a
+  triage table. Its thirteen findings are either fixed in T03's PR or on the
+  plan as **T12**; two are the owner's to decide.
+- **Done:** T01, T02 and T03. T06's documents are in, but T06 itself is still
+  `todo`: the loader for `models.yaml`, the three minds and the prompt pack.
+- The next tasks are **T04** (recording and replay, needs T03), **T05**
+  (executor primitives, needs T03) and **T07** (knowledge store, needs
+  nothing); **T12** carries the review findings.
+- Open owner questions:
+  - which models do which job (T09 measures the `trial:` candidates, then
+    decision D6);
+  - which profile `default_profile` should name — it is `alibaba`, which the
+    owner's own notes call not recommended and nearly exhausted (review
+    finding 8);
+  - whether the OpenRouter reviewer is `nvidia/nemotron-3-ultra-550b-a55b` or
+    the `:free` variant (review finding 8);
+  - whether `claim@1` should carry `superseded` as a status as well as the
+    `superseded_by` field.
+
+## 2026-11-08: T03, the bridge
+
+Branch `task/T03-c-bridge`, PR #TBD.
+
+What exists now:
+- `bridge/agent-bridge.c` and `.h`, this repository's own C, applied to the
+  pinned tree on top of the observer. At the Borg's thinking line it writes
+  one observation and waits for one action; with the agent mode off the branch
+  falls through to `borg_think()`.
+- `src/borg_agent/agent.py`: the Python end — the bounded handshake, schema
+  validation both ways, the wire format, and the action stream with its
+  SHA-256.
+- `src/borg_agent/mind.py`: the `scripted` mind of R2.
+- `python -m borg_agent agent` and `agent-determinism`.
+- `docs/BRIDGE.md`, and `tests/test_agent.py`.
+
+**The gates.** T03: seed 1 at cap 1,000 ended `turn_cap` at turn 1,000 after
+101 decisions, and seed 7 died to "a rock lizard" at turn 311 after 32
+decisions; both reproduced byte-identical action streams and traces on a
+second run. T01's gate was rerun on the bridge build and still gives seed 7's
+trace `2242a3f5…`, which is the evidence that the bridge changes no play
+(RULES 8).
+
+Facts the next sessions will need:
+- **The Borg's own trackers are stale under the agent.** `borg_grids`,
+  `borg_kills` and `borg_takes` are only refreshed inside `borg_think()`,
+  which the agent replaces. R1 allows reusing them, but with the agent
+  deciding they say floor where the game says wall — the first version of this
+  bridge did exactly that and walked into walls for 20,000 decisions. The
+  observation is built from `player->cave`, the game's visible monsters and
+  the character sheet instead. T05 and T08 should not reach for the Borg's
+  trackers either, unless they also call its update.
+- **Nothing the bridge writes is true state**, so no observation carries a
+  `true_state` block; `asleep` and `health` are null because the player cannot
+  tell. A test asserts the bridge calls only four Borg functions
+  (`borg_keypress`, `borg_keypresses`, `borg_note`, `borg_what_text`).
+- **The handshake order is forced**: the agent opens the observation pipe for
+  reading, the bridge opens it for writing and then opens the action pipe for
+  reading, and the agent accepts that. Waiting for the first observation
+  before accepting the action pipe deadlocks — that cost an hour.
+- **Every path handed to the game must be absolute.** The game runs with the
+  build tree as its cwd, so a relative `--output` made it quit before writing
+  anything, which looked exactly like a seed-dependent hang.
+- A stray run can hold `/tmp/angband-validation.lock` for ever if it blocks in
+  a handshake; both waits are now bounded and the child is watched. If a run
+  seems to hang, look for the lock's holder in `/proc/*/fd` first.
+- The executor primitives are not translated yet (T05): `wire()` raises for a
+  `primitive` action. Shops are not handled: `shop` is always null and the
+  scripted mind escapes a store screen.
+
+From the milestone review (issue #7), fixed here:
+- the stall clock of an agent run restarts on every observation, so model
+  latency cannot become an outcome (finding 2);
+- the game gets an allowlisted environment, so none of the owner's keys
+  reaches it or its log (finding 5);
+- `budget_cap`, `decision_cap` and `agent_stopped` are outcomes, not failures
+  (finding 11);
+- the run timer starts inside the lock, and `lock_wait_seconds` is its own
+  figure (finding 12);
+- `action@1` no longer accepts direction 5 (finding 13);
+- `build --output` refuses to delete a directory that is not a build
+  (finding 10);
+- every run records a `calendar` block, the slow test asserts T01's golden
+  trace hash outside 24-26 December, and the docs say why that window matters
+  (finding 1, partly) and correct the claim that the observer "only reads
+  state" (finding 6, partly).
+
+Left for the owner:
+- the two decisions in "Current state" from review finding 8;
+- milestone 2's review, when T04 and T05 are in.
 
 ## 2026-11-08: T02, the schemas
 

@@ -1,4 +1,5 @@
 """Trace parsing and outcome classification, and the headless play gate (slow)."""
+import datetime
 import json
 import os
 
@@ -52,6 +53,20 @@ def test_cli_rejects_an_impossible_seed_or_cap():
             cli.main(argv)
 
 
+# The trace seed 7 at cap 5,000 produced when T01 was written, on 2026-11-08.
+# It is not a property of the seed alone: the game admits seasonal monsters on
+# 24-26 December, so the same seed plays a different game then (finding 1 of
+# the milestone-1 review). The hash is therefore asserted outside that window
+# only, and the determinism of the pair is asserted always.
+GOLDEN_SEED7_CAP5000 = '2242a3f55de1711fce9c37c5301c9ad3d4cdd9daf32cea8f44066b28a1d7d1f0'
+SEASONAL_DAYS = {(12, 24), (12, 25), (12, 26)}
+
+
+def seasonal_today():
+    today = datetime.date.today()
+    return (today.month, today.day) in SEASONAL_DAYS
+
+
 @pytest.mark.slow
 def test_seed_7_plays_twice_with_identical_traces(tmp_path):
     """T01's gate. Needs a compiler, CMake and libx11-dev; takes a few minutes."""
@@ -63,6 +78,11 @@ def test_seed_7_plays_twice_with_identical_traces(tmp_path):
                            lock=not os.environ.get('BORG_AGENT_NO_LOCK'))
         assert record['outcome'] in play.GOOD_OUTCOMES, record
         assert record['character'] == 'Measure Human Warrior'
+        assert record['calendar']['utc']
         traces.append((tmp_path / f'run{attempt}/trace.txt').read_bytes())
     assert traces[0] and traces[0] == traces[1]
-    assert json.loads((tmp_path / 'run1/result.json').read_text())['trace_sha256']
+    recorded = json.loads((tmp_path / 'run1/result.json').read_text())['trace_sha256']
+    assert recorded
+    if not seasonal_today():
+        assert recorded == GOLDEN_SEED7_CAP5000, (
+            'the pinned build no longer plays seed 7 the way it did when T01 was written')

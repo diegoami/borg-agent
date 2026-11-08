@@ -22,6 +22,13 @@ These hold for every session working on this repository, local or cloud.
    says "stacked on #n". At most three unmerged PRs in a stack; then stop
    and wait.
 6. Each PR updates its task's row in PLAN.md and the handover.
+6a. **Reviews happen at milestones, not per PR** (the owner, 2026-11-08). At a
+   milestone a session opens an issue in this repository, "Milestone N
+   review: …", holding what was built and the prompt a reviewer needs; the
+   reviewer — a model of another family, or the owner — posts findings there
+   as comments. A session reads the findings from that issue, fixes what
+   belongs in an open task, and records the rest in PLAN.md as its own task.
+   The first is [#7](https://github.com/diegoami/borg-agent/issues/7).
 7. No posts to angband/angband or any other upstream project or forum.
    Nothing is filed in other repositories; a needed change there is
    described in the handover for the owner.
