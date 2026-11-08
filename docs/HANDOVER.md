@@ -45,5 +45,6 @@ Facts the next sessions will need:
   100,000. The owner wants strategy by class in the remake.
 
 Left for the owner:
-- T09 needs model access, so it runs on the owner's machine.
+- T09 needs model access: the owner's machine, or a cloud environment with
+  `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` set.
 - Reviews by a different model family are arranged by the owner.

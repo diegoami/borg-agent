@@ -111,8 +111,10 @@ Requirements:
    size (see quota-tracker's `/models/context`).
 3. Each run has a budget of model calls and tokens. Hitting it is an outcome,
    `budget_cap`, not a failure.
-4. Models are chosen by the owner's model rule (quota-tracker `/recommend`),
-   with the rows used and their reasons recorded. Prompts carry public game
+4. On the owner's machine, models are chosen by the owner's model rule
+   (quota-tracker `/recommend`), with the rows used and their reasons
+   recorded. In a cloud session the owner sets the model in the
+   environment, and the record says so. Prompts carry public game
    content and game state only, so free models may play; they must not get
    the repository's private material, if it has any.
 
@@ -253,6 +255,6 @@ All five were accepted as recommended on 2026-11-08.
 |---|---|---|
 | D1 | First engine: C 4.2.6 or Neo | **C 4.2.6.** The Rust remake will play the C game. The Borg's own state-reading code fills the observation in the Borg's own terms, and the replay tools exist. Neo second: Squire and Mandos have already done the structured view. |
 | D2 | Phase 1 sources: the manual only, or the manual plus public spoilers | **The manual and the in-game help only**, as you described. Spoilers come in phase 2. |
-| D3 | Where agent runs execute | **Locally** (the owner's machine, models chosen by the quota rule). The zoo imports them and verifies them by replay in CI. |
+| D3 | Where agent runs execute | **Locally** (the owner's machine, models chosen by the quota rule), **or in a cloud session** whose environment provides a model endpoint, key and model id chosen by the owner (amended 2026-11-08). The zoo imports the runs and verifies them by replay in CI. |
 | D4 | Debug-set probe scenarios | **Allowed, marked as interventions,** and kept out of survival figures. |
 | D5 | Adopt harness_imperial and the game-archaeologist method formally | **Reuse the claim lifecycle and the review rule now.** Adopt the harness only if the repository gets several agents working at once. |

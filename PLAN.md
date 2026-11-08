@@ -26,7 +26,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo |
 | T07 | Knowledge store | T02 | yes | todo |
 | T08 | Post-mortem start from a Borg run | T04 | yes | todo |
-| T09 | Pilot | T01–T08 | no: needs model access | todo |
+| T09 | Pilot | T01–T08 | only with a model key in the environment (AGENTS.md) | todo |
 | T10 | Zoo import contract | T04 | yes | todo |
 
 ### T01. Build and play the pinned game headless
@@ -99,15 +99,17 @@ one-line reason. Three backends behind one interface:
 - `scripted`: deterministic rules, for tests only;
 - `external`: each decision is written to a file and the answer read back,
   so a person or a coding session can play a few decisions for debugging;
-- `api`: a model over an HTTP API, with the key from the environment.
+- `api`: a model over an OpenAI-compatible chat API, configured by
+  `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL`.
 
 Also:
 - a prompt pack, versioned, built only from the allowed sources
   ([docs/SOURCES.md](docs/SOURCES.md)), with a test that checks it;
 - every call logged (R2.1);
 - a budget cap per run (R2.3);
-- the `api` backend's model chosen per run by the owner's model rule (see
-  AGENTS.md), and recorded.
+- the `api` backend's model chosen per run by the owner's model rule on
+  the owner's machine, or taken from the environment in a cloud session
+  (AGENTS.md), and recorded either way.
 
 ### T07. Knowledge store
 
@@ -133,7 +135,8 @@ to the Borg, and a branch k turns before it hands over to another mind.
 
 ### T09. Pilot
 
-Run on the owner's machine, where models are available. Mode A: 9 runs, one
+Run on the owner's machine, or in a cloud session whose environment
+provides a model (AGENTS.md). Mode A: 9 runs, one
 per class, Human, 20,000 game turns each. Mode B: both T08 cases, each with
 at least two branches.
 
