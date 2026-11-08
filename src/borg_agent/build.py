@@ -39,7 +39,20 @@ ACTIVATION = ('borg/borg-commands.c', 'void measure_activate_borg(void)',
               '\n#ifdef ALLOW_BORG\nvoid measure_activate_borg(void) { borg_cmd_start(); }\n#endif\n')
 CMAKE_ARGS = ('-DSUPPORT_BORG=ON', '-DSUPPORT_TEST_FRONTEND=ON',
               '-DSUPPORT_X11_FRONTEND=ON', '-DCMAKE_BUILD_TYPE=Debug')
-RECIPE_VERSION = 'borg-agent/observer-build@1'
+RECIPE_VERSION = 'borg-agent/observer-build@2'
+
+# The bridge of T03: this repository's own C, in bridge/. It is applied on top
+# of the observer, so its site is the observer's own line. With the agent mode
+# off (no BORG_AGENT_OBS and BORG_AGENT_ACT) the branch falls through to
+# borg_think and play is byte-identical to the stock Borg's (RULES 8).
+BRIDGE_DIR = pins.ROOT / 'bridge'
+BRIDGE_FILES = ('agent-bridge.c', 'agent-bridge.h')
+BRIDGE_INCLUDE_SITES = ('borg/borg.c',)
+BRIDGE_REPLACEMENTS = (
+    ('borg/borg.c',
+     'while (!(measure_decision(), borg_think()))',
+     'while (!(measure_decision(), agent_active() ? (agent_think(), true) : borg_think()))'),
+)
 
 
 def sha(path):
@@ -49,6 +62,11 @@ def sha(path):
 def observer_sources():
     """The observer files' bytes at the runner pin."""
     return {name: pins.show(RUNNER_PIN, 'tools/' + name) for name in OBSERVER_FILES}
+
+
+def bridge_sources():
+    """The bridge files' bytes, from this repository."""
+    return {name: (BRIDGE_DIR / name).read_bytes() for name in BRIDGE_FILES}
 
 
 def recipe():
@@ -63,6 +81,10 @@ def recipe():
         'cmake_args': list(CMAKE_ARGS),
         'observer_sha256': {name: hashlib.sha256(data).hexdigest()
                             for name, data in observer_sources().items()},
+        'bridge_includes': list(BRIDGE_INCLUDE_SITES),
+        'bridge_replacements': [list(r) for r in BRIDGE_REPLACEMENTS],
+        'bridge_sha256': {name: hashlib.sha256(data).hexdigest()
+                          for name, data in bridge_sources().items()},
     }
 
 
@@ -101,8 +123,18 @@ def instrument(source):
     if marker not in path.read_text():
         with path.open('a') as handle:
             handle.write(addition)
+    # The bridge goes on top of the observer, and its site is the line the
+    # observer just wrote, so the order of these two layers is fixed.
+    for name, data in bridge_sources().items():
+        (source / 'src' / name).write_bytes(data)
+    for name in BRIDGE_INCLUDE_SITES:
+        path = source / 'src' / name
+        path.write_text('#include "agent-bridge.h"\n' + path.read_text())
+    for name, old, new in BRIDGE_REPLACEMENTS:
+        replace_once(source / 'src' / name, old, new)
     with (source / 'CMakeLists.txt').open('a') as handle:
         handle.write('\ntarget_sources(OurExecutable PRIVATE src/native-observer.c)\n')
+        handle.write('\ntarget_sources(OurExecutable PRIVATE src/agent-bridge.c)\n')
         handle.write(f'\nadd_compile_definitions(PRIVATE_USER_PATH="{source.parent / "private-user"}")\n')
 
 
@@ -131,6 +163,11 @@ def prepare(out=None, force=False, log=print):
     source = out / 'source'
     if out.exists():
         import shutil
+        # Only ever replace a directory that is one of our builds: `--output`
+        # could name anything, and a stale build is no reason to delete it.
+        if not any((out / name).exists() for name in ('build.json', 'source', 'build')):
+            raise ValueError(f'{out} exists and is not a build directory; '
+                             'choose another --output or empty it yourself')
         shutil.rmtree(out)
     out.mkdir(parents=True)
     archive = pins.archive(GAME_PIN, source)

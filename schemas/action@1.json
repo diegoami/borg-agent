@@ -100,8 +100,8 @@
             "description": "One game command with its arguments, named as the game's command list names it.",
             "properties": {
               "name": {"type": "string", "minLength": 1},
-              "direction": {"type": "integer", "minimum": 1, "maximum": 9,
-                            "description": "The number-pad direction, as in 'walk 6'. 5 is not a direction."},
+              "direction": {"type": "integer", "enum": [1, 2, 3, 4, 6, 7, 8, 9],
+                            "description": "The number-pad direction, as in 'walk 6'. 5 is not a direction, so it is not accepted."},
               "item": {"type": "string", "minLength": 1, "maxLength": 1,
                        "description": "The inventory, equipment or spell letter the command asks for."},
               "target": {"$ref": "#/$defs/point"},

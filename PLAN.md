@@ -20,7 +20,7 @@ branch), `in review` (with the PR), `done` (merged).
 |---|---|---|---|---|
 | T01 | Build and play the pinned game headless | none | yes | done (#3) |
 | T02 | Schemas | none | yes | done (#5) |
-| T03 | C bridge | T01, T02 | yes | todo |
+| T03 | C bridge | T01, T02 | yes | in review (#8) |
 | T04 | Recording and replay | T03 | yes | todo |
 | T05 | Executor primitives | T03 | yes | todo |
 | T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
@@ -29,6 +29,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T09 | Model trial | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | T04 | yes | todo |
+| T12 | Milestone-1 review findings | T01, T02 | yes | todo |
 
 ### T01. Build and play the pinned game headless
 
@@ -221,6 +222,79 @@ A document, `docs/ZOO-IMPORT.md`, for the zoo's own PR (R6): the run record
 fields the zoo needs, how its CI replays an imported run without a model,
 the build it needs for that, and how agent runs are marked
 non-deterministic. The zoo itself is not changed here.
+
+### T12. Milestone-1 review findings
+
+A review of milestone 1 by a model of another family
+([#7](https://github.com/diegoami/borg-agent/issues/7), 2026-11-08) found
+thirteen things. The small ones were fixed in T03's PR; what is left is this
+task. Each item keeps the review's own number.
+
+**The game is not date-independent (1).** `get_mon_num` reads the clock and
+admits seasonal monsters on 24-26 December, so the same seed plays a
+different game on those days — proved with a fixed clock. T03's PR records a
+`calendar` block in every run and the docs and the golden-hash test carry the
+caveat. What is left: neutralize that one `time()` read in the instrumented
+build, the way the runner's recording profile does, and record that it was
+neutralized; or make replay set the recorded date. With a test that plays one
+seed under two controlled dates. This blocks nothing today but it threatens
+T08's post-mortem replay, T10's `verify` and the zoo's CI (R6.2).
+
+**`run-record@1` under-requires what R5 names (3).** Birth rule and options,
+settings and their hash, content identity, the repository commit and dirty
+state, the birth input's hash, the calendar, and for an `api` mind the
+budget, context size and knowledge hash. Also: `mind` is one block but R2.4
+asks per job; `mode: consolidate` should not force a seed and a cap; the
+runner's `saved` outcome is not representable. With a test that a minimal
+record cannot validate.
+
+**`claim@1` does not enforce the R4.3 promotion rule (4).** A model-produced
+claim can reach `supported` with no review; a `corroborated` claim can rest
+on a review by its producer's own family, or one with `verdict: disagree`;
+`quantified` accepts more successes than trials; run evidence need not name a
+seed. Require `produced_by.model` and `.family` for a model, require
+`reviews[].family`, require an agreeing review or a probe basis above
+`hypothesis`, and give a probe a way to corroborate. T07 checks what the
+schema cannot.
+
+**`observation@1` is a shape, not a knowledge guard (7).** Nothing ties
+`true_state.fields` to the keys present, and `level_feeling.danger` and
+`treasure` are integers in the ordinary map where the player sees a feeling.
+Fix the schema, add a recorder-side check, and temper
+[docs/SCHEMAS.md](docs/SCHEMAS.md).
+
+**The recipe is a hand copy of the runner's (6).** Five of six sites are
+byte-identical; `ui-game.c` differs by indentation. Derive the recipe from
+`tools/measure-native.py` at the runner pin, or compare against it in a test,
+so a runner change cannot leave this build silently stale.
+
+**Keys in free text (5).** `endpoint_host` takes any string, including a URL
+with credentials, and `notes` takes anything. Constrain the host, constrain
+the model, provider and profile fields, scan free text when T04 writes a
+record, and test that a fake key in the environment never reaches a record or
+a log. The game's own environment was fixed in T03's PR.
+
+**The examples carry game and zoo knowledge (9).** One claim example states
+the zoo's Druid/Paladin finding with `sources: ["own-play"]`, which is false
+provenance. Make the examples honest, label them as illustrative, and keep
+them out of `knowledge/`, prompt packs and any ingestion path. Phase 1 also
+has no source value for the seed, birth, cause and turn a mode B post-mortem
+is given, which T08 needs.
+
+**The build key does not cover every input (10).** The fixed include line,
+the appended CMake lines, the `version` file and the compiler and platform are
+outside it, so a changed build can be served from the cache. CI's cache key
+should name the image too.
+
+**Weak tests (the review's test section).** Among them: a test that asserts
+nothing, the birth input compared by prefix instead of to the runner's own
+`INPUT`, the zoo's outcome vocabulary copied rather than read at the pin, a
+regex reader standing in for YAML, and no coverage of the death or checkpoint
+paths, a slow mind, or the claim lifecycle's real cases.
+
+Not in this task, because they are the owner's: which profile
+`default_profile` should name, and whether the OpenRouter reviewer is the free
+variant or the paid one (review finding 8).
 
 ## Later milestones (not started)
 

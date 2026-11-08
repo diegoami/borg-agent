@@ -6,6 +6,7 @@ The run's evidence is the observer's `trace.txt`, which holds only game facts
 two runs of the same seed and cap must produce identical bytes.
 """
 import contextlib
+import datetime
 import fcntl
 import hashlib
 import json
@@ -37,7 +38,41 @@ BIRTH_DESCRIPTION = 'Human Warrior; default point buy; normal UI birth'
 BORG_CONFIG = 'borg_cheat_death = FALSE\nborg_respawn_winners = FALSE\n'
 LOCK_PATH = os.environ.get('BORG_AGENT_LOCK', '/tmp/angband-validation.lock')
 FINAL_KINDS = ('death', 'completion', 'turn_cap', 'saved')
-GOOD_OUTCOMES = ('death', 'completion', 'turn_cap')
+# How a run can legitimately end. Hitting a budget or a decision cap is an
+# outcome, not a failure (R2.3), and neither is a death; only the harness's own
+# troubles are failures.
+GOOD_OUTCOMES = ('death', 'completion', 'turn_cap', 'saved',
+                 'budget_cap', 'decision_cap', 'agent_stopped')
+HARNESS_OUTCOMES = ('stalled', 'wall_timeout', 'crash', 'harness_failure', 'config_error')
+# Finding 5 of the milestone-1 review: the game needs none of the owner's keys,
+# so it is given an environment built from this list and nothing else.
+ENVIRONMENT_ALLOWLIST = ('PATH', 'HOME', 'TERM', 'TZ', 'LANG', 'LC_ALL', 'LC_CTYPE')
+
+
+def game_environment(**extra):
+    """The environment the game process gets: nothing of ours but the game's own.
+
+    A model key in this session's environment has no business in a child that
+    never calls a model, nor in the terminal log it writes (RULES 15).
+    """
+    env = {name: os.environ[name] for name in ENVIRONMENT_ALLOWLIST if name in os.environ}
+    env.update(LC_ALL='C.UTF-8', LANG='C.UTF-8')
+    env.update({name: str(value) for name, value in extra.items()})
+    return env
+
+
+def calendar():
+    """When the run happened, as the zoo's runner records it.
+
+    Play is not independent of the date: the game admits seasonal monsters on
+    24-26 December, so a seed reproduces a game only on the same calendar day.
+    A record that does not say when it ran cannot be replayed with confidence.
+    """
+    local = datetime.datetime.now().astimezone()
+    return {'utc': local.astimezone(datetime.timezone.utc).isoformat(),
+            'local': local.isoformat(),
+            'timezone_name': local.tzname(),
+            'TZ_environment': os.environ.get('TZ')}
 
 
 @contextlib.contextmanager
@@ -76,7 +111,14 @@ def classify(code, states, interrupted=None):
 
 
 def monitor(process, trace_path, wall_limit, stall_limit):
-    """Stop a run that hangs or stops advancing; the runner's rule."""
+    """Stop a run that hangs or stops advancing.
+
+    This is the zoo runner's rule with one difference, deliberate: the runner
+    only watches for a stall once it has seen a turn, so a game that never
+    reaches its first state — a birth the input does not answer, for instance —
+    runs to the wall limit. Here the stall clock starts with the run, so such a
+    game is `stalled` within the stall limit instead of hanging.
+    """
     start = changed = time.monotonic()
     last_turn = None
     while process.poll() is None:
@@ -86,7 +128,7 @@ def monitor(process, trace_path, wall_limit, stall_limit):
         now = time.monotonic()
         if current_turn != last_turn:
             last_turn, changed = current_turn, now
-        reason = ('stalled' if current_turn is not None and now - changed >= stall_limit
+        reason = ('stalled' if now - changed >= stall_limit
                   else 'wall_timeout' if now - start >= wall_limit else None)
         if reason:
             process.terminate()
@@ -103,7 +145,7 @@ def monitor(process, trace_path, wall_limit, stall_limit):
 def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
          checkpoint_saves=False, lock=True, log=print):
     """Play one game with the stock Borg and write the run's files to `output`."""
-    build_out, output = Path(build_out), Path(output)
+    build_out, output = Path(build_out).resolve(), Path(output).resolve()
     manifest = json.loads((build_out / 'build.json').read_text())
     if not manifest.get('complete'):
         raise ValueError(f'{build_out} holds no finished build')
@@ -122,12 +164,8 @@ def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
     command += [f'-d{d}={output / d}' for d in ('user', 'archive', 'save', 'scores', 'panic')]
     command += [f'-d{key}={source / "lib" / directory}'
                 for key, directory in (('gamedata', 'gamedata'), ('pref', 'customize'))]
-    env = os.environ.copy()
-    for key in list(env):
-        if key.startswith(('BORG_RECORD_', 'BORG_REPLAY_', 'BORG_MEASURE_')):
-            env.pop(key)
-    env.update(BORG_MEASURE_SEED=str(seed), BORG_MEASURE_CAP=str(cap),
-               BORG_MEASURE_DIR=str(output), LC_ALL='C.UTF-8', LANG='C.UTF-8')
+    env = game_environment(BORG_MEASURE_SEED=seed, BORG_MEASURE_CAP=cap,
+                           BORG_MEASURE_DIR=output)
     if not checkpoint_saves:
         env['BORG_MEASURE_NO_SAVES'] = '1'
     record = {
@@ -143,12 +181,15 @@ def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
         'input_sha256': sha(output / 'input.txt'),
         'configuration_sha256': sha(output / 'user/borg.txt'),
         'command': command, 'cwd': str(source),
+        'calendar': calendar(),
         'outcome': 'harness_failure',
     }
     (output / 'result.json').write_text(json.dumps(record, indent=2, sort_keys=True) + '\n')
-    started = time.monotonic()
+    waiting = time.monotonic()
     process = None
     with heavy_lock(lock):
+        started = time.monotonic()
+        record['lock_wait_seconds'] = round(started - waiting, 3)
         try:
             with (output / 'input.txt').open() as stdin, (output / 'terminal.log').open('w') as terminal:
                 process = subprocess.Popen(command, cwd=source, env=env, stdin=stdin,

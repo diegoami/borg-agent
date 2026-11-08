@@ -44,6 +44,10 @@ Take the first task in PLAN.md's status table whose status is `todo`, whose
 runs in your kind of session. Set its row to `in progress` with your branch
 in your first commit.
 
+Reviews happen at milestones, not per PR (RULES 6a): a session opens a
+"Milestone N review" issue where a reviewer posts, and reads the findings
+from there.
+
 At the end of a task:
 1. tests pass (`python -m pytest -q`, and the task's own checks);
 2. PLAN.md's row and docs/HANDOVER.md are updated: what was done, what was
@@ -117,7 +121,7 @@ as the owner's other Angband work does.
 | `models.yaml` | the providers, the models per job and the profiles (no keys) |
 | `scripts/setup.sh` | tools check and pinned clones into `vendor/` |
 | `src/borg_agent/` | the Python package: connector, executor, mind, records, knowledge |
-| `bridge/` | the C patch applied to the pinned game tree (from T03) |
+| `bridge/` | the C patch applied to the pinned game tree (T03); see [docs/BRIDGE.md](docs/BRIDGE.md) |
 | `schemas/` | JSON Schemas (from T02) |
 | `knowledge/` | claims, JSON Lines and their Markdown views (from T07) |
 | `docs/reports/` | pilot and experiment reports |
