@@ -39,7 +39,7 @@ The sites are the runner's, with one indentation-only difference in
 `ui-game.c`, so this build stays comparable with the zoo's specimens.
 
 The observer takes no game action and makes no Borg decision, which is what
-RULES 8 asks. It is not inert, though, and the earlier claim here that it
+RULES 9 asks. It is not inert, though, and the earlier claim here that it
 "only reads state" was wrong: it seeds the RNG from `BORG_MEASURE_SEED` (which
 is what makes a seed control the game at all), writes the map at the end,
 calls `quit()` at the cap, and with `--checkpoint-saves` forks and saves. None
@@ -81,7 +81,7 @@ are outcomes; only the harness's own troubles are failures (R2.3).
 
 The game is given an environment built from an allowlist, not this session's,
 so none of the owner's model keys reaches a process that never calls a model
-(RULES 15).
+(RULES 16).
 
 Two limits guard a run: a wall limit, and a stall limit measured from the last
 sign of progress. For the stock Borg that sign is the trace's turn; for an

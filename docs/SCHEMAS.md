@@ -63,7 +63,7 @@ else (decision D7): the record names the job, profile, provider, model,
 family, how they were chosen (`profile`, `local override` or `environment`),
 the context size and the hashes of the model files. There is no field for a
 key, and the mind block refuses unknown fields, so a key cannot be recorded
-by accident (RULES 15). `endpoint_host` is a host, never a URL with
+by accident (RULES 16). `endpoint_host` is a host, never a URL with
 credentials.
 
 `deterministic` is false for any run a model decided (R6.3); replaying its

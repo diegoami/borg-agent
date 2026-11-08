@@ -395,7 +395,7 @@ static int direction_of(char *fields[], int count)
 
 /* The command table: this is where an action becomes keys. The keys are the
  * ones the Borg itself sends for the same command, so the game sees nothing
- * new (RULES 8). */
+ * new (RULES 9). */
 static void apply_action(char *line)
 {
     char *fields[32];

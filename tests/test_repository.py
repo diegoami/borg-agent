@@ -11,7 +11,16 @@ def plan_rows():
     rows = []
     for line in (ROOT / 'PLAN.md').read_text().splitlines():
         cells = [c.strip() for c in line.strip().strip('|').split('|')]
-        if len(cells) == 5 and re.fullmatch(r'T\d\d', cells[0]):
+        if len(cells) == 6 and re.fullmatch(r'T\d\d', cells[0]):
+            rows.append(cells)
+    return rows
+
+
+def milestone_rows():
+    rows = []
+    for line in (ROOT / 'PLAN.md').read_text().splitlines():
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) == 4 and re.fullmatch(r'\*\*\d\..*', cells[0]):
             rows.append(cells)
     return rows
 
@@ -32,11 +41,35 @@ def test_plan_status_table():
     rows = plan_rows()
     ids = [r[0] for r in rows]
     assert ids == sorted(set(ids)) and ids, ids
-    for task, _title, needs, _cloud, status in rows:
+    for task, _title, _milestone, needs, _cloud, status in rows:
         assert status.split(' (')[0] in STATUSES, (task, status)
         for need in re.findall(r'T\d\d', needs):
             assert need in ids and need < task, (task, need)
         assert f'### {task}.' in (ROOT / 'PLAN.md').read_text(), task
+
+
+def test_every_task_belongs_to_a_milestone():
+    milestones = {row[0].strip('*').split('.')[0] for row in milestone_rows()}
+    assert milestones == {'1', '2', '3', '4'}, milestones
+    for task, _title, milestone, _needs, _cloud, _status in plan_rows():
+        assert milestone in milestones, (task, milestone)
+
+
+def test_a_task_does_not_need_a_later_milestones_work():
+    # A milestone has to be reviewable on its own, so nothing in it may depend
+    # on work that only arrives afterwards.
+    milestone_of = {row[0]: int(row[2]) for row in plan_rows()}
+    for task, _title, milestone, needs, _cloud, _status in plan_rows():
+        for need in re.findall(r'T\d\d', needs):
+            assert milestone_of[need] <= int(milestone), (task, need)
+
+
+def test_the_milestone_process_is_written_down():
+    plan = (ROOT / 'PLAN.md').read_text()
+    rules = (ROOT / 'RULES.md').read_text()
+    # The review PR's base is what makes its diff the milestone's work.
+    assert '--base reviewed' in plan
+    assert 'reviewed' in rules and 'milestone' in rules.lower()
 
 
 def test_local_links_resolve():
