@@ -6,7 +6,7 @@ work and updates "Current state".
 ## Current state
 
 - **Merged on 2026-11-08: #3 (T01), #4 (T06's documents), #5 (T02) and #6**
-  (bookkeeping). **T03 is in review** (PR #TBD, branch `task/T03-c-bridge`).
+  (bookkeeping). **T03 is in review** ([#8](https://github.com/diegoami/borg-agent/pull/8), branch `task/T03-c-bridge`).
 - **Reviews happen at milestones, not per PR** (the owner, RULES 6a). The
   first milestone review is issue
   [#7](https://github.com/diegoami/borg-agent/issues/7): it holds the prompt
@@ -31,7 +31,7 @@ work and updates "Current state".
 
 ## 2026-11-08: T03, the bridge
 
-Branch `task/T03-c-bridge`, PR #TBD.
+Branch `task/T03-c-bridge`, PR [#8](https://github.com/diegoami/borg-agent/pull/8).
 
 What exists now:
 - `bridge/agent-bridge.c` and `.h`, this repository's own C, applied to the

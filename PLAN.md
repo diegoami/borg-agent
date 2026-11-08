@@ -20,7 +20,7 @@ branch), `in review` (with the PR), `done` (merged).
 |---|---|---|---|---|
 | T01 | Build and play the pinned game headless | none | yes | done (#3) |
 | T02 | Schemas | none | yes | done (#5) |
-| T03 | C bridge | T01, T02 | yes | in progress (task/T03-c-bridge) |
+| T03 | C bridge | T01, T02 | yes | in review (#8) |
 | T04 | Recording and replay | T03 | yes | todo |
 | T05 | Executor primitives | T03 | yes | todo |
 | T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
