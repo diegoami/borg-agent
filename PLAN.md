@@ -8,7 +8,7 @@ PR and propose a fix to whichever is wrong.
 
 Goal: the agent plays the pinned C game through the Borg's connection,
 every run replays exactly without the model, and a pilot produces its first
-claims with evidence. Stop after the pilot report (T09). Phase 2, the Neo
+claims with evidence. Stop after the pilot report (T10). Phase 2, the Neo
 adapter and larger runs wait for the owner.
 
 ### Status
@@ -26,8 +26,9 @@ branch), `in review` (with the PR), `done` (merged).
 | T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo |
 | T07 | Knowledge store | T02 | yes | todo |
 | T08 | Post-mortem start from a Borg run | T04 | yes | todo |
-| T09 | Pilot | T01–T08 | only with a model key in the environment (AGENTS.md) | todo |
-| T10 | Zoo import contract | T04 | yes | todo |
+| T09 | Model trial | T06, T07, T08 | only with model keys in the environment (AGENTS.md) | todo |
+| T10 | Pilot | T01–T09 | only with a model key in the environment (AGENTS.md) | todo |
+| T11 | Zoo import contract | T04 | yes | todo |
 
 ### T01. Build and play the pinned game headless
 
@@ -109,7 +110,19 @@ Also:
 - a budget cap per run (R2.3);
 - the `api` backend's model chosen per run by the owner's model rule on
   the owner's machine, or taken from the environment in a cloud session
-  (AGENTS.md), and recorded either way.
+  (AGENTS.md), and recorded either way;
+- `providers.json`, the provider table for local runs: for each provider
+  the quota service names, its OpenAI-compatible base URL and the **name**
+  of the environment variable that holds its key (never the key). Take each
+  URL from the provider's own documentation and cite it in the file. A
+  provider without a key-based API (the owner's ChatGPT plan, which is a
+  login used through OpenCode) is listed as not usable here.
+
+  Locally the agent reads the keys from the environment, which the owner
+  fills from `~/.config/ai-keys.env`, asks the quota service for the model
+  each run, and looks up its endpoint in this table. The three
+  `BORG_AGENT_*` variables, when set, override the service for that run,
+  and the record says so.
 
 ### T07. Knowledge store
 
@@ -133,10 +146,52 @@ eye", specimen `4.2.6-bbc-m6`, cap 100,000):
 Done when replaying the Borg's prefix reproduces the zoo's death when left
 to the Borg, and a branch k turns before it hands over to another mind.
 
-### T09. Pilot
+### T09. Model trial
+
+Which model should do which job is measured, not assumed. The jobs differ:
+
+| Job | Calls | What matters |
+|---|---|---|
+| Player: choosing the next primitive or command | hundreds per game | a valid action every time, speed, cost |
+| Consolidator: post-mortems and turning notes into claims | a few per game | careful reasoning, no invented facts |
+| Reviewer: checking claims | a few | a different model family from the consolidator (R4.3) |
+
+**Candidates.** Locally, every row of the quota service's `ranking` (not
+`skipped`) for `tier=light` is a player candidate and every row for
+`tier=heavy` a consolidator and reviewer candidate, taken once at the start
+of the trial and recorded with the rows' reasons. The owner may add or
+remove candidates. In a cloud session the candidates are the models the
+owner configured. Each candidate has a budget cap for the whole trial.
+
+**Three parts**, the same prompt pack for every candidate:
+1. **Decision quiz** (players). At least 30 situations from Borg games on
+   zoo seeds: windows a few turns before a death, and first sightings of a
+   monster. For each situation, try every action the executor offers as a
+   `branch`, let the stock Borg play on for 2,000 game turns, and record
+   which branches survive. That is the answer key, made by the game, not by
+   a person or a model. A candidate scores by how often its choice is among
+   the surviving branches, against the best and the worst choice available.
+   The quiz and its key never enter a prompt or the knowledge base.
+2. **Short games** (players): 3 classes (Warrior, Mage, Priest) × 3 seeds ×
+   5,000 game turns per candidate. Measure the share of valid actions, parse
+   failures, calls and tokens per game turn, latency, depth, level and
+   deaths.
+3. **Post-mortems** (consolidators): both T08 floating-eye cases, the same
+   replay windows for every candidate. Count the claims each produces and
+   check each one: by a probe where one can be run, otherwise by a reviewer
+   candidate of another family. The number that matters most is **false
+   claims**, since the knowledge base is the product.
+
+Report in `docs/reports/model-trial.md`: per candidate and part, the scores,
+cost and failures, and a recommendation per job. The owner picks the models
+per job; that choice is recorded in the requirements as decision D6 and
+used by T10.
+
+### T10. Pilot
 
 Run on the owner's machine, or in a cloud session whose environment
-provides a model (AGENTS.md). Mode A: 9 runs, one
+provides a model (AGENTS.md), with the models the owner chose in T09.
+Mode A: 9 runs, one
 per class, Human, 20,000 game turns each. Mode B: both T08 cases, each with
 at least two branches.
 
@@ -148,7 +203,7 @@ Report in `docs/reports/pilot-1.md`:
 - the cost;
 - anything that could not be done without changing play.
 
-### T10. Zoo import contract
+### T11. Zoo import contract
 
 A document, `docs/ZOO-IMPORT.md`, for the zoo's own PR (R6): the run record
 fields the zoo needs, how its CI replays an imported run without a model,
