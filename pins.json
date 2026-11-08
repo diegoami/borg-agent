@@ -1,0 +1,44 @@
+{
+  "schema": "borg-agent/pins@1",
+  "pins": {
+    "better-borg-c": {
+      "repository": "diegoami/better-borg-c",
+      "commit": "b3c825c97c8aef18b252a7fb7d9b7dceef83d586",
+      "tag": "4.2.6-impact-v6",
+      "role": "The C game and Borg source the bridge attaches to: better-borg-c milestone 6, the zoo's 4.2.6-bbc-m6."
+    },
+    "original": {
+      "repository": "diegoami/better-borg-c",
+      "commit": "e473720ed88a0f0c7ca66815cef3000eb4a38bc3",
+      "role": "The original C Borg (angband/angband e473720), the zoo's 4.2.6. Phase 2 reads it; the bridge may be checked against it."
+    },
+    "runner": {
+      "repository": "diegoami/better-borg-c",
+      "commit": "fc9d97cb46aa0aaa27773e5c83a41ec395d515fc",
+      "path": "tools/measure-native.py",
+      "role": "The zoo's runner: how a pinned source tree is instrumented, built headless and played. The bridge follows its pattern."
+    },
+    "borg-zoo": {
+      "repository": "diegoami/borg-zoo",
+      "commit": "4c675343fa6aed8aeb9ff265d9d10a22054e0ac5",
+      "role": "Outcome vocabulary, run-record provenance and the play hash that this repository's records follow (docs/DESIGN.md)."
+    }
+  },
+  "manual": {
+    "pin": "better-borg-c",
+    "paths": [
+      "docs/index.rst",
+      "docs/a-quick-demo.rst",
+      "docs/guide.rst",
+      "docs/faq.rst",
+      "docs/birth.rst",
+      "docs/dungeon.rst",
+      "docs/attack.rst",
+      "docs/playing.rst",
+      "docs/command.rst",
+      "docs/option.rst",
+      "docs/customize.rst",
+      "lib/help/"
+    ]
+  }
+}
