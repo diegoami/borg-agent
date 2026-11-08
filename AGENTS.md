@@ -45,10 +45,23 @@ Then take the next task, or stop if the stack is at three unmerged PRs.
 
 A cloud session has GitHub and the package registries but none of the
 owner's local services. In particular:
-- **No model access for play.** The `api` mind (T06) can't be run against
-  a real model, and T09 can't run. Use the `scripted` mind for tests and the
-  `external` mind for debugging. Leave real-model runs to the owner's
-  machine and give the exact commands in the handover.
+- **Model access only through the environment.** The owner's quota
+  service isn't reachable, so the model rule below can't run. Instead the
+  owner configures the cloud environment with:
+  - `BORG_AGENT_BASE_URL`: an OpenAI-compatible chat endpoint;
+  - `BORG_AGENT_API_KEY`: its key;
+  - `BORG_AGENT_MODEL`: the model id;
+  - network access to that endpoint's domain (the default allowlist covers
+    GitHub and the package registries, not model APIs).
+
+  The model is then the owner's choice. Record it as
+  `"chosen_by": "environment"`, with the endpoint's host and the model id.
+  Never record or log the key or the request headers.
+
+  With those set, the `api` mind and T09 can run in a cloud session. Without
+  them, use the `scripted` mind for tests and the `external` mind for
+  debugging, and leave real-model runs to the owner's machine with the exact
+  commands in the handover.
 - **No reviewer from another model family.** Say in the PR that it still
   needs one; the owner arranges it.
 - The `gh` CLI may be missing or unauthenticated. All task state is in this
