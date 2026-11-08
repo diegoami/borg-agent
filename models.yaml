@@ -1,0 +1,82 @@
+# Which model does which job (owner decision D7, 2026-11-08).
+#
+# This file is the only model rule in this repository: no recommendation
+# service, no ranking, no fallback chain. The active profile is chosen by, in
+# order,
+# BORG_AGENT_PROFILE, `profile:` in models.local.yaml (git-ignored), and
+# default_profile below.
+#
+# It never holds a key. A provider names the environment variable that holds
+# its key, and the agent reads the key from the environment at run time; the
+# owner fills those variables from ~/.config/ai-keys.env. A missing variable
+# fails before play, naming the variable and never its value.
+#
+# The jobs (PLAN.md T09): `play` chooses the next primitive or command,
+# hundreds of calls per game; `consolidate` writes post-mortems and turns
+# notes into claims; `review` checks claims, and must be a different model
+# family from `consolidate` (requirements R4.3).
+schema: borg-agent/models@1
+default_profile: alibaba
+
+providers:
+  alibaba:
+    base_url: https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1
+    api_key_env: ALIBABA_TOKEN_PLAN_API_KEY
+    # The Token Plan's own Singapore host, which the plan's key is bound to;
+    # a pay-as-you-go key gets 401 here, and the reverse.
+    source: https://www.alibabacloud.com/help/model-studio/base-url
+  openrouter:
+    base_url: https://openrouter.ai/api/v1
+    api_key_env: OPENROUTER_API_KEY
+    source: https://openrouter.ai/docs/quickstart
+  zai:
+    base_url: https://api.z.ai/api/coding/paas/v4
+    api_key_env: ZAI_API_KEY
+    # The GLM Coding Plan's endpoint. A coding-plan key fails on the general
+    # endpoint (https://api.z.ai/api/paas/v4).
+    source: https://docs.z.ai/scenario-example/develop-tools/others
+  minimax:
+    base_url: https://api.minimax.io/v1
+    api_key_env: MINIMAX_API_KEY
+    source: https://platform.minimax.io/docs/api-reference/text-openai-api
+
+profiles:
+  # Self-contained: Alibaba's Token Plan serves both families, so the
+  # reviewer needs no second provider.
+  alibaba:
+    play:        {provider: alibaba, model: qwen3.8-flash, family: qwen, context_k: 64}
+    consolidate: {provider: alibaba, model: qwen3.8-max, family: qwen, context_k: 128}
+    review:      {provider: alibaba, model: glm-5.3, family: glm, context_k: 128}
+  openrouter:
+    play:        {provider: openrouter, model: xiaomi/mimo-v2.6-flash, family: mimo}
+    consolidate: {provider: openrouter, model: xiaomi/mimo-v2.6-pro, family: mimo}
+    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+  # The GLM Coding Plan has one family, so this profile's reviewer comes from
+  # OpenRouter: it needs OPENROUTER_API_KEY as well as ZAI_API_KEY.
+  zai:
+    play:        {provider: zai, model: glm-5.3-flash, family: glm}
+    consolidate: {provider: zai, model: glm-5.3, family: glm}
+    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+  # Same there: the Token Plan has one family, and the reviewer is OpenRouter's.
+  minimax:
+    play:        {provider: minimax, model: MiniMax-M2.7, family: minimax}
+    consolidate: {provider: minimax, model: MiniMax-M3, family: minimax}
+    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+
+# The model trial's candidates per job (PLAN.md T09). The trial measures these
+# on this project's own inputs and outputs; the owner then decides which model
+# does which job and the decision is recorded in the requirements.
+trial:
+  play:
+    - {provider: alibaba, model: qwen3.8-flash, family: qwen}
+    - {provider: openrouter, model: xiaomi/mimo-v2.6-flash, family: mimo}
+    - {provider: zai, model: glm-5.3-flash, family: glm}
+    - {provider: minimax, model: MiniMax-M2.7, family: minimax}
+  consolidate:
+    - {provider: alibaba, model: qwen3.8-max, family: qwen}
+    - {provider: openrouter, model: xiaomi/mimo-v2.6-pro, family: mimo}
+    - {provider: zai, model: glm-5.3, family: glm}
+    - {provider: minimax, model: MiniMax-M3, family: minimax}
+  review:
+    - {provider: alibaba, model: glm-5.3, family: glm}
+    - {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}

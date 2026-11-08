@@ -23,11 +23,11 @@ branch), `in review` (with the PR), `done` (merged).
 | T03 | C bridge | T01, T02 | yes | todo |
 | T04 | Recording and replay | T03 | yes | todo |
 | T05 | Executor primitives | T03 | yes | todo |
-| T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo |
+| T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | in review (#4) |
 | T07 | Knowledge store | T02 | yes | todo |
 | T08 | Post-mortem start from a Borg run | T04 | yes | todo |
-| T09 | Model trial | T06, T07, T08 | only with model keys in the environment (AGENTS.md) | todo |
-| T10 | Pilot | T01–T09 | only with a model key in the environment (AGENTS.md) | todo |
+| T09 | Model trial | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
+| T10 | Pilot | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | T04 | yes | todo |
 
 ### T01. Build and play the pinned game headless
@@ -100,29 +100,42 @@ one-line reason. Three backends behind one interface:
 - `scripted`: deterministic rules, for tests only;
 - `external`: each decision is written to a file and the answer read back,
   so a person or a coding session can play a few decisions for debugging;
-- `api`: a model over an OpenAI-compatible chat API, configured by
-  `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL`.
+- `api`: a model over an OpenAI-compatible chat API, configured by the active
+  profile in `models.yaml` (decision D7).
 
 Also:
 - a prompt pack, versioned, built only from the allowed sources
   ([docs/SOURCES.md](docs/SOURCES.md)), with a test that checks it;
 - every call logged (R2.1);
 - a budget cap per run (R2.3);
-- the `api` backend's model chosen per run by the owner's model rule on
-  the owner's machine, or taken from the environment in a cloud session
-  (AGENTS.md), and recorded either way;
-- `providers.json`, the provider table for local runs: for each provider
-  the quota service names, its OpenAI-compatible base URL and the **name**
-  of the environment variable that holds its key (never the key). Take each
-  URL from the provider's own documentation and cite it in the file. A
-  provider without a key-based API (the owner's ChatGPT plan, which is a
-  login used through OpenCode) is listed as not usable here.
+- **`models.yaml` at the root, and its loader.** The file holds the
+  providers (base URL and the **name** of the environment variable that
+  holds the key, each URL taken from the provider's own documentation and
+  cited in the file), one model per job in each named profile (`play`,
+  `consolidate`, `review`), and the model trial's candidates under `trial:`.
+  It never holds a key. The active profile is the first of
+  `BORG_AGENT_PROFILE`, `profile:` in the git-ignored `models.local.yaml`
+  (which may also override single jobs) and `default_profile`.
 
-  Locally the agent reads the keys from the environment, which the owner
-  fills from `~/.config/ai-keys.env`, asks the quota service for the model
-  each run, and looks up its endpoint in this table. The three
-  `BORG_AGENT_*` variables, when set, override the service for that run,
-  and the record says so.
+  The loader:
+  - validates the file against a JSON Schema in `schemas/`: the profile and
+    its providers exist, every job is present, `review.family` differs from
+    `consolidate.family` (R4.3), and the trial lists name known providers;
+  - refuses any field whose name contains `key` other than `api_key_env`,
+    in `models.yaml` and in `models.local.yaml`;
+  - reads each key from the environment variable its provider names, and
+    fails before play when the variable is unset, naming the variable and
+    never its value;
+  - gives each job its context size from `context_k`, with a default when
+    it is missing (R2.2);
+  - reports, per job, the profile, provider, model and family, how they were
+    chosen (`profile`, `local override` or `environment`) and the SHA-256 of
+    `models.yaml` and of `models.local.yaml` when it exists, for the run
+    record. Never a key, a request header or a URL with credentials.
+
+  Tests cover the schema, the three ways of choosing a profile, the job
+  overrides, the family rule, the key-field refusal and the missing-variable
+  failure.
 
 ### T07. Knowledge store
 
@@ -156,12 +169,11 @@ Which model should do which job is measured, not assumed. The jobs differ:
 | Consolidator: post-mortems and turning notes into claims | a few per game | careful reasoning, no invented facts |
 | Reviewer: checking claims | a few | a different model family from the consolidator (R4.3) |
 
-**Candidates.** Locally, every row of the quota service's `ranking` (not
-`skipped`) for `tier=light` is a player candidate and every row for
-`tier=heavy` a consolidator and reviewer candidate, taken once at the start
-of the trial and recorded with the rows' reasons. The owner may add or
-remove candidates. In a cloud session the candidates are the models the
-owner configured. Each candidate has a budget cap for the whole trial.
+**Candidates** come from `trial:` in `models.yaml` (decision D7), per job,
+the same way locally and in a cloud session; the owner adds or removes
+candidates by editing that list. A candidate whose provider's key variable is
+unset is skipped, and the report says so. Each candidate has a budget cap for
+the whole trial.
 
 **Three parts**, the same prompt pack for every candidate:
 1. **Decision quiz** (players). At least 30 situations from Borg games on
