@@ -5,10 +5,31 @@
   "description": "One plain statement about the game, with its evidence (R4). The knowledge base is the product: claims live in JSON Lines under knowledge/, point at immutable run records and never edit them (R4.1). A model never sets a status past 'hypothesis' (R4.3); a probe result or a review by a different model family moves it on, and the owner decides what becomes part of the remake's specification.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "id", "statement", "area", "scope", "status", "basis", "evidence", "confidence", "phase", "sources", "engine", "created"],
+  "required": [
+    "area",
+    "basis",
+    "confidence",
+    "created",
+    "engine",
+    "evidence",
+    "id",
+    "phase",
+    "produced_by",
+    "schema",
+    "scope",
+    "sources",
+    "statement",
+    "status"
+  ],
   "properties": {
-    "schema": {"const": "borg-agent/claim@1"},
-    "id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "description": "Stable and readable, for example 'floating-eye-gaze-paralyses'."},
+    "schema": {
+      "const": "borg-agent/claim@1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Stable and readable, for example 'floating-eye-gaze-paralyses'."
+    },
     "statement": {
       "type": "string",
       "minLength": 1,
@@ -18,53 +39,157 @@
     },
     "area": {
       "type": "string",
-      "enum": ["monster", "item", "spell", "class", "race", "town", "dungeon", "mechanic", "danger", "tactic", "readiness"]
+      "enum": [
+        "monster",
+        "item",
+        "spell",
+        "class",
+        "race",
+        "town",
+        "dungeon",
+        "mechanic",
+        "danger",
+        "tactic",
+        "readiness"
+      ]
     },
     "scope": {
       "type": "object",
       "additionalProperties": false,
       "description": "Where the claim is meant to hold. An absent field means the claim does not depend on it; null means 'any'.",
       "properties": {
-        "class": {"type": ["string", "null"]},
-        "race": {"type": ["string", "null"]},
-        "character_level": {"$ref": "#/$defs/range"},
-        "depth": {"$ref": "#/$defs/range"},
-        "gear": {"type": ["string", "null"], "description": "What the character must have or lack for the claim to hold."},
-        "version": {"type": "string", "description": "The game version, for example '4.2.6'."}
+        "class": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "race": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "character_level": {
+          "$ref": "#/$defs/range"
+        },
+        "depth": {
+          "$ref": "#/$defs/range"
+        },
+        "gear": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "What the character must have or lack for the claim to hold."
+        },
+        "version": {
+          "type": "string",
+          "description": "The game version, for example '4.2.6'."
+        }
       }
     },
     "engine": {
       "type": "string",
-      "enum": ["c-4.2.6", "neo"],
+      "enum": [
+        "c-4.2.6",
+        "neo"
+      ],
       "description": "The engine it was learned on (R4.4). A claim learned on Neo is not assumed to hold on C until it is checked there."
     },
     "status": {
       "type": "string",
-      "enum": ["unknown", "documented", "hypothesis", "supported", "corroborated", "refuted", "contested"],
+      "enum": [
+        "unknown",
+        "documented",
+        "hypothesis",
+        "supported",
+        "corroborated",
+        "refuted",
+        "contested"
+      ],
       "description": "The lifecycle of game-archaeologist's ADR-008, adapted: 'documented' means the manual says so."
     },
-    "superseded_by": {"type": ["string", "null"], "description": "The id of the claim that replaces this one."},
+    "superseded_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The id of the claim that replaces this one."
+    },
     "basis": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
         "kind": {
           "type": "string",
-          "enum": ["manual", "observed", "quantified", "intervened",
-                    "static:game-source", "static:borg-source", "static:borg-spec",
-                    "static:deaths", "static:issue"],
+          "enum": [
+            "manual",
+            "observed",
+            "quantified",
+            "intervened",
+            "static:game-source",
+            "static:borg-source",
+            "static:borg-spec",
+            "static:deaths",
+            "static:issue"
+          ],
           "description": "How the claim was arrived at. A 'static:*' basis means it was read in a source rather than seen in play; any phase may use one (decision D8), and the distinction is what phase 3 needs. 'quantified' means counted trials."
         },
-        "trials": {"type": "integer", "minimum": 1, "description": "M, for a quantified basis: 'N of M'."},
-        "successes": {"type": "integer", "minimum": 0, "description": "N, for a quantified basis."},
-        "reference": {"type": "string", "description": "For 'manual', the manual file and section; for 'static:*', the file and the pinned commit."}
+        "trials": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "M, for a quantified basis: 'N of M'. borg_agent.checks refuses more successes than trials."
+        },
+        "successes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "N, for a quantified basis."
+        },
+        "reference": {
+          "type": "string",
+          "description": "For 'manual', the manual file and section; for 'static:*', the file and the pinned commit."
+        }
       },
       "allOf": [
-        {"if": {"properties": {"kind": {"const": "quantified"}}, "required": ["kind"]},
-         "then": {"required": ["trials", "successes"]}},
-        {"if": {"properties": {"kind": {"const": "manual"}}, "required": ["kind"]},
-         "then": {"required": ["reference"]}}
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "quantified"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "trials",
+              "successes"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "manual"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "reference"
+            ]
+          }
+        }
       ]
     },
     "evidence": {
@@ -74,69 +199,238 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind"],
+        "required": [
+          "kind"
+        ],
         "properties": {
-          "kind": {"type": "string", "enum": ["run", "manual", "claim"]},
-          "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
-          "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295},
-          "turn": {"type": "integer", "minimum": 0},
-          "note": {"type": "string", "description": "What that run shows, in a line."},
-          "reference": {"type": "string", "description": "The manual file and section, or the other claim's id."}
+          "kind": {
+            "type": "string",
+            "enum": [
+              "run",
+              "manual",
+              "claim"
+            ]
+          },
+          "run_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+          },
+          "seed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "turn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "note": {
+            "type": "string",
+            "description": "What that run shows, in a line."
+          },
+          "reference": {
+            "type": "string",
+            "description": "The manual file and section, or the other claim's id."
+          }
         },
         "allOf": [
-          {"if": {"properties": {"kind": {"const": "run"}}, "required": ["kind"]},
-           "then": {"required": ["run_id", "turn"]}},
-          {"if": {"properties": {"kind": {"enum": ["manual", "claim"]}}, "required": ["kind"]},
-           "then": {"required": ["reference"]}}
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "run"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "required": [
+                "run_id",
+                "turn",
+                "seed"
+              ],
+              "description": "R4: run evidence names the run, the seed and the turn, so it can be replayed by someone who has only the record."
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "manual",
+                    "claim"
+                  ]
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "required": [
+                "reference"
+              ]
+            }
+          }
         ]
       }
     },
     "confidence": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rests_on", "alternatives_ruled_out"],
+      "required": [
+        "rests_on",
+        "alternatives_ruled_out"
+      ],
       "description": "In words (R4): what the claim rests on, and which other explanations were ruled out.",
       "properties": {
-        "rests_on": {"type": "string", "minLength": 1},
+        "rests_on": {
+          "type": "string",
+          "minLength": 1
+        },
         "alternatives_ruled_out": {
           "type": "array",
           "description": "Each explanation that was considered and why it was ruled out. An empty list is allowed and says plainly that none was.",
-          "items": {"type": "string", "minLength": 1}
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     },
     "test": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["how"],
+      "required": [
+        "how"
+      ],
       "description": "Required for a tactic or a readiness claim (R4): the experiment or probe a program would run to confirm or refute it.",
       "properties": {
-        "how": {"type": "string", "minLength": 1},
-        "mode": {"type": "string", "enum": ["probe", "zoo-experiment", "post-mortem"]},
-        "trials": {"type": "integer", "minimum": 1}
+        "how": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "probe",
+            "zoo-experiment",
+            "post-mortem"
+          ]
+        },
+        "trials": {
+          "type": "integer",
+          "minimum": 1
+        }
       }
     },
-    "phase": {"type": "integer", "minimum": 1, "maximum": 3, "description": "Which phase produced it: 1 player-learner, 2 Borg archaeologist, 3 reconciler."},
+    "phase": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3,
+      "description": "Which phase produced it: 1 player-learner, 2 Borg archaeologist, 3 reconciler."
+    },
     "sources": {
       "type": "array",
       "minItems": 1,
       "description": "What the producer was allowed to read, by the names in docs/SOURCES.md.",
-      "items": {"type": "string", "enum": ["manual", "in-game", "own-play", "knowledge-base",
-                                            "game-source", "borg-source", "borg-spec",
-                                            "deaths", "issue", "zoo-results"]}
+      "items": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "in-game",
+          "own-play",
+          "knowledge-base",
+          "game-source",
+          "borg-source",
+          "borg-spec",
+          "deaths",
+          "issue",
+          "zoo-results"
+        ]
+      }
     },
-    "created": {"type": "string", "format": "date-time"},
+    "created": {
+      "type": "string",
+      "format": "date-time"
+    },
     "produced_by": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Who wrote the claim. A model may not promote its own claim (R4.3), so this says which model and family did.",
+      "description": "Who wrote the claim. A model may not promote its own claim (R4.3), so a model names itself and its family; borg_agent.checks enforces what the schema cannot \u2014 that the reviewer is of another family.",
       "properties": {
-        "mind": {"type": "string", "enum": ["model", "person", "probe"]},
-        "model": {"type": ["string", "null"]},
-        "family": {"type": ["string", "null"]},
-        "profile": {"type": ["string", "null"]},
-        "run_id": {"type": ["string", "null"]}
-      }
+        "mind": {
+          "type": "string",
+          "enum": [
+            "model",
+            "person",
+            "probe"
+          ]
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "family": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "run_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "mind"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mind": {
+                "const": "model"
+              }
+            },
+            "required": [
+              "mind"
+            ]
+          },
+          "then": {
+            "required": [
+              "model",
+              "family"
+            ],
+            "properties": {
+              "model": {
+                "type": "string",
+                "minLength": 1
+              },
+              "family": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "description": "A model names itself and its family, so the review rule (R4.3) can be applied at all."
+          }
+        }
+      ]
     },
     "reviews": {
       "type": "array",
@@ -144,57 +438,219 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["by", "verdict", "created"],
+        "required": [
+          "by",
+          "family",
+          "verdict",
+          "created"
+        ],
         "properties": {
-          "by": {"type": "string", "description": "The reviewer: a model id, a family, 'owner' or a probe's run id."},
-          "family": {"type": ["string", "null"]},
-          "verdict": {"type": "string", "enum": ["agree", "disagree", "unclear"]},
-          "note": {"type": "string"},
-          "created": {"type": "string", "format": "date-time"}
+          "by": {
+            "type": "string",
+            "description": "The reviewer: a model id, a family, 'owner' or a probe's run id."
+          },
+          "family": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reviewer's family, or null for a probe. A review by the producer's own family does not promote a claim (R4.3)."
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "agree",
+              "disagree",
+              "unclear"
+            ]
+          },
+          "note": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }
   },
   "allOf": [
     {
-      "if": {"properties": {"area": {"enum": ["tactic", "readiness"]}}, "required": ["area"]},
+      "if": {
+        "properties": {
+          "area": {
+            "enum": [
+              "tactic",
+              "readiness"
+            ]
+          }
+        },
+        "required": [
+          "area"
+        ]
+      },
       "then": {
-        "required": ["test"],
-        "properties": {"test": {"type": "object"}},
+        "required": [
+          "test"
+        ],
+        "properties": {
+          "test": {
+            "type": "object"
+          }
+        },
         "description": "A tactic or readiness claim says how a program would test it (R4)."
       }
     },
     {
-      "if": {"properties": {"status": {"const": "documented"}}, "required": ["status"]},
+      "if": {
+        "properties": {
+          "status": {
+            "const": "documented"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "then": {
-        "properties": {"basis": {"properties": {"kind": {"const": "manual"}}}},
+        "properties": {
+          "basis": {
+            "properties": {
+              "kind": {
+                "const": "manual"
+              }
+            }
+          }
+        },
         "description": "'documented' means the manual says so, so its basis is the manual."
       }
     },
     {
-      "if": {"properties": {"status": {"const": "corroborated"}}, "required": ["status"]},
+      "if": {
+        "properties": {
+          "status": {
+            "const": "corroborated"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "then": {
-        "required": ["reviews"],
-        "properties": {"reviews": {"minItems": 1}},
+        "required": [
+          "reviews"
+        ],
+        "properties": {
+          "reviews": {
+            "minItems": 1
+          }
+        },
         "description": "A model never promotes its own claim past 'hypothesis' (R4.3): a corroborated claim names the probe or the reviewer of another family that moved it."
       }
     },
     {
-      "if": {"properties": {"basis": {"properties": {"kind": {"pattern": "^static:"}},
-                                       "required": ["kind"]}},
-             "required": ["basis"]},
+      "if": {
+        "properties": {
+          "basis": {
+            "properties": {
+              "kind": {
+                "pattern": "^static:"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "basis"
+        ]
+      },
       "then": {
-        "required": ["basis"],
-        "properties": {"basis": {"required": ["reference"]}},
+        "required": [
+          "basis"
+        ],
+        "properties": {
+          "basis": {
+            "required": [
+              "reference"
+            ]
+          }
+        },
         "description": "A claim read in a source names where: the file and the pinned commit, the specification's section, the death's id or the issue's number and the date it was read (decision D8)."
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "supported",
+              "corroborated",
+              "refuted"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "basis": {
+                "properties": {
+                  "kind": {
+                    "enum": [
+                      "quantified",
+                      "intervened"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          {
+            "properties": {
+              "reviews": {
+                "type": "array",
+                "minItems": 1
+              }
+            },
+            "required": [
+              "reviews"
+            ]
+          }
+        ],
+        "description": "A model never promotes its own claim past 'hypothesis' (R4.3): anything above it rests on counted trials, a probe, or a review."
       }
     }
   ],
   "$defs": {
     "range": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "properties": {"min": {"type": "integer", "minimum": 0}, "max": {"type": "integer", "minimum": 0}}
+      "properties": {
+        "min": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
     }
   }
 }

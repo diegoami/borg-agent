@@ -680,7 +680,8 @@
       "required": [
         "utc",
         "local",
-        "timezone_name"
+        "timezone_name",
+        "seasonal"
       ],
       "description": "When the run happened. Play is not independent of the date: the game admits seasonal monsters on 24-26 December, so a seed reproduces a game only on the same calendar day. A replay compares records' calendars.",
       "properties": {
@@ -702,6 +703,10 @@
             "string",
             "null"
           ]
+        },
+        "seasonal": {
+          "type": "boolean",
+          "description": "Whether the run happened on 24-26 December, when the game admits seasonal monsters and the same seed plays a different game. A replay must match this."
         }
       }
     }

@@ -65,7 +65,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | 4 | T04 | yes | todo |
-| T12 | Milestone-1 review findings | 2 | T01, T02 | yes | todo |
+| T12 | Milestone-1 review findings | 2 | T01, T02 | yes | in review (#13) |
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 
 ### T01. Build and play the pinned game headless
@@ -301,78 +301,67 @@ Left for later tasks, not this one:
 
 A review of milestone 1 by a model of another family
 ([#7](https://github.com/diegoami/borg-agent/issues/7), 2026-11-08) found
-thirteen things. The small ones were fixed in T03's PR; what is left is this
-task. Each item keeps the review's own number.
+thirteen things. Six were fixed in T03's PR, one in T04's, one in T13's; the
+rest are done here. Each item keeps the review's own number.
 
-**The game is not date-independent (1).** `get_mon_num` reads the clock and
-admits seasonal monsters on 24-26 December, so the same seed plays a
-different game on those days — proved with a fixed clock. T03's PR records a
-`calendar` block in every run and the docs and the golden-hash test carry the
-caveat. What is left: neutralize that one `time()` read in the instrumented
-build, the way the runner's recording profile does, and record that it was
-neutralized; or make replay set the recorded date. With a test that plays one
-seed under two controlled dates. This blocks nothing today but it threatens
-T08's post-mortem replay, T10's `verify` and the zoo's CI (R6.2).
+**Done in this task:**
 
-**`run-record@1` under-requires what R5 names (3).** **Done in T04**, which
-is what writes those records: the birth rule and options, the settings and
-their hash, the content identity, the repository's commit and dirty state, the
-birth input's hash and the calendar are required; an `api` mind must also name
-its budget, context size, knowledge hash and the rest; `game` is required only
-for a mode that plays one; `saved` is in the vocabulary; `endpoint_host` is
-constrained to a host, so a URL with credentials cannot be recorded (part of
-finding 5). The examples are generated from real runs, and a test checks that a
-record missing any of it is refused. What is left of the finding: `mind` is
-still one block, where R2.4 speaks of three jobs — that becomes real in T06,
-when one run may call more than one model.
+- **(1) The game is not date-independent.** `get_mon_num` reads the clock and
+  admits seasonal monsters on 24-26 December, so the same seed plays a
+  different game on those days. Every run now records `calendar.seasonal`, and
+  `verify` **refuses to compare** a run and a replay that fall on different
+  sides of that window: it reports `comparable: false` with the reason instead
+  of calling it a failure to reproduce. Neutralizing that clock read, as the
+  zoo's recording profile does, would make the build differ from the unpatched
+  game on three days a year, which RULES 9 forbids without the owner's
+  say-so — see "For the owner" below.
+- **(4) The claim lifecycle.** `produced_by` is required and a model names
+  itself and its family; every review names a family (null for a probe); run
+  evidence names its seed; anything above `hypothesis` rests on counted trials
+  or on a review. The two rules that compare fields — a review by the
+  producer's own family does not promote, and a `quantified` basis may not
+  claim more successes than trials — are in `borg_agent.checks`, with tests
+  for the same-family, disagreeing, probe and model-promotes-itself cases.
+- **(7) The observation's knowledge rule.** `true_state.fields` must name
+  exactly the fields it carries, checked by `borg_agent.checks` on every
+  observation the bridge writes; the level feeling's danger and treasure
+  numbers are gone from the ordinary map, since the player sees words.
+  `docs/SCHEMAS.md` no longer claims the schema enforces what it cannot.
+- **(6) Runner parity.** The recipe's `ui-game.c` replacement regained the
+  indentation it had lost, so all six sites are byte-identical to the
+  runner's, and four tests now parse `tools/measure-native.py` at the runner
+  pin and compare the replacements, the include list, the CMake arguments and
+  the activation block.
+- **(5) Keys.** `record.validate` refuses a record with a key-shaped field
+  name or a credential-shaped value anywhere in it, not only in the mind
+  block, with tests for a key in a note, in `endpoint_host` and in a URI.
+- **(10) The build key** now covers the include line, the CMake lines, the
+  version suffix, the compiler and the platform, so none of them can be served
+  from the cache; `--output` already refused to delete what is not a build.
+- **(9) The examples** carry a README saying they are fixtures, not knowledge,
+  and must not enter `knowledge/`, a prompt pack or any ingestion path. The
+  run-record examples are generated by `scripts/refresh-examples.py`.
+- **The weak tests.** The assertion-free one now checks that the build key is
+  order-independent and stable; the birth input is compared with the runner's
+  own `INPUT` at the pin, character for character; the outcome vocabulary is
+  read from the zoo's `docs/DESIGN.md` at its pin; `models.yaml`'s trial lists
+  are checked so T09 can always pair a reviewer of another family (finding 8);
+  and three paths that were untested now have slow tests — a **death with the
+  checkpoint saves** (the fork-and-save path T08 needs), and a **slow mind**,
+  which found that the stall clock still spanned the mind's thinking. It now
+  starts when the action goes out, so model latency cannot become an outcome
+  (finding 2 again).
 
-**`claim@1` does not enforce the R4.3 promotion rule (4).** A model-produced
-claim can reach `supported` with no review; a `corroborated` claim can rest
-on a review by its producer's own family, or one with `verdict: disagree`;
-`quantified` accepts more successes than trials; run evidence need not name a
-seed. Require `produced_by.model` and `.family` for a model, require
-`reviews[].family`, require an agreeing review or a probe basis above
-`hypothesis`, and give a probe a way to corroborate. T07 checks what the
-schema cannot.
+**For the owner**, from finding 1: neutralizing the game's one `time()` read
+would make replay independent of the date, at the price of play differing from
+the unpatched build on 24-26 December. That is a RULES 9 exception, so it is
+the owner's call. Until then, a run made in that window can only be replayed
+in it, and `verify` says so.
 
-**`observation@1` is a shape, not a knowledge guard (7).** Nothing ties
-`true_state.fields` to the keys present, and `level_feeling.danger` and
-`treasure` are integers in the ordinary map where the player sees a feeling.
-Fix the schema, add a recorder-side check, and temper
-[docs/SCHEMAS.md](docs/SCHEMAS.md).
-
-**The recipe is a hand copy of the runner's (6).** Five of six sites are
-byte-identical; `ui-game.c` differs by indentation. Derive the recipe from
-`tools/measure-native.py` at the runner pin, or compare against it in a test,
-so a runner change cannot leave this build silently stale.
-
-**Keys in free text (5).** `endpoint_host` takes any string, including a URL
-with credentials, and `notes` takes anything. Constrain the host, constrain
-the model, provider and profile fields, scan free text when T04 writes a
-record, and test that a fake key in the environment never reaches a record or
-a log. The game's own environment was fixed in T03's PR.
-
-**The examples' provenance (9).** Done in T13: the Druid/Paladin example now
-says `zoo-results`, and the example that existed to be rejected for citing the
-Borg's source is a valid claim with a `static:borg-source` basis, since
-decision D8 allows that. What is left of the finding is smaller: label the
-examples as illustrative and keep them out of `knowledge/` so a future
-ingestion step cannot mistake a fixture for a claim.
-
-**The build key does not cover every input (10).** The fixed include line,
-the appended CMake lines, the `version` file and the compiler and platform are
-outside it, so a changed build can be served from the cache. CI's cache key
-should name the image too.
-
-**Weak tests (the review's test section).** Among them: a test that asserts
-nothing, the birth input compared by prefix instead of to the runner's own
-`INPUT`, the zoo's outcome vocabulary copied rather than read at the pin, a
-regex reader standing in for YAML, and no coverage of the death or checkpoint
-paths, a slow mind, or the claim lifecycle's real cases.
-
-Not in this task, because they are the owner's: which profile
-`default_profile` should name, and whether the OpenRouter reviewer is the free
-variant or the paid one (review finding 8).
+**Left for later tasks, not this one:** `mind` is still one block where R2.4
+speaks of three jobs (finding 3's remainder) — that becomes real in T06, when
+one run may call more than one model; and the regex reader standing in for
+YAML in `tests/test_models_file.py` goes when T06's loader lands.
 
 ## After milestone 4 (not started)
 

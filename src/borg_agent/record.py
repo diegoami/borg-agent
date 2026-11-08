@@ -193,6 +193,33 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
     return record
 
 
+# Field names that must never appear in a record, and value shapes that look
+# like a credential. The schema forbids unknown fields in the mind block; this
+# catches a key that reached any other corner (RULES 16, review finding 5).
+SECRET_NAMES = ('api_key', 'apikey', 'key', 'secret', 'password', 'token', 'authorization')
+SECRET_VALUE = r'(?i)(sk-[A-Za-z0-9]{8,}|bearer\s+\S+|[A-Za-z0-9_-]{40,}://|://[^/\s]*:[^/@\s]+@)'
+
+
+def secrets_in(document, path=''):
+    """Anything in a record that looks like a credential."""
+    import re
+
+    problems = []
+    if isinstance(document, dict):
+        for name, value in document.items():
+            where = f'{path}.{name}' if path else name
+            if name.lower() in SECRET_NAMES:
+                problems.append(f'{where}: a record never carries a key (RULES 16)')
+            problems += secrets_in(value, where)
+    elif isinstance(document, list):
+        for index, value in enumerate(document):
+            problems += secrets_in(value, f'{path}[{index}]')
+    elif isinstance(document, str):
+        if re.search(SECRET_VALUE, document):
+            problems.append(f'{path}: the value looks like a credential (RULES 16)')
+    return problems
+
+
 def validate(record):
     """Against schemas/run-record@1.json; raises with the first problems."""
     from jsonschema import Draft202012Validator, FormatChecker
@@ -201,6 +228,9 @@ def validate(record):
     errors = sorted(validator.iter_errors(record), key=str)
     if errors:
         raise ValueError('; '.join(f'{list(e.absolute_path)}: {e.message}' for e in errors[:4]))
+    leaks = secrets_in(record)
+    if leaks:
+        raise ValueError('; '.join(leaks[:4]))
     return record
 
 

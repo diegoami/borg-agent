@@ -23,13 +23,15 @@
       "kind": "run",
       "run_id": "post-mortem-20261109-druid-01",
       "turn": 8800,
-      "note": "A Druid death at depth 2."
+      "note": "A Druid death at depth 2.",
+      "seed": 1375157069
     },
     {
       "kind": "run",
       "run_id": "post-mortem-20261109-paladin-01",
       "turn": 100000,
-      "note": "A Paladin alive at the cap."
+      "note": "A Paladin alive at the cap.",
+      "seed": 1865911738
     }
   ],
   "confidence": {

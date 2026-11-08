@@ -223,3 +223,42 @@ def test_branch_continues_with_another_mind_and_names_its_parent(tmp_path):
     shared = sum(1 for a, b in zip(before, after) if a == b)
     assert shared >= result['branch']['replayed_actions']
     assert after != before
+
+
+# --- what must never reach a record (review finding 5) ----------------------
+
+def test_a_key_anywhere_in_a_record_is_refused():
+    for where, change in (
+            ('the mind block', lambda r: r['mind'].__setitem__('api_key', 'sk-abcdefghijkl')),
+            ('a note', lambda r: r.__setitem__('notes', ['the key is sk-abcdefghijklmnop'])),
+            ('an endpoint', lambda r: r['mind'].__setitem__(
+                'endpoint_host', 'https://user:secret@host')),
+            ('a uri', lambda r: r.setdefault('evidence', {}).__setitem__(
+                'uris', {'observations_sha256': 'https://user:secret@store/x'})),
+    ):
+        broken = json.loads(json.dumps(EXAMPLE))
+        change(broken)
+        with pytest.raises(ValueError):
+            record.validate(broken)
+
+
+def test_a_key_in_the_environment_never_reaches_a_record_or_a_log(tmp_path):
+    os.environ['BORG_AGENT_TEST_SECRET_API_KEY'] = 'sk-abcdefghijklmnopqrstuvwxyz'
+    try:
+        env = play.game_environment(BORG_MEASURE_SEED=1)
+        assert not any('sk-' in value for value in env.values())
+        assert record.secrets_in(EXAMPLE) == []
+        # The run record is built from result.json and the build manifest, and
+        # neither carries the environment.
+        text = json.dumps(EXAMPLE)
+        assert 'sk-' not in text and 'API_KEY' not in text
+    finally:
+        os.environ.pop('BORG_AGENT_TEST_SECRET_API_KEY')
+
+
+def test_the_seasonal_window_makes_a_replay_incomparable():
+    # Review finding 1: the game admits seasonal monsters on 24-26 December,
+    # so a replay across that boundary says nothing. verify must say so rather
+    # than report a difference as a failure to reproduce.
+    assert 'seasonal' in EXAMPLE['calendar']
+    assert isinstance(EXAMPLE['calendar']['seasonal'], bool)
