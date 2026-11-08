@@ -1,0 +1,9 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "primitive",
+  "primitive": {"name": "shop_list", "list": [
+    {"label": "a", "count": 4, "side": "buy"},
+    {"label": "c", "count": 2, "side": "buy"}
+  ]},
+  "reason": "Food and cure light wounds before going down."
+}

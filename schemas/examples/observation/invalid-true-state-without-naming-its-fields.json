@@ -1,0 +1,14 @@
+{
+  "schema": "borg-agent/observation@1",
+  "run_id": "probe-20261108-floating-eye-02",
+  "decision": 3,
+  "turn": 540,
+  "character": {"race": "Human", "class": "Warrior", "level": 1, "hp": 18, "max_hp": 18, "depth": 1, "gold": 0},
+  "map": {"player": {"x": 5, "y": 5}, "rows": ["#######"]},
+  "monsters": [],
+  "inventory": [],
+  "equipment": [],
+  "messages": [],
+  "prompt": {"kind": "none"},
+  "true_state": {"monster_hp": 11}
+}

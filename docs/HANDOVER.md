@@ -6,17 +6,66 @@ work and updates "Current state".
 ## Current state
 
 - **T01** is in review ([#3](https://github.com/diegoami/borg-agent/pull/3), branch `task/T01-headless-play`): the pinned
-  game builds headless and the stock Borg plays it reproducibly. The next
-  tasks are **T02** (schemas) and **T07** (knowledge store), which need
-  nothing, and then **T03** (the bridge), which needs T01 and T02.
+  game builds headless and the stock Borg plays it reproducibly.
 - **T06's documents** are in review ([#4](https://github.com/diegoami/borg-agent/pull/4), branch
   `task/T06-models-profiles`, stacked on #3): the agent's models come from a
   profile in `models.yaml`, decision D7. T06's loader is still to write, and
   needs T02 and T05 first.
+- **T02** is in review ([#5](https://github.com/diegoami/borg-agent/pull/5), branch `task/T02-schemas`, stacked on #4):
+  the four schemas and their examples.
+- **The stack is at three unmerged PRs** (#3, #4 and #5), so this session
+  stopped there (RULES 5). The next tasks are **T07** (knowledge store),
+  which needs nothing, and **T03** (the bridge), which needs T01 and T02.
 - Open owner questions: which models do which job. The models are not fixed
   in advance; T09 measures the candidates from `trial:` in `models.yaml` on
   this project's own inputs and outputs, and the owner then records the
   choice as decision D6.
+
+## 2026-11-08: T02, the schemas
+
+Branch `task/T02-schemas`, PR [#5](https://github.com/diegoami/borg-agent/pull/5), stacked on #4.
+
+What exists now:
+- `schemas/observation@1.json`, `action@1.json`, `run-record@1.json` and
+  `claim@1.json`, draft 2020-12, each naming itself in a `schema` field.
+- `schemas/examples/<name>/valid-*.json` and `invalid-*.json`: 41 examples,
+  and an invalid example's file name says which rule it breaks.
+- `tests/test_schemas.py`: every schema compiles, every valid example
+  validates, every invalid one is rejected, and the rules a reader would want
+  stated are asserted directly — the outcome vocabulary, the profile-only
+  model rule, the true-state rule and the claim lifecycle.
+- `docs/SCHEMAS.md` explains each schema and what it enforces.
+- `jsonschema>=4.21` is now a test dependency (the first beyond pytest).
+
+Facts the next sessions will need:
+- **The observation's knowledge rule is in the shape of the schema**, not
+  only in prose: a monster entry forbids unknown fields and has no `hp`, what
+  the player cannot tell is null, and `true_state` is absent by default and
+  must list the names of the fields it carries. T03 fills observations from
+  the Borg's own state-reading code, so it has to keep true-state reads out
+  of the ordinary fields, or name them there.
+- **`action@1` rejects a payload of the wrong kind** rather than ignoring it,
+  so a mind that answers `{"kind": "command", "primitive": ...}` fails
+  loudly. T06's parse-failure counter should count exactly that.
+- **The outcome vocabulary** is the zoo's nine classes plus `agent_stopped`
+  (the zoo's `borg_stopped`) and `budget_cap`. A test pins the set, so a
+  change has to be deliberate.
+- **The claim schema cannot check the review rule** (R4.3): that the reviewer
+  was of another family than the producer. `produced_by.family` and
+  `reviews[].family` are there for T07 to check, and T07 should.
+- The run record's `mind` block refuses unknown fields and has no key field,
+  so a key cannot be recorded by accident; `endpoint_host` is a host, never a
+  URL with credentials.
+- Nothing writes or reads these files yet: the recorder is T04, the knowledge
+  store T07. There is no Python model of the schemas on purpose — the schema
+  files are the single definition, and code validates against them.
+
+Left for the owner:
+- a review by another model family for this PR;
+- whether `claim@1`'s `status` set should carry `superseded` as well as the
+  `superseded_by` field. R4 lists the statuses and `superseded-by`
+  separately, which is what the schema does, so nothing is blocked either
+  way.
 
 ## 2026-11-08: models by profile, in models.yaml (T06, documents)
 

@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "command",
+  "primitive": {"name": "explore_floor"},
+  "reason": "Explore the floor."
+}

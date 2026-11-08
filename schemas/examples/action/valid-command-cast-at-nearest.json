@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "command",
+  "command": {"name": "cast", "item": "b", "target_nearest": true},
+  "reason": "Magic Missile the eye from here rather than touching it."
+}

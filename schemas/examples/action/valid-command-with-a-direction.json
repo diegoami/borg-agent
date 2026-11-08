@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "command",
+  "command": {"name": "walk", "direction": 6},
+  "reason": "One step east to see round the corner."
+}

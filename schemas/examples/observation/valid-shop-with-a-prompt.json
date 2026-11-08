@@ -1,0 +1,25 @@
+{
+  "schema": "borg-agent/observation@1",
+  "run_id": "play-20261108-seed7-warrior",
+  "decision": 7,
+  "turn": 260,
+  "reason_asked": "shop",
+  "character": {"race": "Human", "class": "Warrior", "level": 1, "hp": 18, "max_hp": 18, "depth": 0, "gold": 270},
+  "map": {"player": {"x": 20, "y": 7}, "rows": ["   1    2    3   ", "   .....@.......  "]},
+  "monsters": [],
+  "inventory": [],
+  "equipment": [],
+  "messages": ["Welcome to the General Store."],
+  "shop": {
+    "kind": "General Store",
+    "stock": [
+      {"label": "a", "description": "Rations of Food", "price": 3, "count": 24},
+      {"label": "b", "description": "Flasks of oil", "price": 3, "count": 40},
+      {"label": "c", "description": "Potions of Cure Light Wounds", "price": 20, "count": 5}
+    ]
+  },
+  "prompt": {"kind": "item", "text": "Buy which item? ", "options": [
+    {"label": "a", "description": "Rations of Food"},
+    {"label": "b", "description": "Flasks of oil"}
+  ]}
+}

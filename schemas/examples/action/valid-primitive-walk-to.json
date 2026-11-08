@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "primitive",
+  "primitive": {"name": "walk_to", "target": {"x": 42, "y": 9}},
+  "reason": "The down staircase is there and nothing is in the way."
+}

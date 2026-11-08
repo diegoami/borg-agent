@@ -1,0 +1,15 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "always-dive-fast",
+  "statement": "Take the first down staircase as soon as it is found, whatever the character's state.",
+  "area": "tactic",
+  "scope": {"version": "4.2.6"},
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {"kind": "observed"},
+  "evidence": [{"kind": "run", "run_id": "play-20261109-seed7-warrior", "turn": 4000}],
+  "confidence": {"rests_on": "One run that went well.", "alternatives_ruled_out": []},
+  "phase": 1,
+  "sources": ["own-play"],
+  "created": "2026-11-09T10:05:00Z"
+}

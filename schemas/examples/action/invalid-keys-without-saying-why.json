@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "keys",
+  "keys": {"keys": "yyy"},
+  "reason": "Answer the prompts."
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "borg-agent/observation@1",
+  "run_id": "play-20261108-seed7-warrior",
+  "decision": 3,
+  "turn": 540,
+  "character": {"race": "Human", "class": "Warrior", "level": 1, "hp": 18, "max_hp": 18, "depth": 1, "gold": 0},
+  "map": {"player": {"x": 5, "y": 5}, "rows": ["#######"]},
+  "monsters": [],
+  "inventory": [],
+  "equipment": [],
+  "messages": [],
+  "prompt": {"kind": "roll_a_die"}
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "primitive",
+  "primitive": {"name": "cheat_death"},
+  "reason": "No."
+}
