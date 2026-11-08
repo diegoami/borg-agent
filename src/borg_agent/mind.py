@@ -36,6 +36,7 @@ class ScriptedMind:
     """
 
     name = 'scripted'
+    kind = 'scripted'
 
     def __init__(self, heading=6):
         self.heading = heading
@@ -100,3 +101,74 @@ class ScriptedMind:
                 return action('command', f'Open the door {direction}.',
                               command={'name': 'alter', 'direction': direction})
         return action('command', 'Nowhere known to step: stay put.', command={'name': 'stay'})
+
+
+class PrimitiveMind:
+    """A chooser of primitives, for tests (R2's `scripted` mind, one layer up).
+
+    It is a fixture, not a policy: its rules are the shortest ones that
+    exercise every primitive deterministically. A mind **may** hold thresholds
+    — that is its job — which is why the half-health limit below lives here
+    and not in the executor.
+    """
+
+    name = 'scripted-primitives'
+    kind = 'scripted'
+
+    def __init__(self):
+        self.dead_ends = 0
+
+    def act(self, observation):
+        prompt = observation.get('prompt') or {'kind': 'none'}
+        character = observation['character']
+        monsters = observation['monsters']
+        player = observation['map']['player']
+        last = observation.get('last_stop')
+
+        if prompt['kind'] == 'more':
+            return action('command', 'Clear the -more- prompt.',
+                          command={'name': 'answer', 'answer': '\r'})
+        if prompt['kind'] == 'yes_no':
+            return action('command', 'Answer no to a question I did not ask.',
+                          command={'name': 'answer', 'answer': 'n'})
+        if prompt['kind'] != 'none':
+            return action('command', 'Leave a prompt I do not understand.',
+                          command={'name': 'escape'})
+
+        adjacent = [m for m in monsters
+                    if max(abs(m['x'] - player['x']), abs(m['y'] - player['y'])) <= 1]
+        if adjacent:
+            self.dead_ends = 0
+            return action('primitive', 'Something is next to me; fight it.',
+                          primitive={'name': 'fight_nearest',
+                                     'stop_if_hp_below': max(1, character['max_hp'] // 2)})
+        if character['hp'] < character['max_hp'] and not monsters:
+            self.dead_ends = 0
+            return action('primitive', 'Hurt and alone; rest.',
+                          primitive={'name': 'rest_until_healed'})
+        # Exploring the town never ends — its dark edges are always a frontier —
+        # so hand back after a while and go down if a staircase is known. The
+        # limit and the preference are judgements, which is why they are here.
+        if last == 'decision_limit' and squares_with_glyph(observation, '>'):
+            self.dead_ends = 0
+            return action('primitive', 'Seen enough of this floor; go down.',
+                          primitive={'name': 'take_stairs', 'direction': 'down'})
+        if last in ('explored', 'no_stairs_known', 'no_path'):
+            self.dead_ends += 1
+            if self.dead_ends >= 2:
+                self.dead_ends = 0
+                return action('command', 'Nothing left to do here; wait a turn.',
+                              command={'name': 'stay'})
+            if last == 'explored':
+                return action('primitive', 'This floor is known; go down.',
+                              primitive={'name': 'take_stairs', 'direction': 'down'})
+            return action('primitive', 'No way down that I know; keep exploring.',
+                          primitive={'name': 'explore_floor'})
+        self.dead_ends = 0
+        return action('primitive', 'Explore what I have not seen.',
+                      primitive={'name': 'explore_floor', 'max_decisions': 150})
+
+
+def squares_with_glyph(observation, glyph):
+    """Whether the player's known map shows a glyph anywhere."""
+    return any(glyph in row for row in observation['map']['rows'])

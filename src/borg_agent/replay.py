@@ -28,6 +28,7 @@ class ReplayMind:
     """
 
     name = 'replay'
+    kind = 'replay'
 
     def __init__(self, actions, state_hashes=None, then=None, until_turn=None):
         self.actions = list(actions)

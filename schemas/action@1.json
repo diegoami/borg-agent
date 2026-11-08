@@ -5,10 +5,23 @@
   "description": "One answer from the mind (R1.2, R2). It is a primitive the executor runs, a single game command with its arguments, or raw keys as an escape hatch. The connector translates it to keypresses; raw keys are logged as raw. Every action carries a one-line reason.",
   "type": "object",
   "unevaluatedProperties": false,
-  "required": ["schema", "kind", "reason"],
+  "required": [
+    "schema",
+    "kind",
+    "reason"
+  ],
   "properties": {
-    "schema": {"const": "borg-agent/action@1"},
-    "kind": {"type": "string", "enum": ["primitive", "command", "keys"]},
+    "schema": {
+      "const": "borg-agent/action@1"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "primitive",
+        "command",
+        "keys"
+      ]
+    },
     "reason": {
       "type": "string",
       "minLength": 1,
@@ -17,54 +30,137 @@
       "description": "One line, in the mind's own words, recorded with the call (R2.1)."
     },
     "note": {
-      "type": ["string", "null"],
+      "type": [
+        "string",
+        "null"
+      ],
       "description": "An observation note for the notebook (R2.3), if this decision taught something."
     }
   },
   "allOf": [
     {
-      "if": {"properties": {"kind": {"const": "primitive"}}},
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "primitive"
+          }
+        }
+      },
       "then": {
-        "required": ["primitive"],
+        "required": [
+          "primitive"
+        ],
         "properties": {
           "primitive": {
             "type": "object",
             "unevaluatedProperties": false,
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "description": "The executor primitives of R2. They are mechanical and carry no tactics; choosing between them is the mind's job.",
             "properties": {
               "name": {
                 "type": "string",
-                "enum": ["walk_to", "explore_floor", "fight_nearest", "rest_until_healed",
-                          "take_stairs", "flee", "read_unknown_scroll", "shop_list"]
+                "enum": [
+                  "walk_to",
+                  "explore_floor",
+                  "fight_nearest",
+                  "rest_until_healed",
+                  "take_stairs",
+                  "flee",
+                  "read_unknown_scroll",
+                  "shop_list"
+                ]
+              },
+              "max_decisions": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Stop after this many decisions whatever else happens, so a primitive can never run away with a run. The executor's own default applies when it is absent."
+              },
+              "stop_if_hp_below": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Stop as soon as the character's hit points fall below this. The executor holds no thresholds of its own (R2, docs/SOURCES.md): a threshold is the mind's judgement, so it is said here or not at all."
               }
             },
             "allOf": [
               {
-                "if": {"properties": {"name": {"const": "walk_to"}}},
+                "if": {
+                  "properties": {
+                    "name": {
+                      "const": "walk_to"
+                    }
+                  }
+                },
                 "then": {
-                  "required": ["target"],
-                  "properties": {"target": {"$ref": "#/$defs/point"}}
+                  "required": [
+                    "target"
+                  ],
+                  "properties": {
+                    "target": {
+                      "$ref": "#/$defs/point"
+                    }
+                  }
                 }
               },
               {
-                "if": {"properties": {"name": {"const": "take_stairs"}}},
+                "if": {
+                  "properties": {
+                    "name": {
+                      "const": "take_stairs"
+                    }
+                  }
+                },
                 "then": {
-                  "required": ["direction"],
-                  "properties": {"direction": {"type": "string", "enum": ["down", "up"]}}
+                  "required": [
+                    "direction"
+                  ],
+                  "properties": {
+                    "direction": {
+                      "type": "string",
+                      "enum": [
+                        "down",
+                        "up"
+                      ]
+                    }
+                  }
                 }
               },
               {
-                "if": {"properties": {"name": {"const": "flee"}}},
+                "if": {
+                  "properties": {
+                    "name": {
+                      "const": "flee"
+                    }
+                  }
+                },
                 "then": {
-                  "required": ["by"],
-                  "properties": {"by": {"type": "string", "enum": ["stairs", "phase_door"]}}
+                  "required": [
+                    "by"
+                  ],
+                  "properties": {
+                    "by": {
+                      "type": "string",
+                      "enum": [
+                        "stairs",
+                        "phase_door"
+                      ]
+                    }
+                  }
                 }
               },
               {
-                "if": {"properties": {"name": {"const": "shop_list"}}},
+                "if": {
+                  "properties": {
+                    "name": {
+                      "const": "shop_list"
+                    }
+                  }
+                },
                 "then": {
-                  "required": ["list"],
+                  "required": [
+                    "list"
+                  ],
                   "properties": {
                     "list": {
                       "type": "array",
@@ -72,11 +168,27 @@
                       "items": {
                         "type": "object",
                         "additionalProperties": false,
-                        "required": ["label", "count"],
+                        "required": [
+                          "label",
+                          "count"
+                        ],
                         "properties": {
-                          "label": {"type": "string", "minLength": 1},
-                          "count": {"type": "integer", "minimum": 1},
-                          "side": {"type": "string", "enum": ["buy", "sell"], "default": "buy"}
+                          "label": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 1
+                          },
+                          "side": {
+                            "type": "string",
+                            "enum": [
+                              "buy",
+                              "sell"
+                            ],
+                            "default": "buy"
+                          }
                         }
                       }
                     }
@@ -89,44 +201,115 @@
       }
     },
     {
-      "if": {"properties": {"kind": {"const": "command"}}},
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "command"
+          }
+        }
+      },
       "then": {
-        "required": ["command"],
+        "required": [
+          "command"
+        ],
         "properties": {
           "command": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "description": "One game command with its arguments, named as the game's command list names it.",
             "properties": {
-              "name": {"type": "string", "minLength": 1},
-              "direction": {"type": "integer", "enum": [1, 2, 3, 4, 6, 7, 8, 9],
-                            "description": "The number-pad direction, as in 'walk 6'. 5 is not a direction, so it is not accepted."},
-              "item": {"type": "string", "minLength": 1, "maxLength": 1,
-                       "description": "The inventory, equipment or spell letter the command asks for."},
-              "target": {"$ref": "#/$defs/point"},
-              "target_nearest": {"type": "boolean"},
-              "count": {"type": "integer", "minimum": 1},
-              "answer": {"type": "string", "description": "The answer to a prompt the command raises, for example 'y'."}
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "direction": {
+                "type": "integer",
+                "enum": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  6,
+                  7,
+                  8,
+                  9
+                ],
+                "description": "The number-pad direction, as in 'walk 6'. 5 is not a direction, so it is not accepted."
+              },
+              "item": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1,
+                "description": "The inventory, equipment or spell letter the command asks for."
+              },
+              "target": {
+                "$ref": "#/$defs/point"
+              },
+              "target_nearest": {
+                "type": "boolean"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "answer": {
+                "type": "string",
+                "description": "The answer to a prompt the command raises, for example 'y'."
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "full",
+                  "as_needed",
+                  "turns"
+                ],
+                "description": "For `rest`: until healed, as needed, or a count of turns."
+              }
             },
-            "not": {"required": ["target", "target_nearest"]}
+            "not": {
+              "required": [
+                "target",
+                "target_nearest"
+              ]
+            }
           }
         }
       }
     },
     {
-      "if": {"properties": {"kind": {"const": "keys"}}},
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "keys"
+          }
+        }
+      },
       "then": {
-        "required": ["keys"],
+        "required": [
+          "keys"
+        ],
         "properties": {
           "keys": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["keys", "why"],
+            "required": [
+              "keys",
+              "why"
+            ],
             "description": "The escape hatch (R1.2). Logged as raw keys, so a reader can tell these apart from commands the connector built.",
             "properties": {
-              "keys": {"type": "string", "minLength": 1},
-              "why": {"type": "string", "minLength": 1, "description": "Why no command covers this."}
+              "keys": {
+                "type": "string",
+                "minLength": 1
+              },
+              "why": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Why no command covers this."
+              }
             }
           }
         }
@@ -137,8 +320,20 @@
     "point": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["x", "y"],
-      "properties": {"x": {"type": "integer", "minimum": 0}, "y": {"type": "integer", "minimum": 0}}
+      "required": [
+        "x",
+        "y"
+      ],
+      "properties": {
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
     }
   }
 }

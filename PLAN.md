@@ -58,7 +58,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T02 | Schemas | 1 | none | yes | done (#5) |
 | T03 | C bridge | 2 | T01, T02 | yes | done (#8) |
 | T04 | Recording and replay | 2 | T03 | yes | in review (#11) |
-| T05 | Executor primitives | 2 | T03 | yes | todo |
+| T05 | Executor primitives | 2 | T03 | yes | in review (#12) |
 | T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
 | T07 | Knowledge store | 3 | T02 | yes | todo |
 | T08 | Post-mortem start from a Borg run | 3 | T04 | yes | todo |

@@ -25,9 +25,11 @@
 #include "obj-util.h"
 #include "player.h"
 #include "player-timed.h"
+#include "store.h"
 #include "ui-term.h"
 #include "borg/borg.h"
 #include "borg/borg-io.h"
+#include "borg/borg-store.h"
 #include "borg/borg-trait.h"
 #include "agent-bridge.h"
 #include <ctype.h>
@@ -35,9 +37,8 @@
 
 #define AGENT_LINE 65536
 #define AGENT_SCHEMA "borg-agent/observation@1"
-/* The window of the known map the observation carries, with its origin. */
-#define AGENT_VIEW_W 41
-#define AGENT_VIEW_H 21
+/* The widest a map row can be: the dungeon's own width. */
+#define AUTO_MAX_X 198
 
 static FILE *observations;   /* we write one line per decision */
 static FILE *actions;        /* we read one line per decision */
@@ -147,24 +148,39 @@ static void write_map(FILE *out)
 {
     int y, x;
     struct chunk *known = player->cave;
-    int top  = player->grid.y - AGENT_VIEW_H / 2;
-    int left = player->grid.x - AGENT_VIEW_W / 2;
     int height = known ? known->height : 0;
     int width  = known ? known->width : 0;
+    int top = height, left = width, bottom = -1, right = -1;
 
-    if (top + AGENT_VIEW_H > height) top = height - AGENT_VIEW_H;
-    if (left + AGENT_VIEW_W > width) left = width - AGENT_VIEW_W;
-    if (top < 0) top = 0;
-    if (left < 0) left = 0;
+    /* The whole of what the player knows, trimmed to its bounding box: a
+     * window would make the agent blind to a corridor it has already walked,
+     * and the box is small while little is known. The player's own square is
+     * always inside it. */
+    for (y = 0; y < height; ++y) {
+        for (x = 0; x < width; ++x) {
+            if (known->squares[y][x].feat == FEAT_NONE)
+                continue;
+            if (y < top) top = y;
+            if (y > bottom) bottom = y;
+            if (x < left) left = x;
+            if (x > right) right = x;
+        }
+    }
+    if (bottom < 0) {
+        top = bottom = player->grid.y;
+        left = right = player->grid.x;
+    }
+    if (player->grid.y < top) top = player->grid.y;
+    if (player->grid.y > bottom) bottom = player->grid.y;
+    if (player->grid.x < left) left = player->grid.x;
+    if (player->grid.x > right) right = player->grid.x;
 
     fprintf(out, "\"map\":{\"player\":{\"x\":%d,\"y\":%d},\"origin\":{\"x\":%d,\"y\":%d},\"rows\":[",
         (int)player->grid.x, (int)player->grid.y, left, top);
-    for (y = top; y < top + AGENT_VIEW_H; ++y) {
-        char row[AGENT_VIEW_W + 1];
+    for (y = top; y <= bottom; ++y) {
+        char row[AUTO_MAX_X + 1];
         int n = 0;
-        for (x = left; x < left + AGENT_VIEW_W; ++x) {
-            /* The player's own remembered grid: a square never seen has no
-             * feature, and stays blank here. */
+        for (x = left; x <= right && n < AUTO_MAX_X; ++x) {
             uint8_t feat = (y < height && x < width) ? known->squares[y][x].feat : FEAT_NONE;
             if (feat == FEAT_NONE)
                 row[n++] = ' ';
@@ -272,6 +288,49 @@ static void write_items(FILE *out, const char *field, bool equipment)
     fprintf(out, "]");
 }
 
+static void write_shop(FILE *out)
+{
+    struct store *store = cave ? store_at(cave, player->grid) : NULL;
+    struct object *obj;
+    int index = 0;
+    size_t letters;
+
+    if (!store) {
+        fprintf(out, "\"shop\":null");
+        return;
+    }
+    letters = strlen(SHOP_MENU_ITEMS);
+    fprintf(out, "\"shop\":{");
+    /* The store as the screen names it: its entrance terrain, exactly as
+     * ui-store.c titles the page. */
+    json_field(out, "kind", f_info[store->feat].name);
+    fprintf(out, ",\"stock\":[");
+    /* The store's stock, described the way its own screen describes it:
+     * ODESC_STORE hides what the player has not learned (ui-store.c does the
+     * same). The labels are the ones the store's menu offers, taken from the
+     * Borg's own table, so a buy lands on the item the agent named. */
+    for (obj = store->stock; obj; obj = obj->next, ++index) {
+        char description[120];
+        char label[2];
+
+        if (!obj->kind)
+            continue;
+        object_desc(description, sizeof(description), obj,
+            ODESC_PREFIX | ODESC_FULL | ODESC_STORE, player);
+        label[0] = (index < (int)letters) ? SHOP_MENU_ITEMS[index] : '?';
+        label[1] = '\0';
+        if (index)
+            fputc(',', out);
+        fprintf(out, "{");
+        json_field(out, "label", label);
+        fputc(',', out);
+        json_field(out, "description", description);
+        fprintf(out, ",\"count\":%d,\"price\":%d}",
+            (int)obj->number, price_item(store, obj, false, 1));
+    }
+    fprintf(out, "]}");
+}
+
 static void write_messages(FILE *out)
 {
     int total = messages_num();
@@ -345,7 +404,9 @@ static void write_observation(void)
     write_items(out, "equipment", true);
     fputc(',', out);
     write_messages(out);
-    fprintf(out, ",\"shop\":null,");
+    fputc(',', out);
+    write_shop(out);
+    fputc(',', out);
     write_prompt_and_screen(out);
     fprintf(out, "}\n");
     fflush(out);
@@ -458,6 +519,38 @@ static void apply_action(char *line)
         if (!text || !*text)
             quit("agent bridge: answer needs text");
         borg_keypresses(text);
+    } else if (!strcmp(name, "read")) {
+        const char *item = argument(fields, count, "item");
+        if (!item || !*item)
+            quit("agent bridge: read needs item");
+        borg_keypress('r');
+        borg_keypress((keycode_t)item[0]);
+    } else if (!strcmp(name, "quaff")) {
+        const char *item = argument(fields, count, "item");
+        if (!item || !*item)
+            quit("agent bridge: quaff needs item");
+        borg_keypress('q');
+        borg_keypress((keycode_t)item[0]);
+    } else if (!strcmp(name, "buy") || !strcmp(name, "sell")) {
+        /* The Borg's own sequence: in a store the item's letter moves the
+         * cursor, the command acts on it, and two returns accept the quantity
+         * and the price. */
+        const char *item = argument(fields, count, "item");
+        const char *quantity = argument(fields, count, "count");
+        bool buying = !strcmp(name, "buy");
+        if (!item || !*item)
+            quit("agent bridge: a purchase needs item");
+        if (buying) {
+            borg_keypress((keycode_t)item[0]);
+            borg_keypress('p');
+        } else {
+            borg_keypress('s');
+            borg_keypress((keycode_t)item[0]);
+        }
+        if (quantity && atoi(quantity) > 1)
+            borg_keypresses(quantity);
+        borg_keypress(KC_ENTER);
+        borg_keypress(KC_ENTER);
     } else if (!strcmp(name, "escape")) {
         borg_keypress(ESCAPE);
     } else {

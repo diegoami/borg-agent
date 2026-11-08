@@ -7,8 +7,9 @@ work and updates "Current state".
 
 - **Milestone 2 is in progress.** PLAN.md's milestone table is the map:
   milestone 1 (foundation) is **reviewed**, milestone 2 (the connection) has
-  T03, T13 and T04 merged and **T05 and T12 left**, milestones 3 and 4 have
-  not started.
+  T03, T13, T04 and T05 merged and **T12 left**, milestones 3 and 4 have not
+  started. When T12 is merged the milestone 2 review PR goes up and this
+  session stops.
 - **How reviews work** (RULES 7, the owner on 2026-11-08): inside a milestone
   a session merges its own task PRs as soon as CI is green, with no approval.
   When the milestone's last task is merged it **stops** and opens the review
@@ -33,6 +34,56 @@ work and updates "Current state".
   general notes about that provider (not recommended, not monitored) do not
   apply here; decision D7 makes the profile the only model rule in this
   repository.
+
+## 2026-11-08: T05, the executor's primitives
+
+Branch `task/T05-executor-primitives`, PR #TBD.
+
+What exists now:
+- `src/borg_agent/executor.py`: the eight primitives of R2 (`walk_to`,
+  `explore_floor`, `fight_nearest`, `rest_until_healed`, `take_stairs`,
+  `flee`, `read_unknown_scroll`, `shop_list`), breadth-first pathing over the
+  player's known map, and `ExecutingMind`, which runs a primitive until it
+  stops and then asks the chooser again with the stop reason.
+- `mind.PrimitiveMind`: a chooser fixture; `--mind scripted-primitives`.
+- The bridge gained the shop's stock in the observation and the `read`,
+  `quaff`, `buy` and `sell` commands.
+- `docs/EXECUTOR.md`, `tests/test_executor.py` (44 tests), and a live gate.
+
+**The gates.** The same fixture played twice on seed 1 to 10,000 turns:
+identical action streams (876 decisions, `01aeca55…`), and `verify`
+reproduced the run with the same state hash at every observation. T01's gate
+still gives `2242a3f5…`, so the bridge changes did not touch play.
+
+Facts the next sessions will need:
+- **The observation now carries the whole known map**, trimmed to its bounding
+  box, not a 41×21 window. The window made exploration blind: the frontier was
+  always the window's edge, so the agent re-walked corridors it already knew
+  and never finished a floor. About 4 KB per observation after 10,000 turns.
+  T06 will have to summarise it for a prompt rather than paste it.
+- **A primitive holds no threshold.** `stop_if_hp_below` and `max_decisions`
+  come from the mind, in the action. A test checks that a primitive keeps
+  going at one hit point when nothing was asked for. Keep it that way: if the
+  executor decided when to flee, T09 would be measuring the plumbing.
+- **Two new ways a run can end**, both in the vocabulary already:
+  `agent_stopped` when six primitives in a row stop without acting
+  (`executor.CannotAct`), and `stalled` when the game answers 500 decisions
+  without its turn advancing. The second one matters: a shop doorway burned
+  31,681 decisions at one turn before it existed, and a turn cap cannot catch
+  that because entering a shop costs no game time.
+- **The shop path is live-verified**: the stock is read from `store->stock`
+  with `ODESC_STORE`, exactly as `ui-store.c` describes it, and the labels come
+  from the Borg's own `SHOP_MENU_ITEMS` table, which is what the store menu
+  offers. Buying sends the label, `p`, then two returns — the Borg's own
+  sequence. Checked in the General Store: 140 gold to 80, mushroom in the
+  inventory.
+- `stock_k` (the store's "known" stock) describes as `(nothing)`; use
+  `store->stock` with `ODESC_STORE`.
+- The fixture chooser waits out the cap on a floor whose stairs it never
+  finds. It is a fixture, deliberately not a strategy.
+
+Left for the owner:
+- nothing new; **T12 is the last task of milestone 2**, and then the review PR.
 
 ## 2026-11-08: T04, run records and replay
 

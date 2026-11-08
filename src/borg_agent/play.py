@@ -171,6 +171,7 @@ def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
     record = {
         'schema': 'borg-agent/play@1',
         'mind': 'stock-borg',
+        'mind_kind': 'stock-borg',
         'seed': seed, 'turn_cap': cap,
         'birth': BIRTH_DESCRIPTION,
         'checkpoint_saves': checkpoint_saves,
