@@ -5,9 +5,76 @@ work and updates "Current state".
 
 ## Current state
 
-- Nothing is built yet. The next task is **T01** (PLAN.md); T02 and T07 can
-  run in parallel with it.
-- Open owner questions: none.
+- **T01** is in review ([#3](https://github.com/diegoami/borg-agent/pull/3), branch `task/T01-headless-play`): the pinned
+  game builds headless and the stock Borg plays it reproducibly. The next
+  tasks are **T02** (schemas) and **T07** (knowledge store), which need
+  nothing, and then **T03** (the bridge), which needs T01 and T02.
+- Open owner questions: which models do which job. The owner's note of
+  2026-11-08: the models are not fixed in advance; T09 measures the
+  candidates on this task's own inputs and outputs first, and the owner then
+  records the choice as decision D6. So T06 keeps the model configurable per
+  run and nothing earlier than T09 assumes a model.
+
+## 2026-11-08: T01, the pinned game headless
+
+Branch `task/T01-headless-play`, PR [#3](https://github.com/diegoami/borg-agent/pull/3).
+
+What exists now:
+- `python -m borg_agent build`: extracts the `better-borg-c` pin with
+  `git archive`, instruments it exactly as the zoo's runner does
+  (`tools/measure-native.py --observe` at the `runner` pin), and builds it
+  with CMake. The instrumentation recipe is data in
+  `src/borg_agent/build.py`, so tests check every site against the pinned
+  sources without building, and the build key is a SHA-256 of the recipe
+  (game commit, runner commit, sites, CMake arguments, observer file
+  hashes). Builds live in `build/<key>`, and a finished build of the same
+  recipe is reused.
+- `python -m borg_agent play --seed N --cap T`: plays the **stock Borg**
+  through the test frontend with the runner's birth input (Human Warrior),
+  under `/tmp/angband-validation.lock`, and writes `trace.txt`,
+  `terminal.log` and `result.json` to `runs/`.
+- `python -m borg_agent determinism --seed N --cap T`: plays twice and
+  compares trace bytes, writing `determinism.json`.
+- `docs/BUILD-AND-PLAY.md`, and a CI job (`headless`, Ubuntu 24.04) that
+  builds, runs the determinism check and the `slow` tests, caching `build/`
+  by the recipe key.
+
+Facts the next sessions will need:
+- **T01's gate passed.** Seed 7, cap 5,000, Human Warrior: both runs ended
+  `turn_cap` at turn 5000 with 53,040 bytes of identical trace, SHA-256
+  `2242a3f55de1711fce9c37c5301c9ad3d4cdd9daf32cea8f44066b28a1d7d1f0`, about
+  1.9 s each. So T03 may build on it.
+- The observer's `trace.txt` holds game facts only (turn, energy, decision
+  count, depth, level, HP, the full RNG state, character, options, and the
+  Borg's own messages as `BORG <turn> <text>`); no wall time, paths or pids.
+  That is why the bytes match, and it is what T04's state hashes can use.
+- Checkpoint saves are off by default here (the runner writes one every
+  1,000 turns by `fork` and save). T08 needs them on: `--checkpoint-saves`,
+  which gives `start.save` and `recent.save` in the run directory.
+- The runner's named-play mode (`BORG_MEASURE_PLAY_TURNS` with
+  `measure_activate_borg`) is how the zoo resumes a save and plays on at a
+  command boundary. T08's "stop k turns before the death" should use that
+  path rather than a new one; `src/borg_agent/build.py` already adds the
+  activation function the observer needs.
+- `vendor/` clones are blobless (`--filter=blob:none`). `git archive` and
+  `git show` fetch what they need, but `git grep` over a whole pinned commit
+  fetches every blob and takes minutes: don't.
+
+Environment, on the owner's machine:
+- `bash scripts/setup.sh --strict` ends with `setup: ready`; the C compiler,
+  CMake and `libx11-dev` were already there, and nothing had to be
+  installed.
+- There is no system `pip` and no system `pytest`; `uv` is present. Made
+  `.venv` with `uv venv` and installed the package into it, and added that
+  fallback to AGENTS.md. `.venv/` was already in `.gitignore`.
+- `python -m pytest -q` now deselects the `slow` tests (the build-and-play
+  gate). CI runs both.
+
+Left for the owner:
+- a review by another model family (RULES 12, AGENTS.md): T01's PR needs
+  one.
+- T09 (model trial) and T10 (pilot) still need model access, and the model
+  choice per job is still open; see "Current state".
 
 ## 2026-11-08: repository initialized
 

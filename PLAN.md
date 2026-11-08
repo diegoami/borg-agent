@@ -18,7 +18,7 @@ branch), `in review` (with the PR), `done` (merged).
 
 | Task | Title | Needs | Runs in a cloud session | Status |
 |---|---|---|---|---|
-| T01 | Build and play the pinned game headless | none | yes | todo |
+| T01 | Build and play the pinned game headless | none | yes | in review (#3) |
 | T02 | Schemas | none | yes | todo |
 | T03 | C bridge | T01, T02 | yes | todo |
 | T04 | Recording and replay | T03 | yes | todo |

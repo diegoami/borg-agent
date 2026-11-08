@@ -15,3 +15,34 @@ jobs:
       - run: bash scripts/setup.sh --strict
       - run: pip install -q -e '.[test]'
       - run: python -m pytest -q
+
+  headless:
+    # T01: build the pinned game and play seed 7 twice with identical traces.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq build-essential cmake libx11-dev > /dev/null
+      - run: bash scripts/setup.sh --strict
+      - run: pip install -q -e '.[test]'
+      - id: recipe
+        run: echo "key=$(python -c 'from borg_agent.build import build_key; print(build_key())')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: build
+          key: game-${{ runner.os }}-${{ steps.recipe.outputs.key }}
+      - run: python -m borg_agent build
+      - run: python -m borg_agent determinism --seed 7 --cap 5000
+      - run: python -m pytest -q -m slow
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-logs
+          path: |
+            build/*/configure.log
+            build/*/build.log
+            runs/**/result.json
+            runs/**/determinism.json
+          if-no-files-found: ignore

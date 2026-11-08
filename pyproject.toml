@@ -17,3 +17,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The slow marker is the headless build and play (T01): a compiler, CMake,
+# libx11-dev and a few minutes. Run it with: pytest -m slow
+addopts = "-m 'not slow'"
+markers = ["slow: builds the pinned game and plays it"]
