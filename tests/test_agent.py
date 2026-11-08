@@ -171,8 +171,18 @@ def test_the_calendar_is_recorded_because_play_is_not_date_independent():
     # The game admits seasonal monsters on 24-26 December, so a record that
     # does not say when it ran cannot be replayed with confidence.
     recorded = play.calendar()
-    assert set(recorded) == {'utc', 'local', 'timezone_name', 'TZ_environment'}
+    assert set(recorded) == {'utc', 'local', 'timezone_name', 'TZ_environment', 'seasonal'}
     datetime.datetime.fromisoformat(recorded['utc'])
+    assert recorded['seasonal'] is play.seasonal()
+
+
+@pytest.mark.parametrize('date,expected', [
+    ((2026, 12, 24), True), ((2026, 12, 25), True), ((2026, 12, 26), True),
+    ((2026, 12, 23), False), ((2026, 12, 27), False), ((2026, 11, 8), False),
+])
+def test_the_seasonal_window_is_the_games_own(date, expected):
+    # get_mon_num admits RF_SEASONAL monsters only on those three days.
+    assert play.seasonal(datetime.datetime(*date)) is expected
 
 
 def test_a_build_directory_that_is_not_ours_is_not_deleted(tmp_path):
@@ -203,3 +213,29 @@ def test_a_scripted_mind_plays_the_same_game_twice(tmp_path):
     assert records[0]['action_stream']['sha256'] == records[1]['action_stream']['sha256']
     assert records[0]['trace_sha256'] == records[1]['trace_sha256']
     assert records[0]['outcome'] == records[1]['outcome']
+
+
+@pytest.mark.slow
+def test_a_slow_mind_is_not_called_a_stall(tmp_path):
+    """Review finding 2: model latency must never become an outcome (R1.3).
+
+    The mind here takes far longer per decision than the stall limit. The run
+    must still finish: the stall clock follows the protocol, not the clock.
+    """
+    import time
+
+    class Slow(mind.ScriptedMind):
+        name = 'slow'
+
+        def act(self, observation):
+            time.sleep(0.3)
+            return super().act(observation)
+
+    out = build.prepare(log=lambda *a: None)
+    record = agent.play_with_mind(out, seed=1, cap=100, output=tmp_path / 'slow',
+                                  mind=Slow(), timeout=300, stall_timeout=0.1,
+                                  lock=not os.environ.get('BORG_AGENT_NO_LOCK'),
+                                  log=lambda *a: None)
+    assert record['outcome'] in play.GOOD_OUTCOMES, record
+    assert record['decisions'] >= 5
+    assert record['wall_seconds'] > record['decisions'] * 0.25

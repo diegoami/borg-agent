@@ -1,0 +1,51 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "floating-eye-gaze-paralyses-low-level-melee",
+  "statement": "Attacking a floating eye in melee below character level 10 can leave the character paralysed until something else kills it.",
+  "area": "danger",
+  "scope": {
+    "class": null,
+    "character_level": {
+      "min": 1,
+      "max": 9
+    },
+    "depth": {
+      "min": 1,
+      "max": 5
+    },
+    "version": "4.2.6"
+  },
+  "engine": "c-4.2.6",
+  "status": "supported",
+  "basis": {
+    "kind": "observed"
+  },
+  "evidence": [
+    {
+      "kind": "run",
+      "run_id": "play-20261109-seed1865911738-mage",
+      "seed": 1865911738,
+      "turn": 14310,
+      "note": "Died to a floating eye at depth 3, character level 8, after walking into it."
+    }
+  ],
+  "confidence": {
+    "rests_on": "One death, with the game's own cause of death and the messages before it.",
+    "alternatives_ruled_out": [
+      "Starvation: the character was fed at the time.",
+      "Another monster: no other monster was visible in the ten turns before."
+    ]
+  },
+  "phase": 1,
+  "sources": [
+    "own-play"
+  ],
+  "created": "2026-11-09T10:05:00Z",
+  "produced_by": {
+    "mind": "model",
+    "model": "qwen3.8-max",
+    "family": "qwen",
+    "profile": "alibaba",
+    "run_id": "consolidate-20261109-01"
+  }
+}

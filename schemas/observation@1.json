@@ -5,36 +5,112 @@
   "description": "What the agent is shown at one decision point (R1.1). It holds only what the player could know: the map as the player knows it, the monsters the player can see, the character's own state, the messages since the last observation, the shop's stock while in a shop, and the open prompt or menu. Anything read from the true game state goes under 'true_state', which is off by default.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "run_id", "decision", "turn", "character", "map", "monsters", "inventory", "equipment", "messages", "prompt"],
+  "required": [
+    "schema",
+    "run_id",
+    "decision",
+    "turn",
+    "character",
+    "map",
+    "monsters",
+    "inventory",
+    "equipment",
+    "messages",
+    "prompt"
+  ],
   "properties": {
-    "schema": {"const": "borg-agent/observation@1"},
-    "run_id": {"$ref": "#/$defs/id"},
-    "decision": {"type": "integer", "minimum": 0, "description": "The agent's decision index in this run, counted from 0."},
-    "turn": {"type": "integer", "minimum": 0, "description": "The engine's game turn. Ten game turns are one player turn at normal speed."},
+    "schema": {
+      "const": "borg-agent/observation@1"
+    },
+    "run_id": {
+      "$ref": "#/$defs/id"
+    },
+    "decision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The agent's decision index in this run, counted from 0."
+    },
+    "turn": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The engine's game turn. Ten game turns are one player turn at normal speed."
+    },
     "reason_asked": {
       "type": "string",
-      "enum": ["start", "primitive_stopped", "new_monster", "low_hp", "level_feeling", "new_item", "shop", "prompt", "death"],
+      "enum": [
+        "start",
+        "primitive_stopped",
+        "new_monster",
+        "low_hp",
+        "level_feeling",
+        "new_item",
+        "shop",
+        "prompt",
+        "death"
+      ],
       "description": "Why the mind was asked now (R2)."
     },
-    "character": {"$ref": "#/$defs/character"},
-    "map": {"$ref": "#/$defs/map"},
+    "character": {
+      "$ref": "#/$defs/character"
+    },
+    "map": {
+      "$ref": "#/$defs/map"
+    },
     "monsters": {
       "type": "array",
       "description": "Monsters the player can see. 'name' is null until the player has learned it; the letter and colour are always known.",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["letter", "x", "y"],
+        "required": [
+          "letter",
+          "x",
+          "y"
+        ],
         "properties": {
-          "letter": {"type": "string", "minLength": 1, "maxLength": 1},
-          "colour": {"type": "string"},
-          "name": {"type": ["string", "null"]},
-          "x": {"type": "integer", "minimum": 0},
-          "y": {"type": "integer", "minimum": 0},
-          "distance": {"type": "integer", "minimum": 0},
-          "line_of_sight": {"type": "boolean"},
-          "asleep": {"type": ["boolean", "null"], "description": "Null when the player cannot tell."},
-          "health": {"type": ["string", "null"], "description": "The health bar as the game shows it, not the monster's hit points."}
+          "letter": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1
+          },
+          "colour": {
+            "type": "string"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "distance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "line_of_sight": {
+            "type": "boolean"
+          },
+          "asleep": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Null when the player cannot tell."
+          },
+          "health": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The health bar as the game shows it, not the monster's hit points."
+          }
         }
       }
     },
@@ -44,47 +120,109 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["description", "x", "y"],
+        "required": [
+          "description",
+          "x",
+          "y"
+        ],
         "properties": {
-          "description": {"type": "string"},
-          "x": {"type": "integer", "minimum": 0},
-          "y": {"type": "integer", "minimum": 0}
+          "description": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
-    "inventory": {"type": "array", "items": {"$ref": "#/$defs/item"}},
-    "equipment": {"type": "array", "items": {"$ref": "#/$defs/item"}},
+    "inventory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
+    "equipment": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/item"
+      }
+    },
     "messages": {
       "type": "array",
       "description": "The messages the game printed since the last observation, oldest first, as the player read them.",
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     },
     "shop": {
-      "type": ["object", "null"],
+      "type": [
+        "object",
+        "null"
+      ],
       "additionalProperties": false,
-      "required": ["kind", "stock"],
+      "required": [
+        "kind",
+        "stock"
+      ],
       "properties": {
-        "kind": {"type": "string", "description": "The shop as the game names it, for example 'General Store'."},
-        "stock": {"type": "array", "items": {"$ref": "#/$defs/item"}}
+        "kind": {
+          "type": "string",
+          "description": "The shop as the game names it, for example 'General Store'."
+        },
+        "stock": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/item"
+          }
+        }
       }
     },
     "prompt": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "description": "The prompt or menu waiting for an answer. 'none' means ordinary play.",
       "properties": {
-        "kind": {"type": "string", "enum": ["none", "more", "yes_no", "direction", "item", "menu", "text", "command"]},
-        "text": {"type": "string"},
+        "kind": {
+          "type": "string",
+          "enum": [
+            "none",
+            "more",
+            "yes_no",
+            "direction",
+            "item",
+            "menu",
+            "text",
+            "command"
+          ]
+        },
+        "text": {
+          "type": "string"
+        },
         "options": {
           "type": "array",
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["label", "description"],
+            "required": [
+              "label",
+              "description"
+            ],
             "properties": {
-              "label": {"type": "string", "minLength": 1},
-              "description": {"type": "string"}
+              "label": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string"
+              }
             }
           }
         }
@@ -93,90 +231,203 @@
     "screen": {
       "type": "array",
       "description": "The terminal's lines, as the player sees them. The connector may leave it out to keep observations small.",
-      "items": {"type": "string"}
+      "items": {
+        "type": "string"
+      }
     },
     "true_state": {
       "type": "object",
-      "description": "Fields read from the true game state rather than from the player's knowledge (R1.1). Off by default: a run that sets any of these records it, and knowledge learned from such a run says so.",
+      "description": "Fields read from the true game state rather than from the player's knowledge (R1.1). Off by default: 'fields' must name every other key present here, which borg_agent.checks enforces, and a run that sets any of them records it. Knowledge learned from such a run says so.",
       "additionalProperties": true,
       "properties": {
         "fields": {
           "type": "array",
           "minItems": 1,
           "description": "The name of every true-state field present here, so a reader never has to guess which values the player could not know.",
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         }
       },
-      "required": ["fields"]
+      "required": [
+        "fields"
+      ]
     }
   },
   "$defs": {
-    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
     "character": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["race", "class", "level", "hp", "max_hp", "depth", "gold"],
+      "required": [
+        "race",
+        "class",
+        "level",
+        "hp",
+        "max_hp",
+        "depth",
+        "gold"
+      ],
       "properties": {
-        "name": {"type": "string"},
-        "race": {"type": "string"},
-        "class": {"type": "string"},
-        "level": {"type": "integer", "minimum": 1},
-        "max_level": {"type": "integer", "minimum": 1},
-        "exp": {"type": "integer", "minimum": 0},
-        "hp": {"type": "integer"},
-        "max_hp": {"type": "integer", "minimum": 1},
-        "sp": {"type": "integer", "minimum": 0},
-        "max_sp": {"type": "integer", "minimum": 0},
-        "depth": {"type": "integer", "minimum": 0, "description": "Dungeon level; 0 is the town."},
-        "max_depth": {"type": "integer", "minimum": 0},
-        "gold": {"type": "integer", "minimum": 0},
-        "ac": {"type": "integer"},
-        "speed": {"type": "integer"},
-        "food": {"type": ["integer", "string"]},
+        "name": {
+          "type": "string"
+        },
+        "race": {
+          "type": "string"
+        },
+        "class": {
+          "type": "string"
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "max_level": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hp": {
+          "type": "integer"
+        },
+        "max_hp": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_sp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Dungeon level; 0 is the town."
+        },
+        "max_depth": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gold": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ac": {
+          "type": "integer"
+        },
+        "speed": {
+          "type": "integer"
+        },
+        "food": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
         "stats": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "str": {"type": "string"}, "int": {"type": "string"}, "wis": {"type": "string"},
-            "dex": {"type": "string"}, "con": {"type": "string"}
+            "str": {
+              "type": "string"
+            },
+            "int": {
+              "type": "string"
+            },
+            "wis": {
+              "type": "string"
+            },
+            "dex": {
+              "type": "string"
+            },
+            "con": {
+              "type": "string"
+            }
           },
           "description": "As the character sheet prints them, so '18/40' stays itself."
         },
         "conditions": {
           "type": "array",
           "description": "What the status line shows: afraid, poisoned, confused, blind, hungry, and so on.",
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
     "map": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["player", "rows"],
+      "required": [
+        "player",
+        "rows"
+      ],
       "description": "The map as the player knows it: the same glyphs the player sees, with unknown squares blank.",
       "properties": {
         "player": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["x", "y"],
-          "properties": {"x": {"type": "integer", "minimum": 0}, "y": {"type": "integer", "minimum": 0}}
+          "required": [
+            "x",
+            "y"
+          ],
+          "properties": {
+            "x": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         },
         "origin": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["x", "y"],
+          "required": [
+            "x",
+            "y"
+          ],
           "description": "The dungeon coordinate of the first column and row of 'rows', when the view is a window on a larger level.",
-          "properties": {"x": {"type": "integer", "minimum": 0}, "y": {"type": "integer", "minimum": 0}}
-        },
-        "rows": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "level_feeling": {
-          "type": ["object", "null"],
-          "additionalProperties": false,
-          "description": "The level feeling as the game gives it, once the player has earned it.",
           "properties": {
-            "danger": {"type": ["integer", "null"]},
-            "treasure": {"type": ["integer", "null"]},
-            "text": {"type": "string"}
+            "x": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "level_feeling": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "description": "The level feeling as the game gives it to the player, in words. The danger and treasure numbers behind it are cave internals, so a run that wants them puts them under 'true_state' and names them there (R1.1).",
+          "properties": {
+            "text": {
+              "type": "string"
+            }
           }
         }
       }
@@ -184,12 +435,29 @@
     "item": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["label", "description"],
+      "required": [
+        "label",
+        "description"
+      ],
       "properties": {
-        "label": {"type": "string", "minLength": 1, "description": "The letter or slot the game offers, for example 'c'."},
-        "description": {"type": "string", "description": "As the game prints it, flavour and all: '2 Flasks of oil', 'a Soft Leather Armour [8]'."},
-        "count": {"type": "integer", "minimum": 1},
-        "price": {"type": "integer", "minimum": 0, "description": "Shop stock only."}
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The letter or slot the game offers, for example 'c'."
+        },
+        "description": {
+          "type": "string",
+          "description": "As the game prints it, flavour and all: '2 Flasks of oil', 'a Soft Leather Armour [8]'."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "price": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Shop stock only."
+        }
       }
     }
   }

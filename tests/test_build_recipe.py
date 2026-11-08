@@ -1,4 +1,5 @@
 """The instrumentation recipe, checked against the pinned sources without building."""
+import ast
 import json
 import re
 
@@ -48,9 +49,14 @@ def test_build_key_covers_the_whole_recipe():
         assert build.build_key({**recipe, **change}) != key
 
 
-def test_build_key_is_a_hash_of_the_recipe_only():
-    # The recipe must be JSON, so the key is reproducible on another machine.
-    json.dumps(build.recipe(), sort_keys=True)
+def test_the_build_key_is_a_hash_of_the_recipe_and_nothing_else():
+    # It must be reproducible: JSON, order-independent, and stable.
+    recipe = build.recipe()
+    text = json.dumps(recipe, sort_keys=True)
+    assert json.loads(text) == recipe
+    shuffled = dict(reversed(list(recipe.items())))
+    assert build.build_key(shuffled) == build.build_key(recipe)
+    assert build.build_key(recipe) == build.build_key(json.loads(text))
 
 
 def pinned_tree(tmp_path):
@@ -154,3 +160,65 @@ def test_cached_build_is_reused_only_when_it_matches_the_recipe(tmp_path):
 def test_build_directory_is_under_the_ignored_build_root():
     assert build.build_dir().parent == build.BUILD_ROOT
     assert build.BUILD_ROOT.name == 'build'
+
+
+def runner_source():
+    return build.pins.show(build.RUNNER_PIN, 'tools/measure-native.py').decode()
+
+
+def runner_replacements():
+    """The replace(...) calls of the runner's observer branch, at its pin."""
+    source = runner_source()
+    observe = source[source.index("if args.observe:"):source.index("def refresh_observer")]
+    found = []
+    for match in re.finditer(
+            r"replace\(source / 'src/([^']+)',\s*('(?:[^'\\]|\\.)*'),\s*('(?:[^'\\]|\\.)*')\)",
+            observe, re.S):
+        name, old, new = match.groups()
+        found.append((name, ast.literal_eval(old), ast.literal_eval(new)))
+    return found
+
+
+def test_the_recipe_is_the_runners_at_the_pin():
+    """Finding 6 of the milestone-1 review: parity, not a hand copy."""
+    theirs = runner_replacements()
+    assert len(theirs) == 6, theirs
+    assert list(build.REPLACEMENTS) == theirs
+
+
+def test_the_include_sites_are_the_runners():
+    source = runner_source()
+    observe = source[source.index("if args.observe:"):source.index("def refresh_observer")]
+    listed = re.search(r"for file in \(([^)]*)\):", observe).group(1)
+    assert [ast.literal_eval(part.strip()) for part in listed.split(',') if part.strip()] \
+        == list(build.INCLUDE_SITES)
+
+
+def test_the_cmake_arguments_are_the_runners():
+    source = runner_source()
+    configure = source[source.index("('configure', ['cmake'"):source.index("('build', ['cmake'")]
+    theirs = re.findall(r"'(-D[^']+)'", configure)
+    assert theirs == list(build.CMAKE_ARGS)
+
+
+def test_the_activation_block_is_the_runners():
+    source = runner_source()
+    bridge = source[source.index('def named_play_bridge'):source.index('def recording_profile')]
+    marker = re.search(r"if '([^']+)' not in path.read_text\(\)", bridge).group(1)
+    assert marker == build.ACTIVATION[1]
+    assert 'borg_cmd_start' in bridge
+
+
+def test_the_build_key_covers_the_lines_the_recipe_writes_and_the_toolchain():
+    # Finding 10: a changed include line, CMake line, version suffix, compiler
+    # or platform must not be served from the cache.
+    recipe = build.recipe()
+    key = build.build_key(recipe)
+    for change in ({'include_line': '/* nothing */\n'},
+                   {'cmake_lines': []},
+                   {'version_suffix': '-other'},
+                   {'compiler': 'cc (some other compiler)'},
+                   {'platform': 'Linux aarch64'},
+                   {'bridge_sha256': {}}):
+        assert build.build_key({**recipe, **change}) != key, change
+    assert set(build.toolchain()) == {'compiler', 'platform'}

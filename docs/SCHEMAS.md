@@ -14,6 +14,9 @@ can't express on its own.
 | `run-record@1` | one run, replayable, with its provenance | R5 |
 | `claim@1` | one statement about the game, with its evidence | R4 |
 
+The examples beside each schema are fixtures, not knowledge: see
+[schemas/examples/README.md](../schemas/examples/README.md).
+
 Each carries its own name in a `schema` field (`borg-agent/observation@1` and
 so on), so a file says what it is. A later version is a new file and a new
 field value; nothing in version 1 changes meaning.
@@ -26,10 +29,16 @@ character's own state, the messages since the last observation, the shop's
 stock while in a shop, and the open prompt or menu.
 
 A monster entry has no room for what the player cannot know — there is no
-`hp` field, and unknown values are null. Anything taken from the true game
-state goes under `true_state`, which is absent by default and must list the
-name of every true-state field it carries, so a reader never has to guess
-which values the player could not have known.
+`hp` field, and unknown values are null. The level feeling is the words the
+game gives the player; the danger and treasure numbers behind it are cave
+internals, so they are not in the ordinary map.
+
+Anything taken from the true game state goes under `true_state`, which is
+absent by default and must list the name of every true-state field it carries.
+**That naming rule is a comparison between fields, which a JSON Schema cannot
+make**, so it lives in `borg_agent.checks.check_observation`, which runs on
+every observation the bridge writes. The schema alone would accept
+`{"fields": ["a"], "b": 1}`; the check does not.
 
 ## action@1
 
@@ -93,6 +102,14 @@ The schema enforces what it can:
   basis (decision D8); what matters is that the record says whether a fact was
   read or seen.
 
-What the schema cannot check is that the reviewer was of **another family**
-than the producer; `produced_by.family` and `reviews[].family` are there so
-the knowledge store (T07) can.
+What a schema cannot check is a comparison between fields:
+
+- that the reviewer was of **another family** than the producer (R4.3);
+- that a `quantified` basis does not claim more successes than trials.
+
+Both live in `borg_agent.checks.check_claim`, beside the observation's
+true-state rule. The schema carries what it can — `produced_by` is required, a
+model names itself and its family, every review names a family (null for a
+probe), run evidence names its seed and turn, and anything above `hypothesis`
+rests on counted trials or on a review — and the check does the rest. T07 runs
+both when a claim enters the store.

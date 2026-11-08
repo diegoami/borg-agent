@@ -3,16 +3,44 @@
   "id": "warrior-should-not-melee-floating-eye-before-level-10",
   "statement": "A Warrior below character level 10 should kill a floating eye at range or leave it alone rather than melee it.",
   "area": "tactic",
-  "scope": {"class": "Warrior", "character_level": {"min": 1, "max": 9}, "depth": {"min": 1, "max": 5}, "version": "4.2.6"},
+  "scope": {
+    "class": "Warrior",
+    "character_level": {
+      "min": 1,
+      "max": 9
+    },
+    "depth": {
+      "min": 1,
+      "max": 5
+    },
+    "version": "4.2.6"
+  },
   "engine": "c-4.2.6",
   "status": "supported",
-  "basis": {"kind": "quantified", "trials": 20, "successes": 3},
+  "basis": {
+    "kind": "quantified",
+    "trials": 20,
+    "successes": 3
+  },
   "evidence": [
-    {"kind": "run", "run_id": "probe-20261109-floating-eye-melee", "turn": 540,
-     "note": "20 branches that melee the eye: 3 survived 2,000 turns."},
-    {"kind": "run", "run_id": "probe-20261109-floating-eye-ranged", "turn": 540,
-     "note": "20 branches that throw oil instead: 19 survived."},
-    {"kind": "claim", "reference": "floating-eye-gaze-paralyses-low-level-melee"}
+    {
+      "kind": "run",
+      "run_id": "probe-20261109-floating-eye-melee",
+      "turn": 540,
+      "note": "20 branches that melee the eye: 3 survived 2,000 turns.",
+      "seed": 1865911738
+    },
+    {
+      "kind": "run",
+      "run_id": "probe-20261109-floating-eye-ranged",
+      "turn": 540,
+      "note": "20 branches that throw oil instead: 19 survived.",
+      "seed": 1865911738
+    },
+    {
+      "kind": "claim",
+      "reference": "floating-eye-gaze-paralyses-low-level-melee"
+    }
   ],
   "confidence": {
     "rests_on": "Forty branches from the same saved position, which differ only in the first action.",
@@ -21,13 +49,28 @@
       "Chance: 3 of 20 against 19 of 20 is far outside the interval for a tie."
     ]
   },
-  "test": {"how": "Branch from a level-1 to level-9 Warrior meeting a floating eye and compare melee with thrown oil over 2,000 turns.", "mode": "probe", "trials": 20},
+  "test": {
+    "how": "Branch from a level-1 to level-9 Warrior meeting a floating eye and compare melee with thrown oil over 2,000 turns.",
+    "mode": "probe",
+    "trials": 20
+  },
   "phase": 1,
-  "sources": ["own-play", "knowledge-base"],
+  "sources": [
+    "own-play",
+    "knowledge-base"
+  ],
   "created": "2026-11-09T12:00:00Z",
-  "produced_by": {"mind": "probe", "run_id": "probe-20261109-floating-eye-melee"},
+  "produced_by": {
+    "mind": "probe",
+    "run_id": "probe-20261109-floating-eye-melee"
+  },
   "reviews": [
-    {"by": "probe-20261109-floating-eye-melee", "verdict": "agree", "created": "2026-11-09T12:00:00Z",
-     "note": "The counted result is the probe itself."}
+    {
+      "by": "probe-20261109-floating-eye-melee",
+      "verdict": "agree",
+      "created": "2026-11-09T12:00:00Z",
+      "note": "The counted result is the probe itself.",
+      "family": null
+    }
   ]
 }

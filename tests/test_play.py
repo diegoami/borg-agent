@@ -86,3 +86,46 @@ def test_seed_7_plays_twice_with_identical_traces(tmp_path):
     if not seasonal_today():
         assert recorded == GOLDEN_SEED7_CAP5000, (
             'the pinned build no longer plays seed 7 the way it did when T01 was written')
+
+
+def test_the_birth_input_is_exactly_the_runners():
+    # Review's test note: a prefix is not enough. This is the runner's INPUT at
+    # the pin, character for character.
+    import ast
+    import re
+
+    from borg_agent import pins
+
+    runner = pins.show('runner', 'tools/measure-native.py').decode()
+    theirs = ast.literal_eval(re.search(r"INPUT = ('''.*?''')", runner, re.S).group(1))
+    assert play.BIRTH_INPUT == theirs
+
+
+def test_the_outcome_vocabulary_is_read_from_the_zoo_not_copied():
+    # The zoo's design document at its pin lists the classes its runner uses.
+    from borg_agent import pins
+
+    design = pins.show('borg-zoo', 'docs/DESIGN.md').decode()
+    listed = design[design.index('- **Outcomes:**'):][:400]
+    for kind in ('death', 'turn_cap', 'stalled', 'borg_stopped', 'decision_cap',
+                 'harness_failure'):
+        assert kind in listed, kind
+        # Each of the zoo's classes is one of ours, with its one rename.
+        ours = 'agent_stopped' if kind == 'borg_stopped' else kind
+        assert ours in play.GOOD_OUTCOMES + play.HARNESS_OUTCOMES, ours
+
+
+@pytest.mark.slow
+def test_a_death_and_the_checkpoint_saves(tmp_path):
+    """The paths T08 needs: a run that dies, with the runner's saves kept."""
+    out = build.prepare(log=lambda *a: None)
+    record = play.play(out, seed=7, cap=100000, output=tmp_path / 'death',
+                       checkpoint_saves=True, timeout=600, stall_timeout=120,
+                       lock=not os.environ.get('BORG_AGENT_NO_LOCK'), log=lambda *a: None)
+    assert record['outcome'] == 'death', record['outcome']
+    assert record['cause'] and record['cause'] != '(alive and well)'
+    # The observer saves at the start and every thousand turns, by forking, so
+    # neither the save nor its monster-list compaction touches live play.
+    assert (tmp_path / 'death/start.save').exists()
+    assert (tmp_path / 'death/recent.save').exists()
+    assert any(state['kind'] == 'checkpoint' for state in record['states'])

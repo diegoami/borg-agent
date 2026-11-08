@@ -94,6 +94,22 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
         'first_differing_decision': first_difference,
         'calendar': [original['calendar']['utc'], result['calendar']['utc']],
     }
+    verdict['seasonal'] = [original['calendar'].get('seasonal'),
+                           result['calendar'].get('seasonal')]
+    if verdict['seasonal'][0] != verdict['seasonal'][1]:
+        # The game's monster table differs on 24-26 December, so this replay
+        # was never going to match and its result says nothing about the run.
+        verdict['comparable'] = False
+        verdict['verified'] = False
+        verdict['incomparable_because'] = (
+            'the run and the replay fall on different sides of the seasonal window '
+            '(24-26 December): the game admits different monsters, so the same seed '
+            'plays a different game. Replay it on a day of the same kind.')
+        (output / VERIFY_NAME).write_text(json.dumps(verdict, indent=2, sort_keys=True) + '\n')
+        log(json.dumps({k: verdict[k] for k in ('run', 'verified', 'comparable',
+                                                'incomparable_because')}))
+        return verdict
+    verdict['comparable'] = True
     verdict['verified'] = bool(
         before and before == after
         and original['outcome'] == result['outcome']

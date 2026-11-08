@@ -29,7 +29,7 @@ INCLUDE_SITES = ('main-test.c', 'game-world.c', 'ui-game.c', 'borg/borg.c', 'bor
 REPLACEMENTS = (
     ('main-test.c', 'term_data_link(0);', 'measure_init();\n\tterm_data_link(0);'),
     ('game-world.c', '\t\t\tturn++;', '\t\t\tturn++;\n\t\t\tmeasure_tick();'),
-    ('ui-game.c', '\t\t\tpre_turn_refresh();', 'measure_boundary();\n\t\t\tpre_turn_refresh();'),
+    ('ui-game.c', '\t\t\tpre_turn_refresh();', '\t\t\tmeasure_boundary();\n\t\t\tpre_turn_refresh();'),
     ('ui-game.c', '\t\tclose_game(true);', '\t\tmeasure_end();\n\t\tclose_game(true);'),
     ('borg/borg.c', 'while (!borg_think())', 'while (!(measure_decision(), borg_think()))'),
     ('borg/borg-io.c', '    /* Log the message */', '    measure_note(what);\n\n    /* Log the message */'),
@@ -39,7 +39,14 @@ ACTIVATION = ('borg/borg-commands.c', 'void measure_activate_borg(void)',
               '\n#ifdef ALLOW_BORG\nvoid measure_activate_borg(void) { borg_cmd_start(); }\n#endif\n')
 CMAKE_ARGS = ('-DSUPPORT_BORG=ON', '-DSUPPORT_TEST_FRONTEND=ON',
               '-DSUPPORT_X11_FRONTEND=ON', '-DCMAKE_BUILD_TYPE=Debug')
-RECIPE_VERSION = 'borg-agent/observer-build@2'
+RECIPE_VERSION = 'borg-agent/observer-build@3'
+# The lines the recipe adds verbatim. They are in the build key too, so a
+# change to any of them cannot be served from the cache.
+INCLUDE_LINE = '#include "{header}"\n'
+CMAKE_LINES = ('\ntarget_sources(OurExecutable PRIVATE src/native-observer.c)\n',
+               '\ntarget_sources(OurExecutable PRIVATE src/agent-bridge.c)\n',
+               '\nadd_compile_definitions(PRIVATE_USER_PATH="{private_user}")\n')
+VERSION_SUFFIX = '-observer'
 
 # The bridge of T03: this repository's own C, in bridge/. It is applied on top
 # of the observer, so its site is the observer's own line. With the agent mode
@@ -69,6 +76,15 @@ def bridge_sources():
     return {name: (BRIDGE_DIR / name).read_bytes() for name in BRIDGE_FILES}
 
 
+def toolchain():
+    """The compiler and platform, which decide what the binary is as much as
+    the sources do (finding 10 of the milestone-1 review)."""
+    return {
+        'compiler': subprocess.check_output(['cc', '--version'], text=True).splitlines()[0],
+        'platform': subprocess.check_output(['uname', '-sm'], text=True).strip(),
+    }
+
+
 def recipe():
     """Everything that decides what the binary is, for the build key."""
     return {
@@ -85,6 +101,10 @@ def recipe():
         'bridge_replacements': [list(r) for r in BRIDGE_REPLACEMENTS],
         'bridge_sha256': {name: hashlib.sha256(data).hexdigest()
                           for name, data in bridge_sources().items()},
+        'include_line': INCLUDE_LINE,
+        'cmake_lines': list(CMAKE_LINES),
+        'version_suffix': VERSION_SUFFIX,
+        **toolchain(),
     }
 
 
@@ -115,7 +135,7 @@ def instrument(source):
         (source / 'src' / name).write_bytes(data)
     for name in INCLUDE_SITES:
         path = source / 'src' / name
-        path.write_text('#include "native-observer.h"\n' + path.read_text())
+        path.write_text(INCLUDE_LINE.format(header='native-observer.h') + path.read_text())
     for name, old, new in REPLACEMENTS:
         replace_once(source / 'src' / name, old, new)
     name, marker, addition = ACTIVATION
@@ -129,13 +149,12 @@ def instrument(source):
         (source / 'src' / name).write_bytes(data)
     for name in BRIDGE_INCLUDE_SITES:
         path = source / 'src' / name
-        path.write_text('#include "agent-bridge.h"\n' + path.read_text())
+        path.write_text(INCLUDE_LINE.format(header='agent-bridge.h') + path.read_text())
     for name, old, new in BRIDGE_REPLACEMENTS:
         replace_once(source / 'src' / name, old, new)
     with (source / 'CMakeLists.txt').open('a') as handle:
-        handle.write('\ntarget_sources(OurExecutable PRIVATE src/native-observer.c)\n')
-        handle.write('\ntarget_sources(OurExecutable PRIVATE src/agent-bridge.c)\n')
-        handle.write(f'\nadd_compile_definitions(PRIVATE_USER_PATH="{source.parent / "private-user"}")\n')
+        for line in CMAKE_LINES:
+            handle.write(line.format(private_user=source.parent / 'private-user'))
 
 
 def is_current(out, recipe_data):
@@ -176,12 +195,12 @@ def prepare(out=None, force=False, log=print):
         'recipe': recipe_data,
         'build_key': build_key(recipe_data),
         'source_archive_sha256': sha(archive),
-        'compiler': subprocess.check_output(['cc', '--version'], text=True).splitlines()[0],
-        'platform': subprocess.check_output(['uname', '-sm'], text=True).strip(),
+        'compiler': recipe_data['compiler'],
+        'platform': recipe_data['platform'],
         'complete': False,
     }
     instrument(source)
-    (source / 'version').write_text(recipe_data['game_commit'] + '-observer')
+    (source / 'version').write_text(recipe_data['game_commit'] + VERSION_SUFFIX)
     (out / 'build.json').write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
     env = os.environ.copy()
     env.update(LC_ALL='C.UTF-8', LANG='C.UTF-8', GIT_CEILING_DIRECTORIES=str(source))

@@ -15,7 +15,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import executor, play
+from . import checks, executor, play
 from .build import binary, sha
 
 OBS_FIFO = 'observations.fifo'
@@ -90,6 +90,9 @@ class Validator:
         if errors:
             raise ValueError(f'{where}: ' + '; '.join(
                 f'{list(e.absolute_path)}: {e.message}' for e in errors[:3]))
+        if name == 'observation':
+            # R1.1's naming rule, which the schema cannot express.
+            checks.enforce(checks.check_observation(document), where)
         self.checked += 1
 
 
@@ -234,12 +237,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                         validator.check('observation', observation,
                                         f'observation {observation.get("decision")}')
                         observation_log.write(line)
-                        # Every observation is progress in the protocol: the
-                        # game has acted and is waiting again. Model latency
-                        # must never become an outcome (R1.3), so the clock
-                        # restarts here rather than when the game's turn moves.
-                        stall_deadline = time.monotonic() + stall_timeout
-                        # Progress in the *game* is its own question: a turn
+                        # Progress in the game is its own question: a turn
                         # that never moves is a stall whatever the clock says.
                         if observation['turn'] != last_turn:
                             last_turn = observation['turn']
@@ -263,6 +261,12 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                         action_log.write(json.dumps(action, sort_keys=True) + '\n')
                         actions.write(wire(action) + '\n')
                         actions.flush()
+                        # The stall limit is on the *game's* answer, so the
+                        # clock starts when the action goes out, not when the
+                        # last observation came in. Model latency must never
+                        # become an outcome (R1.3), and the mind has just had
+                        # all the time it wanted.
+                        stall_deadline = time.monotonic() + stall_timeout
                         decisions += 1
                         if decisions >= decision_cap:
                             interrupted = 'decision_cap'

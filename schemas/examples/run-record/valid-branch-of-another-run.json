@@ -6,15 +6,16 @@
   },
   "calendar": {
     "TZ_environment": null,
-    "local": "2026-11-08T21:38:01.056872+01:00",
+    "local": "2026-11-08T22:07:46.165328+01:00",
+    "seasonal": false,
     "timezone_name": "CET",
-    "utc": "2026-11-08T20:38:01.056872+00:00"
+    "utc": "2026-11-08T21:07:46.165328+00:00"
   },
-  "created": "2026-11-08T20:38:01.056872+00:00",
+  "created": "2026-11-08T21:07:46.165328+00:00",
   "deterministic": true,
   "engine": {
-    "binary_sha256": "b38ab55ee1b27d2811589db016378ca4e412d0243f6c426f9c54511d0a813cec",
-    "build_key": "3c1a4a8b879756e6",
+    "binary_sha256": "98fa8c75353534dde3dcebb03647348eb06231b357d7a40e35715284339bf1eb",
+    "build_key": "3c360dcf01941ef0",
     "commit": "0fd4af4000000000000000000000000000000000",
     "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
     "data_sha256": {
@@ -91,7 +92,7 @@
     "dirty": "",
     "name": "c-4.2.6",
     "patch_sha256": {
-      "agent-bridge.c": "677001ce3cfe44481bf5975a52998f1e817be8c2c550093dfc01d3c03dd22a55",
+      "agent-bridge.c": "89c96d7d94f3a279faf1e5f2a4a012ff0ab1aae588839c00886feae9dc1da839",
       "agent-bridge.h": "f634bf096ed76d2883710f1430cb180cb1022be0198e0452503834674e2994a6",
       "native-observer.c": "9c10fcedd8b2f44e211f63235b38bad7cec351ec45216366689e73cb3f0a9ad7",
       "native-observer.h": "faa6a800ce6fb6e73795b044663ff36d39cc7eae837f9a53aae1ef04f3241730"
@@ -106,8 +107,8 @@
     "platform": "Linux x86_64"
   },
   "evidence": {
-    "observations_sha256": "15f23ca59552cc574ef502b08d24868a3d73c676d7ea79063a0e537b6b3f3209",
-    "state_hashes_sha256": "449a51250151fa28b1ab4b2121f65a5b9044f1519f83883de610720b928ce27f",
+    "observations_sha256": "1b2424e9a1dc5c978084da138680491b227a9d79b73dbd3c75a813586e0baf65",
+    "state_hashes_sha256": "246985052fbdb917524b1a954f3069644be9b8f770775e67a931f20d6a36762b",
     "trace_sha256": "06e6c1f42ed5a06c6c4ba1e762175dfb023517f7e6f30283dc3f610826fce95b"
   },
   "game": {
@@ -198,7 +199,7 @@
     "turn": 1000
   },
   "parent": {
-    "run_id": "t04-rec",
+    "run_id": "play",
     "turn": 501
   },
   "run_id": "branch-20261108-seed1-turn500",
@@ -206,6 +207,6 @@
   "usage": {
     "decisions": 101,
     "model_calls": 0,
-    "wall_seconds": 0.411
+    "wall_seconds": 1.029
   }
 }

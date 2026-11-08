@@ -61,18 +61,31 @@ def game_environment(**extra):
     return env
 
 
-def calendar():
-    """When the run happened, as the zoo's runner records it.
+# The days the game admits seasonal monsters (`get_mon_num` reads the clock),
+# so the same seed plays a different game. Found by the milestone-1 review.
+SEASONAL_DAYS = ((12, 24), (12, 25), (12, 26))
 
-    Play is not independent of the date: the game admits seasonal monsters on
-    24-26 December, so a seed reproduces a game only on the same calendar day.
-    A record that does not say when it ran cannot be replayed with confidence.
+
+def seasonal(moment=None):
+    """Whether a local date falls in the game's seasonal window."""
+    moment = moment or datetime.datetime.now().astimezone()
+    return (moment.month, moment.day) in SEASONAL_DAYS
+
+
+def calendar():
+    """When the run happened, as the zoo's runner records it, and whether the
+    game's seasonal monsters were available.
+
+    Play is not independent of the date, so a seed reproduces a game only on a
+    day of the same kind. A record that does not say when it ran cannot be
+    replayed with confidence.
     """
     local = datetime.datetime.now().astimezone()
     return {'utc': local.astimezone(datetime.timezone.utc).isoformat(),
             'local': local.isoformat(),
             'timezone_name': local.tzname(),
-            'TZ_environment': os.environ.get('TZ')}
+            'TZ_environment': os.environ.get('TZ'),
+            'seasonal': seasonal(local)}
 
 
 @contextlib.contextmanager
