@@ -5,21 +5,22 @@ work and updates "Current state".
 
 ## Current state
 
-- **T01** is in review ([#3](https://github.com/diegoami/borg-agent/pull/3), branch `task/T01-headless-play`): the pinned
-  game builds headless and the stock Borg plays it reproducibly.
-- **T06's documents** are in review ([#4](https://github.com/diegoami/borg-agent/pull/4), branch
-  `task/T06-models-profiles`, stacked on #3): the agent's models come from a
-  profile in `models.yaml`, decision D7. T06's loader is still to write, and
-  needs T02 and T05 first.
-- **T02** is in review ([#5](https://github.com/diegoami/borg-agent/pull/5), branch `task/T02-schemas`, stacked on #4):
-  the four schemas and their examples.
-- **The stack is at three unmerged PRs** (#3, #4 and #5), so this session
-  stopped there (RULES 5). The next tasks are **T07** (knowledge store),
-  which needs nothing, and **T03** (the bridge), which needs T01 and T02.
-- Open owner questions: which models do which job. The models are not fixed
-  in advance; T09 measures the candidates from `trial:` in `models.yaml` on
-  this project's own inputs and outputs, and the owner then records the
-  choice as decision D6.
+- **Merged on 2026-11-08: #3 (T01), #4 (T06's documents) and #5 (T02).** The
+  owner asked for all three to be merged and said reviews happen at
+  milestones, not per PR, so none of the three was reviewed by another model
+  family. Nothing is unmerged now; the next session starts with a clean
+  stack.
+- **Done:** T01 (build and play the pinned game headless) and T02 (the four
+  schemas). T06's documents are in, but **T06 itself is still `todo`**: the
+  loader for `models.yaml`, the three minds and the prompt pack are left, and
+  it needs T02 (done) and T05.
+- The next tasks are **T07** (knowledge store), which needs nothing, and
+  **T03** (the bridge), which needs T01 and T02 — both done.
+- Open owner questions: which models do which job (T09 measures the
+  candidates from `trial:` in `models.yaml`, then the owner records decision
+  D6); whether the four profiles are the ones wanted and whether to pin the
+  zai and minimax model ids; and whether `claim@1` should carry `superseded`
+  as a status as well as the `superseded_by` field.
 
 ## 2026-11-08: T02, the schemas
 
