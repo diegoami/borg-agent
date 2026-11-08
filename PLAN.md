@@ -23,7 +23,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T03 | C bridge | T01, T02 | yes | todo |
 | T04 | Recording and replay | T03 | yes | todo |
 | T05 | Executor primitives | T03 | yes | todo |
-| T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | in progress (task/T06-models-profiles) |
+| T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | in review (#4) |
 | T07 | Knowledge store | T02 | yes | todo |
 | T08 | Post-mortem start from a Borg run | T04 | yes | todo |
 | T09 | Model trial | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |

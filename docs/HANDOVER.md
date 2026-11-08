@@ -9,7 +9,7 @@ work and updates "Current state".
   game builds headless and the stock Borg plays it reproducibly. The next
   tasks are **T02** (schemas) and **T07** (knowledge store), which need
   nothing, and then **T03** (the bridge), which needs T01 and T02.
-- **T06's documents** are in review (PR #TBD, branch
+- **T06's documents** are in review ([#4](https://github.com/diegoami/borg-agent/pull/4), branch
   `task/T06-models-profiles`, stacked on #3): the agent's models come from a
   profile in `models.yaml`, decision D7. T06's loader is still to write, and
   needs T02 and T05 first.
@@ -20,7 +20,7 @@ work and updates "Current state".
 
 ## 2026-11-08: models by profile, in models.yaml (T06, documents)
 
-Branch `task/T06-models-profiles`, PR #TBD, stacked on #3. Documents and
+Branch `task/T06-models-profiles`, PR [#4](https://github.com/diegoami/borg-agent/pull/4), stacked on #3. Documents and
 configuration only; the loader is the rest of T06.
 
 The owner's decision of 2026-11-08, recorded as **D7**: the agent's models
