@@ -5,7 +5,7 @@ work and updates "Current state".
 
 ## Current state
 
-- **T01** is in review (PR #TBD, branch `task/T01-headless-play`): the pinned
+- **T01** is in review ([#3](https://github.com/diegoami/borg-agent/pull/3), branch `task/T01-headless-play`): the pinned
   game builds headless and the stock Borg plays it reproducibly. The next
   tasks are **T02** (schemas) and **T07** (knowledge store), which need
   nothing, and then **T03** (the bridge), which needs T01 and T02.
@@ -17,7 +17,7 @@ work and updates "Current state".
 
 ## 2026-11-08: T01, the pinned game headless
 
-Branch `task/T01-headless-play`, PR #TBD.
+Branch `task/T01-headless-play`, PR [#3](https://github.com/diegoami/borg-agent/pull/3).
 
 What exists now:
 - `python -m borg_agent build`: extracts the `better-borg-c` pin with
