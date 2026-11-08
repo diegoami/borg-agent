@@ -22,6 +22,7 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [The bridge](docs/BRIDGE.md): how an agent gets the Borg's hands and eyes.
 - [Records and replay](docs/RECORDS.md): what makes a run evidence, and the
   five tools that work on it.
+- [The executor](docs/EXECUTOR.md): the primitives a mind chooses between.
 
 ## Status
 

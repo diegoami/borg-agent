@@ -16,12 +16,11 @@ from . import pins
 from .build import sha
 
 SCHEMA = 'borg-agent/run-record@1'
+# A mind's name is free; its kind is the record's vocabulary (R5).
+KINDS = ('stock-borg', 'scripted', 'external', 'api', 'replay')
 RECORD_NAME = 'run-record.json'
 STATE_HASHES_NAME = 'state-hashes.txt'
 ENGINE = 'c-4.2.6'
-# What the mind of a run was, in the schema's vocabulary.
-MIND_KINDS = {'stock-borg': 'stock-borg', 'scripted': 'scripted', 'external': 'external',
-              'api': 'api', 'replay': 'replay'}
 
 
 def git_state():
@@ -112,7 +111,9 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
     states = result.get('states') or []
     last = states[-1] if states else {}
     commit, dirty = git_state()
-    kind = MIND_KINDS[result['mind']]
+    kind = result.get('mind_kind') or result['mind']
+    if kind not in KINDS:
+        raise ValueError(f'the mind kind {kind!r} is not one of {KINDS}')
     hashes_sha, hashes = write_state_hashes(run_dir)
     stream = result.get('action_stream')
 

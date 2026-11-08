@@ -9,12 +9,16 @@ from pathlib import Path
 
 from . import agent as agent_module
 from . import build as build_module
+from . import executor as executor_module
 from . import mind as mind_module
 from . import play as play_module
 from . import record as record_module
 from . import replay as replay_module
 
-MINDS = {'scripted': mind_module.ScriptedMind}
+MINDS = {'scripted': mind_module.ScriptedMind,
+         # The primitives of R2, with a scripted chooser in front (T05).
+         'scripted-primitives': lambda: executor_module.ExecutingMind(
+             mind_module.PrimitiveMind(), name='scripted-primitives')}
 
 RUNS = build_module.pins.ROOT / 'runs'
 

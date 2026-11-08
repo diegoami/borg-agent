@@ -15,7 +15,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import play
+from . import executor, play
 from .build import binary, sha
 
 OBS_FIFO = 'observations.fifo'
@@ -34,6 +34,10 @@ WIRE_COMMANDS = {
     'go_up': {},
     'rest': {'mode': 'mode', 'count': 'count'},
     'answer': {'answer': 'text'},
+    'read': {'item': 'item'},
+    'quaff': {'item': 'item'},
+    'buy': {'item': 'item', 'count': 'count'},
+    'sell': {'item': 'item', 'count': 'count'},
 }
 SAFE = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.,:/')
 
@@ -140,8 +144,15 @@ def read_line(stream, deadline, stall_deadline):
         return line
 
 
+# A game that answers but never advances is stalled, however fast it answers.
+# The turn cap cannot catch that on its own: entering and leaving a shop, or
+# walking into a wall, costs no game time at all.
+DEFAULT_TURN_STALL_DECISIONS = 500
+
+
 def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeout=120,
-                   decision_cap=100000, validate=True, lock=True, log=print):
+                   decision_cap=100000, turn_stall_decisions=DEFAULT_TURN_STALL_DECISIONS,
+                   validate=True, lock=True, log=print):
     """Play one game with `mind` deciding, and record everything it decided."""
     build_out, output = Path(build_out).resolve(), Path(output).resolve()
     manifest = json.loads((build_out / 'build.json').read_text())
@@ -171,11 +182,13 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
     record = {
         'schema': 'borg-agent/play@1',
         'mind': mind.name,
+        'mind_kind': getattr(mind, 'kind', 'scripted'),
         'run_id': run_id,
         'seed': seed, 'turn_cap': cap, 'decision_cap': decision_cap,
         'birth': play.BIRTH_DESCRIPTION,
         'checkpoint_saves': False,
         'wall_limit_seconds': timeout, 'stall_limit_seconds': stall_timeout,
+        'turn_stall_decisions': turn_stall_decisions,
         'build_key': manifest['build_key'],
         'binary_sha256': manifest['binary_sha256'],
         'recipe': manifest['recipe'],
@@ -207,6 +220,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                         (output / ACTION_LOG).open('w') as action_log, \
                         (output / OBSERVATION_LOG).open('w') as observation_log:
                     last_turn = None
+                    decisions_at_this_turn = 0
                     stall_deadline = time.monotonic() + stall_timeout
                     while not trouble:
                         line = read_line(observations, deadline, stall_deadline)
@@ -220,14 +234,31 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                         validator.check('observation', observation,
                                         f'observation {observation.get("decision")}')
                         observation_log.write(line)
-                        # Every observation is progress: the game has acted on
-                        # the last action and is waiting for the next. Model
-                        # latency between decisions must never become an
-                        # outcome (R1.3), so the clock restarts here rather
-                        # than when the game's turn moves.
-                        last_turn = observation['turn']
+                        # Every observation is progress in the protocol: the
+                        # game has acted and is waiting again. Model latency
+                        # must never become an outcome (R1.3), so the clock
+                        # restarts here rather than when the game's turn moves.
                         stall_deadline = time.monotonic() + stall_timeout
-                        action = mind.act(observation)
+                        # Progress in the *game* is its own question: a turn
+                        # that never moves is a stall whatever the clock says.
+                        if observation['turn'] != last_turn:
+                            last_turn = observation['turn']
+                            decisions_at_this_turn = 0
+                        else:
+                            decisions_at_this_turn += 1
+                            if decisions_at_this_turn >= turn_stall_decisions:
+                                interrupted = 'stalled'
+                                record['error'] = (
+                                    f'{decisions_at_this_turn} decisions at turn '
+                                    f'{last_turn} without the game advancing')
+                                break
+                        try:
+                            action = mind.act(observation)
+                        except executor.CannotAct as exc:
+                            # The agent gave up; that is an outcome (R5).
+                            interrupted = 'agent_stopped'
+                            record['error'] = str(exc)
+                            break
                         validator.check('action', action, f'action {decisions}')
                         action_log.write(json.dumps(action, sort_keys=True) + '\n')
                         actions.write(wire(action) + '\n')
