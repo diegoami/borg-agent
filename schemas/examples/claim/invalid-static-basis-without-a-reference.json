@@ -1,0 +1,29 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "borg-does-something",
+  "statement": "The Borg flees at some fraction of its hit points.",
+  "area": "mechanic",
+  "scope": {
+    "version": "4.2.6"
+  },
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {
+    "kind": "static:borg-source"
+  },
+  "evidence": [
+    {
+      "kind": "manual",
+      "reference": "somewhere in the Borg"
+    }
+  ],
+  "confidence": {
+    "rests_on": "Reading the source.",
+    "alternatives_ruled_out": []
+  },
+  "phase": 1,
+  "sources": [
+    "borg-source"
+  ],
+  "created": "2026-11-09T10:05:00Z"
+}

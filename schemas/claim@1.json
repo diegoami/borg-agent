@@ -51,8 +51,10 @@
       "properties": {
         "kind": {
           "type": "string",
-          "enum": ["manual", "observed", "quantified", "intervened", "static:game-source", "static:borg-source"],
-          "description": "'static:*' are phase 2 and later only; phase 1 must not read those sources (SOURCES.md)."
+          "enum": ["manual", "observed", "quantified", "intervened",
+                    "static:game-source", "static:borg-source", "static:borg-spec",
+                    "static:deaths", "static:issue"],
+          "description": "How the claim was arrived at. A 'static:*' basis means it was read in a source rather than seen in play; any phase may use one (decision D8), and the distinction is what phase 3 needs. 'quantified' means counted trials."
         },
         "trials": {"type": "integer", "minimum": 1, "description": "M, for a quantified basis: 'N of M'."},
         "successes": {"type": "integer", "minimum": 0, "description": "N, for a quantified basis."},
@@ -119,7 +121,9 @@
       "type": "array",
       "minItems": 1,
       "description": "What the producer was allowed to read, by the names in docs/SOURCES.md.",
-      "items": {"type": "string", "enum": ["manual", "in-game", "own-play", "knowledge-base", "game-source", "borg-source", "zoo-results"]}
+      "items": {"type": "string", "enum": ["manual", "in-game", "own-play", "knowledge-base",
+                                            "game-source", "borg-source", "borg-spec",
+                                            "deaths", "issue", "zoo-results"]}
     },
     "created": {"type": "string", "format": "date-time"},
     "produced_by": {
@@ -176,13 +180,13 @@
       }
     },
     {
-      "if": {"properties": {"phase": {"const": 1}}, "required": ["phase"]},
+      "if": {"properties": {"basis": {"properties": {"kind": {"pattern": "^static:"}},
+                                       "required": ["kind"]}},
+             "required": ["basis"]},
       "then": {
-        "properties": {
-          "sources": {"items": {"enum": ["manual", "in-game", "own-play", "knowledge-base"]}},
-          "basis": {"properties": {"kind": {"not": {"enum": ["static:game-source", "static:borg-source"]}}}}
-        },
-        "description": "Phase 1 must not read the game source, the Borg source or spoilers (SOURCES.md)."
+        "required": ["basis"],
+        "properties": {"basis": {"required": ["reference"]}},
+        "description": "A claim read in a source names where: the file and the pinned commit, the specification's section, the death's id or the issue's number and the date it was read (decision D8)."
       }
     }
   ],

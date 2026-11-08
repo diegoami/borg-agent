@@ -1,0 +1,38 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "borg-avoids-melee-with-a-floating-eye",
+  "statement": "The C Borg refuses melee against a monster whose race has the paralysing gaze, by its own danger code.",
+  "area": "mechanic",
+  "scope": {
+    "version": "4.2.6"
+  },
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {
+    "kind": "static:borg-source",
+    "reference": "src/borg/borg-fight-attack.c at better-borg-c b3c825c9"
+  },
+  "evidence": [
+    {
+      "kind": "manual",
+      "reference": "src/borg/borg-fight-attack.c at better-borg-c b3c825c9"
+    }
+  ],
+  "confidence": {
+    "rests_on": "Reading the Borg's attack code at the pinned commit.",
+    "alternatives_ruled_out": [
+      "That the behaviour comes from the game rather than the Borg: the check is in the Borg's own source."
+    ]
+  },
+  "phase": 1,
+  "sources": [
+    "borg-source"
+  ],
+  "created": "2026-11-09T10:05:00Z",
+  "produced_by": {
+    "mind": "model",
+    "model": "qwen3.8-max",
+    "family": "qwen",
+    "profile": "alibaba"
+  }
+}

@@ -86,7 +86,12 @@ The schema enforces what it can:
   evidence;
 - a `corroborated` claim names the probe or the review that moved it there,
   since a model never promotes its own claim past `hypothesis` (R4.3);
-- a phase 1 claim may not cite the game or Borg source (SOURCES.md).
+- a claim read in a source (`static:game-source`, `static:borg-source`,
+  `static:borg-spec`, `static:deaths`, `static:issue`) names its reference:
+  the file and the pinned commit, the specification's section, the death's id,
+  or the issue's number and the date it was read. Any phase may use such a
+  basis (decision D8); what matters is that the record says whether a fact was
+  read or seen.
 
 What the schema cannot check is that the reviewer was of **another family**
 than the producer; `produced_by.family` and `reviews[].family` are there so

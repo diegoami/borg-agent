@@ -53,3 +53,34 @@ def test_session_start_hook_runs_setup():
     commands = [h['command'] for entry in settings['hooks']['SessionStart'] for h in entry['hooks']]
     assert any('scripts/setup.sh' in c for c in commands)
     assert (ROOT / 'scripts/setup.sh').stat().st_mode & 0o111
+
+
+def test_the_agents_sources_are_pinned_and_readable():
+    """Decision D8: what the playing agent may read, each at a fixed commit."""
+    from borg_agent import pins
+
+    data = json.loads((ROOT / 'pins.json').read_text())
+    sources = data['sources']
+    assert sources['manual']['required'] is True
+    for name, source in sources.items():
+        if name == 'note' or 'unpinned' in source:
+            continue
+        assert source['pin'] in data['pins'], name
+        assert source['paths'], name
+    # The spec is the one source outside better-borg-c, so check it is really
+    # there at its pin rather than only named.
+    spec = sources['borg_spec']
+    text = pins.show(spec['pin'], pins.pin(spec['pin'])['path']).decode()
+    assert 'Borg' in text and len(text) > 10000
+    # The deaths are read at the better-borg-c pin, not from its moving main.
+    listing = pins.git('better-borg-c', 'ls-tree', '--name-only',
+                       data['pins']['better-borg-c']['commit'] + ':docs/deaths').decode()
+    assert 'index.json' in listing and 'D0001' in listing
+
+
+def test_the_manual_is_still_the_manual():
+    # D8 opened what the agent may read; the manual list is still the manual,
+    # so a prompt pack can require it without pulling in developer pages.
+    manual = json.loads((ROOT / 'pins.json').read_text())['manual']
+    assert all(p.startswith(('docs/', 'lib/help')) for p in manual['paths'])
+    assert not any('hacking' in p or 'gamedata' in p for p in manual['paths'])

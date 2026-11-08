@@ -1,46 +1,62 @@
 # Sources: what each role may read
 
-Phase 1's knowledge has to be what a player can learn (requirements,
-"Phases"). That rule is about **what reaches the playing agent**: its
-prompts, its retrieved knowledge and its notes. It is not a rule about what
-the developer of this repository may read.
+The owner's decision of 2026-11-08 (requirements, **D8**): **the playing agent
+may read whatever helps it build the knowledge base** — the manual, the game
+source, the Borg source and its documentation, the Borg specification, the
+open issues, the recorded deaths, the zoo's results and its own play. The
+earlier rule here, that phase 1 saw only the manual, was not the owner's
+intent and is withdrawn.
 
-## The playing agent (phase 1)
+What the manual is, is **required**: the agent has to know the keys and the
+commands before anything else can work.
 
-May receive:
-- the manual: the files listed under `manual` in [pins.json](../pins.json),
-  at the `better-borg-c` pin. These are the game's own "Getting Started" and
-  "The Manual" pages, and the in-game help;
-- what the game shows during play: the observation (R1), monster recall and
-  object descriptions as the game prints them to the player;
-- its own knowledge base: claims and notes produced by phase 1.
+The point of this repository is to play, and to grow a knowledge base that
+the Borg reborn can be built from. A fact that comes from the Borg's source
+or from the spec is as welcome as one the agent learned by dying, as long as
+the record says which it was.
 
-Must not receive:
-- game source, the gamedata files under `lib/gamedata/`, or the developer
-  pages under `docs/hacking/` (including `docs/hacking/borg.rst`);
-- the Borg source or its documentation;
-- spoilers, wiki pages or forum posts;
-- zoo results, beyond the facts a mode B post-mortem is given: the seed, the
-  birth, the cause of death the game printed and the turn.
+## The playing agent
 
-Prompt packs are checked by a test: no file outside the allowed list is
-read into a prompt.
+| May read | Where it is |
+|---|---|
+| **the manual** (required) | the `manual` paths in [pins.json](../pins.json), at the `better-borg-c` pin: the game's own "Getting Started" and "The Manual" pages, and the in-game help |
+| what the game shows during play | the observation (R1), monster recall and object descriptions as the game prints them |
+| the game source, including `lib/gamedata/` and `docs/hacking/` | the `better-borg-c` pin, or the `original` pin for the unmodified C Borg |
+| the Borg source and its documentation | the same pins (`src/borg/`, `docs/hacking/borg.rst`) |
+| the Borg specification | the `borg-spec` pin: `docs/c-borg/BORG_SPEC.md` in diegoami/neo-angband-tracker |
+| the recorded deaths | `docs/deaths/` at the `better-borg-c` pin (nine cases there; more on its `main`) |
+| the open issues of the related repositories | the trackers themselves; a claim records the issue number and the date it was read |
+| the zoo's results | the `borg-zoo` pin and its results branch |
+| its own knowledge base | the claims and notes under `knowledge/` |
 
-## The developer (any session working on this repository)
+Nothing on that list is forbidden. Two things are still asked of it:
 
-May read everything public, including the C game and Borg source, because the
-bridge (R1) has to attach to it. The care needed is the other way round:
-- the **executor** primitives (R2) are mechanical: pathing, resting until a
-  condition, taking stairs, following a shop list. They contain no tactics
-  taken from the Borg, such as its danger estimates, flee thresholds or
-  item valuations. Choosing between primitives is the model's job;
-- the **prompt packs** contain no game knowledge the developer brought from
-  the source, spoilers or experience. If a prompt needs a fact, the fact
-  comes from the manual or from a claim with evidence.
+1. **Provenance.** Every claim says which sources produced it (R4). A claim
+   read out of the Borg's source is marked `static:borg-source`, not
+   `observed`; a claim from the zoo's results says so. That is what lets
+   phase 3 tell "the Borg believes this" from "the game does this".
+2. **Honesty about what was checked.** Reading something in the source is not
+   the same as seeing it happen. A claim's basis says which it is, and a
+   `quantified` claim still needs its counted trials.
 
-A review of an executor or prompt-pack PR checks both points.
+## What is still kept apart
 
-## Phases 2 and 3
+- **A model never promotes its own claim past `hypothesis`** (R4.3). That is
+  unchanged, and it is about review, not about reading.
+- **The executor's primitives stay mechanical** (R2): pathing, resting until a
+  condition, taking stairs, following a shop list. The developer does not
+  hard-code the Borg's danger estimates, flee thresholds or item valuations
+  into them, because choosing between primitives is the mind's job and the
+  point is to find out what the mind decides. Reading the Borg's code to
+  understand it is fine; copying its tactics into the plumbing hides the
+  thing being measured.
+- **The model trial's answer key** (T09) never enters a prompt or the
+  knowledge base: a candidate must not be able to read the quiz's answers.
+  That is test hygiene, not a source rule.
 
-The Borg archaeologist and the reconciler may read everything, and record
-for each claim which sources it used (requirements, R4).
+## The developer, and later phases
+
+A session working on this repository may read everything public. The phases
+of the requirements still describe **what each phase produces** — game
+knowledge, design records, then the remake's specification — but they are no
+longer a rule about what may be read.

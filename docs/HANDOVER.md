@@ -13,6 +13,8 @@ work and updates "Current state".
   and the review of `main` at `11c8303` by a model of another family, with a
   triage table. Its thirteen findings are either fixed in T03's PR or on the
   plan as **T12**; two are the owner's to decide.
+- **T13 is in review** ([#9](https://github.com/diegoami/borg-agent/pull/9), branch `task/T13-open-sources`, stacked on
+  #8): decision **D8**, the playing agent's sources are open.
 - **Done:** T01, T02 and T03. T06's documents are in, but T06 itself is still
   `todo`: the loader for `models.yaml`, the three minds and the prompt pack.
 - The next tasks are **T04** (recording and replay, needs T03), **T05**
@@ -28,6 +30,52 @@ work and updates "Current state".
     the `:free` variant (review finding 8);
   - whether `claim@1` should carry `superseded` as a status as well as the
     `superseded_by` field.
+
+## 2026-11-08: T13, the playing agent's sources are open (D8)
+
+Branch `task/T13-open-sources`, PR [#9](https://github.com/diegoami/borg-agent/pull/9), stacked on #8. Documents, pins and
+the claim schema.
+
+The owner, on 2026-11-08: the rule in docs/SOURCES.md that phase 1 could read
+only the manual **was not their intent**. The playing agent may read whatever
+helps it build the knowledge base — the game source, the Borg source and its
+documentation, the Borg specification, the open issues, the recorded deaths
+and the zoo's results. The manual stays required, so the agent knows the keys
+and the commands. The purpose of the repository is to play and to grow the
+knowledge base the Borg reborn is built from. Recorded as **D8**, superseding
+D2.
+
+What changed:
+- `docs/SOURCES.md` rewritten around what may be read and where it is pinned.
+- The requirements: the phases now say what each phase *produces*, not what it
+  may read; D2 is marked superseded; D8 is recorded; the claim basis list
+  grew.
+- `pins.json`: a new **`borg-spec`** pin (diegoami/neo-angband-tracker
+  `eefc5500`, `docs/c-borg/BORG_SPEC.md`, 107 KB) and a **`sources`** block
+  naming each source with the pin it is read at. `scripts/setup.sh` clones the
+  new repository without any change — it reads `pins.json`.
+- `claim@1`: `static:borg-spec`, `static:deaths` and `static:issue` beside the
+  two static bases that existed, the matching `sources` values, the phase-1
+  restriction gone, and a **new rule that a `static:` basis must name its
+  reference**.
+- The example that existed to be rejected for citing the Borg's source is now
+  a valid claim with a `static:borg-source` basis; an example that omits the
+  reference took its place.
+
+Facts the next sessions will need:
+- **The deaths are at our pin**: `docs/deaths/` at better-borg-c `b3c825c9`
+  has nine cases with `index.json`, `README.md` and a review template;
+  better-borg-c's `main` has sixteen. Read them at the pin and cite the
+  commit, or cite `main` with the date.
+- **The issues are the one unpinned source.** A claim that rests on an issue
+  records its number and the date it was read, because a tracker moves.
+- What survives of the old rule, and is unchanged: a model never promotes its
+  own claim past `hypothesis` (R4.3); the executor's primitives stay
+  mechanical, because hiding the Borg's tactics in the plumbing would hide the
+  thing being measured; and T09's quiz answers never enter a prompt.
+- T06's prompt-pack test changes shape: it checks **provenance, not
+  permission** — every file a prompt draws on is named in `pins.json`'s
+  `sources`, and the pack records which.
 
 ## 2026-11-08: T03, the bridge
 

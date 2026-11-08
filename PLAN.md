@@ -30,6 +30,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T10 | Pilot | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | T04 | yes | todo |
 | T12 | Milestone-1 review findings | T01, T02 | yes | todo |
+| T13 | Open the playing agent's sources (D8) | T02 | yes | in review (#9) |
 
 ### T01. Build and play the pinned game headless
 
@@ -105,8 +106,13 @@ one-line reason. Three backends behind one interface:
   profile in `models.yaml` (decision D7).
 
 Also:
-- a prompt pack, versioned, built only from the allowed sources
-  ([docs/SOURCES.md](docs/SOURCES.md)), with a test that checks it;
+- a prompt pack, versioned, built from the sources of
+  [docs/SOURCES.md](docs/SOURCES.md) — the manual is required, and decision D8
+  allows the game source, the Borg source, the specification, the deaths, the
+  issues and the zoo's results. The test that checks it is about **provenance,
+  not permission**: every file a prompt draws on is named in `pins.json`'s
+  `sources` (or recorded with its issue number and date), and the pack records
+  which, so a claim made from that prompt can cite it;
 - every call logged (R2.1);
 - a budget cap per run (R2.3);
 - **`models.yaml` at the root, and its loader.** The file holds the
@@ -177,7 +183,10 @@ unset is skipped, and the report says so. Each candidate has a budget cap for
 the whole trial.
 
 **Three parts**, the same prompt pack for every candidate:
-1. **Decision quiz** (players). At least 30 situations from Borg games on
+1. **Decision quiz** (players). The quiz and its answer key never enter a
+   prompt or the knowledge base: a candidate must not be able to read the
+   answers (test hygiene, not a source rule — see decision D8). At least 30
+   situations from Borg games on
    zoo seeds: windows a few turns before a death, and first sightings of a
    monster. For each situation, try every action the executor offers as a
    `branch`, let the stock Borg play on for 2,000 game turns, and record
@@ -222,6 +231,35 @@ A document, `docs/ZOO-IMPORT.md`, for the zoo's own PR (R6): the run record
 fields the zoo needs, how its CI replays an imported run without a model,
 the build it needs for that, and how agent runs are marked
 non-deterministic. The zoo itself is not changed here.
+
+### T13. Open the playing agent's sources (D8)
+
+The owner's decision of 2026-11-08: the playing agent may read whatever helps
+it build the knowledge base — the manual and the in-game help (required), its
+own play, the game source, the Borg source and its documentation, the Borg
+specification, the recorded deaths, the open issues and the zoo's results. The
+earlier rule, that phase 1 saw only the manual, was not the owner's intent.
+
+Done in this task:
+- [docs/SOURCES.md](docs/SOURCES.md) rewritten: what may be read, where each
+  source is pinned, and the two things still asked — provenance, and honesty
+  about what was read rather than seen;
+- the requirements: the phases table, the paragraph that made the phases a
+  reading rule, D2 marked superseded, and **D8** recorded;
+- `pins.json`: a `borg-spec` pin (diegoami/neo-angband-tracker) and a
+  `sources` block naming each source with the pin it is read at; the issues
+  are listed as unpinned, to be cited by number and date;
+- `claim@1`: a basis for each source (`static:borg-spec`, `static:deaths`,
+  `static:issue` beside the two that existed), the matching `sources` values,
+  the phase-1 restriction removed, and a new rule that a `static:` basis must
+  name its reference;
+- the examples and the tests that encoded the old rule.
+
+Left for later tasks, not this one:
+- the prompt pack and its provenance test (T06);
+- reading the deaths and the specification into actual claims — that is what
+  T07's store and T08's post-mortems are for;
+- `knowledge/` keeping fixtures out of the ingestion path (T12).
 
 ### T12. Milestone-1 review findings
 
@@ -274,12 +312,12 @@ the model, provider and profile fields, scan free text when T04 writes a
 record, and test that a fake key in the environment never reaches a record or
 a log. The game's own environment was fixed in T03's PR.
 
-**The examples carry game and zoo knowledge (9).** One claim example states
-the zoo's Druid/Paladin finding with `sources: ["own-play"]`, which is false
-provenance. Make the examples honest, label them as illustrative, and keep
-them out of `knowledge/`, prompt packs and any ingestion path. Phase 1 also
-has no source value for the seed, birth, cause and turn a mode B post-mortem
-is given, which T08 needs.
+**The examples' provenance (9).** Done in T13: the Druid/Paladin example now
+says `zoo-results`, and the example that existed to be rejected for citing the
+Borg's source is a valid claim with a `static:borg-source` basis, since
+decision D8 allows that. What is left of the finding is smaller: label the
+examples as illustrative and keep them out of `knowledge/` so a future
+ingestion step cannot mistake a fixture for a claim.
 
 **The build key does not cover every input (10).** The fixed include line,
 the appended CMake lines, the `version` file and the compiler and platform are
