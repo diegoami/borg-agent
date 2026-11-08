@@ -88,14 +88,91 @@ def calendar():
             'seasonal': seasonal(local)}
 
 
+def lock_holders(path=None, procfs='/proc'):
+    """The process ids holding the heavy-run lock, as /proc shows them.
+
+    Best effort and Linux-only: it is used to explain a wait, never to decide
+    anything about play.
+    """
+    path = str(path or LOCK_PATH)
+    holders = []
+    root = Path(procfs)
+    if not root.exists():
+        return holders
+    for entry in root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            for descriptor in (entry / 'fd').iterdir():
+                if os.readlink(descriptor) == path:
+                    holders.append(int(entry.name))
+                    break
+        except OSError:
+            continue       # the process went away, or is not ours to look at
+    return sorted(holders)
+
+
+def parents(pid=None, procfs='/proc'):
+    """This process's ancestors, closest first."""
+    chain = []
+    current = pid if pid is not None else os.getppid()
+    seen = set()
+    while current and current > 1 and current not in seen:
+        seen.add(current)
+        chain.append(current)
+        try:
+            stat = (Path(procfs) / str(current) / 'stat').read_text()
+            # ... after the comm field, which may itself contain spaces.
+            current = int(stat[stat.rindex(')') + 1:].split()[1])
+        except (OSError, ValueError, IndexError):
+            break
+    return chain
+
+
+def held_by_an_ancestor(path=None, procfs='/proc', pid=None):
+    """Whether a process we are a child of already holds the lock.
+
+    `flock /tmp/angband-validation.lock pytest -m slow` is the documented way
+    to run heavy work, and the suite's own runs take the same lock. A second
+    acquire from inside that process tree can never succeed — the holder is
+    waiting for us — so it is skipped: the work is already serialized by the
+    ancestor that holds it.
+    """
+    holders = set(lock_holders(path, procfs))
+    return bool(holders & set(parents(pid, procfs)))
+
+
 @contextlib.contextmanager
-def heavy_lock(enabled=True):
-    """Serialize heavy local runs with the owner's other Angband work."""
-    if not enabled:
+def heavy_lock(enabled=True, timeout=600, log=print):
+    """Serialize heavy local runs with the owner's other Angband work.
+
+    Skipped when BORG_AGENT_NO_LOCK is set, or when an ancestor process
+    already holds the lock. A wait that goes on too long raises instead of
+    hanging for ever, and says who is holding it.
+    """
+    if not enabled or os.environ.get('BORG_AGENT_NO_LOCK'):
+        yield None
+        return
+    if held_by_an_ancestor():
         yield None
         return
     with open(LOCK_PATH, 'a+') as handle:
-        fcntl.flock(handle, fcntl.LOCK_EX)
+        waited = 0.0
+        while True:
+            try:
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError:
+                if waited >= timeout:
+                    raise TimeoutError(
+                        f'waited {int(waited)}s for {LOCK_PATH}, held by '
+                        f'{lock_holders() or "another process"}. If you are running under an '
+                        f'outer `flock` on the same file, that is detected; otherwise stop the '
+                        f'holder or set BORG_AGENT_NO_LOCK=1.')
+                if waited and not waited % 30:
+                    log(f'waiting for {LOCK_PATH}, held by {lock_holders()}')
+                time.sleep(0.5)
+                waited += 0.5
         try:
             yield handle
         finally:

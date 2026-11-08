@@ -67,6 +67,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T11 | Zoo import contract | 4 | T04 | yes | todo |
 | T12 | Milestone-1 review findings | 2 | T01, T02 | yes | in review (#13) |
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
+| T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | in progress (task/T14-lock-under-flock) |
 
 ### T01. Build and play the pinned game headless
 
@@ -296,6 +297,26 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T14. The heavy-run lock under an outer flock
+
+Found by the milestone 2 reviewer, who ran the documented command
+
+```sh
+flock /tmp/angband-validation.lock .venv/bin/python -m pytest -q -m slow
+```
+
+and waited an hour and three quarters. The outer `flock` holds the lock; the
+suite's own runs then open the same file and wait for a lock their own parent
+holds. Nothing could ever release it.
+
+`heavy_lock` now skips the lock when a process we are a child of already
+holds it — the work is serialized by that ancestor, which is the point of the
+lock — acquires without blocking so a wait can be reported and given up on
+(ten minutes, naming the holder, pointing at `BORG_AGENT_NO_LOCK`), and
+honours `BORG_AGENT_NO_LOCK` everywhere rather than only in tests. AGENTS.md
+and docs/BUILD-AND-PLAY.md say so, and a test builds a small `/proc` to check
+the ancestor case without a real deadlock.
 
 ### T12. Milestone-1 review findings
 
