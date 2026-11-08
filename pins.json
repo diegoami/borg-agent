@@ -22,6 +22,12 @@
       "repository": "diegoami/borg-zoo",
       "commit": "4c675343fa6aed8aeb9ff265d9d10a22054e0ac5",
       "role": "Outcome vocabulary, run-record provenance and the play hash that this repository's records follow (docs/DESIGN.md)."
+    },
+    "borg-spec": {
+      "repository": "diegoami/neo-angband-tracker",
+      "commit": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
+      "path": "docs/c-borg/BORG_SPEC.md",
+      "role": "The Borg specification and the Tunable Borg Plan: what the remake is meant to be. A source for the playing agent (docs/SOURCES.md, decision D8) and for phases 2 and 3."
     }
   },
   "manual": {
@@ -40,5 +46,60 @@
       "docs/customize.rst",
       "lib/help/"
     ]
+  },
+  "sources": {
+    "note": "What the playing agent may read beyond the manual (decision D8, 2026-11-08). Each entry names the pin it is read at, so a claim can cite a fixed commit.",
+    "manual": {
+      "pin": "better-borg-c",
+      "paths": [
+        "see the \"manual\" block"
+      ],
+      "required": true
+    },
+    "game_source": {
+      "pin": "better-borg-c",
+      "paths": [
+        "src/",
+        "lib/gamedata/",
+        "docs/"
+      ]
+    },
+    "borg_source": {
+      "pin": "better-borg-c",
+      "paths": [
+        "src/borg/",
+        "docs/hacking/borg.rst"
+      ]
+    },
+    "original_borg_source": {
+      "pin": "original",
+      "paths": [
+        "src/borg/"
+      ]
+    },
+    "deaths": {
+      "pin": "better-borg-c",
+      "paths": [
+        "docs/deaths/"
+      ]
+    },
+    "borg_spec": {
+      "pin": "borg-spec",
+      "paths": [
+        "docs/c-borg/BORG_SPEC.md",
+        "docs/c-borg/TUNABLE-BORG-PLAN.md"
+      ]
+    },
+    "zoo_results": {
+      "pin": "borg-zoo",
+      "paths": [
+        "catalogue/",
+        "experiments/",
+        "docs/DESIGN.md"
+      ]
+    },
+    "issues": {
+      "unpinned": "The open issues of diegoami/better-borg-c, diegoami/borg-zoo and diegoami/neo-angband-tracker. A claim records the issue number and the date it was read, since a tracker moves."
+    }
   }
 }
