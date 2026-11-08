@@ -30,7 +30,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T10 | Pilot | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | T04 | yes | todo |
 | T12 | Milestone-1 review findings | T01, T02 | yes | todo |
-| T13 | Open the playing agent's sources (D8) | T02 | yes | in progress (task/T13-open-sources) |
+| T13 | Open the playing agent's sources (D8) | T02 | yes | in review (#9) |
 
 ### T01. Build and play the pinned game headless
 

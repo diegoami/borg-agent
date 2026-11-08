@@ -13,7 +13,7 @@ work and updates "Current state".
   and the review of `main` at `11c8303` by a model of another family, with a
   triage table. Its thirteen findings are either fixed in T03's PR or on the
   plan as **T12**; two are the owner's to decide.
-- **T13 is in review** (PR #TBD, branch `task/T13-open-sources`, stacked on
+- **T13 is in review** ([#9](https://github.com/diegoami/borg-agent/pull/9), branch `task/T13-open-sources`, stacked on
   #8): decision **D8**, the playing agent's sources are open.
 - **Done:** T01, T02 and T03. T06's documents are in, but T06 itself is still
   `todo`: the loader for `models.yaml`, the three minds and the prompt pack.
@@ -33,7 +33,7 @@ work and updates "Current state".
 
 ## 2026-11-08: T13, the playing agent's sources are open (D8)
 
-Branch `task/T13-open-sources`, PR #TBD, stacked on #8. Documents, pins and
+Branch `task/T13-open-sources`, PR [#9](https://github.com/diegoami/borg-agent/pull/9), stacked on #8. Documents, pins and
 the claim schema.
 
 The owner, on 2026-11-08: the rule in docs/SOURCES.md that phase 1 could read
