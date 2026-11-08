@@ -1,0 +1,15 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "many-things-at-once",
+  "statement": "Floating eyes paralyse.\nJackals come in packs.\nDruids die more than Paladins.",
+  "area": "monster",
+  "scope": {"version": "4.2.6"},
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {"kind": "observed"},
+  "evidence": [{"kind": "run", "run_id": "play-20261109-seed7-warrior", "turn": 10}],
+  "confidence": {"rests_on": "Several runs.", "alternatives_ruled_out": []},
+  "phase": 1,
+  "sources": ["own-play"],
+  "created": "2026-11-09T10:05:00Z"
+}

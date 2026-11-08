@@ -1,0 +1,21 @@
+{
+  "schema": "borg-agent/observation@1",
+  "run_id": "play-20261108-seed7-warrior",
+  "decision": 41,
+  "turn": 3120,
+  "reason_asked": "new_monster",
+  "character": {
+    "race": "Human", "class": "Warrior", "level": 4, "max_level": 4,
+    "hp": 12, "max_hp": 34, "depth": 2, "max_depth": 2, "gold": 140,
+    "conditions": ["Afraid"]
+  },
+  "map": {"player": {"x": 12, "y": 4}, "rows": ["####################", "#....e.....@.......#"]},
+  "monsters": [
+    {"letter": "e", "colour": "purple", "name": null, "x": 5, "y": 1,
+     "distance": 7, "line_of_sight": true, "asleep": null, "health": null}
+  ],
+  "inventory": [{"label": "a", "description": "a Scroll titled \"nagkri mun\""}],
+  "equipment": [],
+  "messages": ["You see a purple 'e'."],
+  "prompt": {"kind": "none"}
+}

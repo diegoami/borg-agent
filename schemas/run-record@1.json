@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/diegoami/borg-agent/schemas/run-record@1.json",
+  "title": "Run record (borg-agent/run-record@1)",
+  "description": "One run, with everything needed to replay it and to judge its evidence (R5). Run records are immutable once written (R4.1): a correction is a new record. Outcomes are the zoo's vocabulary plus 'budget_cap', and 'borg_stopped' is 'agent_stopped' here. Large logs (observations and model replies) live outside git, addressed by hash.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "run_id", "created", "mode", "engine", "game", "mind", "action_stream", "outcome", "deterministic", "intervention"],
+  "properties": {
+    "schema": {"const": "borg-agent/run-record@1"},
+    "run_id": {"$ref": "#/$defs/id"},
+    "created": {"type": "string", "format": "date-time", "description": "When the run started. Wall time never affects play (R1.3); this is provenance only."},
+    "mode": {
+      "type": "string",
+      "enum": ["play", "post_mortem", "probe", "consolidate", "trial"],
+      "description": "The learning mode of R3: A play, B post-mortem, C probe, D consolidate; 'trial' is a model-trial run (T09)."
+    },
+    "parent": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["run_id", "turn"],
+      "description": "For a branch (R5): the run this one continues, and the turn it continued from.",
+      "properties": {"run_id": {"$ref": "#/$defs/id"}, "turn": {"type": "integer", "minimum": 0}}
+    },
+    "deterministic": {
+      "type": "boolean",
+      "description": "False for any run whose actions a model chose (R6.3). A replay of the recorded action stream is deterministic either way."
+    },
+    "intervention": {
+      "type": "boolean",
+      "description": "True when the run was set up with debug commands (owner decision D4). Such runs never count in survival figures."
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "pins", "build_key", "binary_sha256"],
+      "properties": {
+        "name": {"type": "string", "enum": ["c-4.2.6", "neo"]},
+        "pins": {
+          "type": "object",
+          "description": "The pinned commits used, by the names in pins.json.",
+          "minProperties": 1,
+          "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+        },
+        "build_key": {"type": "string", "minLength": 8, "description": "The build recipe's hash (src/borg_agent/build.py)."},
+        "binary_sha256": {"$ref": "#/$defs/sha256"},
+        "patch_sha256": {
+          "type": "object",
+          "description": "Every patch or instrumented file applied to the pinned tree, by name: the bridge (T03) and the observer.",
+          "additionalProperties": {"$ref": "#/$defs/sha256"}
+        },
+        "data_sha256": {"type": "object", "additionalProperties": {"$ref": "#/$defs/sha256"},
+                        "description": "Game data and content identity, as the zoo records it."},
+        "compiler": {"type": "string"},
+        "platform": {"type": "string"},
+        "dirty": {"type": "string", "description": "This repository's uncommitted changes at run time, empty when clean."},
+        "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$", "description": "This repository's commit."}
+      }
+    },
+    "game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "birth", "turn_cap"],
+      "properties": {
+        "seed": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+        "birth": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["race", "class"],
+          "description": "Assigned race and class, ordinary birth otherwise, with the game's default birth options (R1.6). No munchkin start and no lunal mode (RULES 13).",
+          "properties": {
+            "race": {"type": "string"},
+            "class": {"type": "string"},
+            "name": {"type": "string"},
+            "rule": {"type": "string", "enum": ["fixed", "assigned", "random"], "description": "The zoo's birth rules."},
+            "options": {"type": "object", "additionalProperties": {"type": "integer"},
+                        "description": "The birth options in effect, as the observer records them."}
+          }
+        },
+        "settings": {"type": "object", "additionalProperties": {"type": ["integer", "string", "boolean"]},
+                     "description": "The settings in effect, the way the zoo checks a profile."},
+        "settings_sha256": {"$ref": "#/$defs/sha256"},
+        "turn_cap": {"type": ["integer", "null"], "minimum": 2, "description": "The game-turn cap; null when the run has none."},
+        "decision_cap": {"type": ["integer", "null"], "minimum": 1}
+      }
+    },
+    "mind": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "description": "Who decided. 'stock-borg' is the Borg's own rules, with no model at all (T01, T08). A model's provider, model id and family come from the active profile in models.yaml (decision D7), never from anywhere else, and no key, header or credentialed URL is ever recorded (RULES 15).",
+      "properties": {
+        "kind": {"type": "string", "enum": ["stock-borg", "scripted", "external", "api", "replay"]},
+        "model": {"type": ["string", "null"]},
+        "provider": {"type": ["string", "null"]},
+        "effort": {"type": ["string", "null"], "description": "The reasoning-effort setting, when the provider has one."},
+        "job": {
+          "type": "string",
+          "enum": ["play", "consolidate", "review"],
+          "description": "Which job of the profile this model did (decision D7)."
+        },
+        "profile": {"type": ["string", "null"], "description": "The active profile in models.yaml."},
+        "family": {"type": ["string", "null"], "description": "The model's family. A review is of a different family from the consolidation it checks (R4.3)."},
+        "chosen_by": {
+          "type": "string",
+          "enum": ["profile", "local override", "environment", "not-applicable"],
+          "description": "How the model was chosen (R2.4, D7): the profile (models.yaml's default), a job overridden in models.local.yaml, or BORG_AGENT_PROFILE in the environment."
+        },
+        "models_sha256": {"$ref": "#/$defs/sha256", "description": "models.yaml as it was for this run."},
+        "models_local_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}],
+                                 "description": "models.local.yaml, when it exists. Null when it does not."},
+        "context_k": {"type": ["integer", "null"], "minimum": 1, "description": "The context size the job was given (R2.2)."},
+        "endpoint_host": {"type": ["string", "null"], "description": "The endpoint's host only. Never the key, never the headers (RULES 15)."},
+        "prompt_pack": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "sha256"],
+          "properties": {"version": {"type": "string"}, "sha256": {"$ref": "#/$defs/sha256"}}
+        },
+        "knowledge_sha256": {"$ref": "#/$defs/sha256", "description": "The knowledge base the prompts drew on."},
+        "budget": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "The run's budget (R2.3). Hitting it is the outcome 'budget_cap', not a failure.",
+          "properties": {
+            "model_calls": {"type": ["integer", "null"], "minimum": 1},
+            "tokens": {"type": ["integer", "null"], "minimum": 1}
+          }
+        }
+      },
+      "allOf": [{
+        "if": {"properties": {"kind": {"const": "api"}}, "required": ["kind"]},
+        "then": {"required": ["model", "provider", "family", "job", "profile", "chosen_by", "models_sha256", "prompt_pack"]}
+      }]
+    },
+    "action_stream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "sha256"],
+      "description": "The recorded actions, which replay feeds back without the mind (R5). The stream itself may live outside git; 'uri' says where.",
+      "properties": {
+        "count": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "uri": {"type": "string"},
+        "schema": {"const": "borg-agent/action@1"}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Hashes of the run's other streams, so a claim can point at them and a replay can be compared.",
+      "properties": {
+        "trace_sha256": {"$ref": "#/$defs/sha256"},
+        "play_sha256": {"$ref": "#/$defs/sha256", "description": "The play hash, leaving the configuration lines out, as the zoo computes it."},
+        "state_hashes_sha256": {"$ref": "#/$defs/sha256", "description": "Over the state hash at every observation, which verify compares."},
+        "observations_sha256": {"$ref": "#/$defs/sha256"},
+        "model_calls_sha256": {"$ref": "#/$defs/sha256"},
+        "notes_sha256": {"$ref": "#/$defs/sha256"},
+        "uris": {"type": "object", "additionalProperties": {"type": "string"},
+                 "description": "Where each large log is stored, by the same names."}
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "turn"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["death", "completion", "turn_cap", "stalled", "wall_timeout", "crash",
+                    "harness_failure", "config_error", "agent_stopped", "decision_cap", "budget_cap"],
+          "description": "The zoo's outcome vocabulary, with 'borg_stopped' renamed 'agent_stopped' and 'budget_cap' added (R5). Only 'death' counts as a death."
+        },
+        "cause": {"type": ["string", "null"], "description": "The cause of death the game printed, for a death."},
+        "reason": {"type": ["string", "null"], "description": "Why the agent or the harness stopped."},
+        "turn": {"type": "integer", "minimum": 0},
+        "died_after_cap": {"type": ["string", "null"], "description": "A death past the requested cap, which counts as a turn-cap run (the zoo's rule)."},
+        "depth": {"type": "integer", "minimum": 0},
+        "max_depth": {"type": "integer", "minimum": 0},
+        "level": {"type": "integer", "minimum": 1},
+        "max_level": {"type": "integer", "minimum": 1},
+        "depth_marks": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0},
+                        "description": "The first turn at each depth, as the zoo records it."}
+      },
+      "allOf": [
+        {"if": {"properties": {"kind": {"const": "death"}}, "required": ["kind"]},
+         "then": {"required": ["cause"], "properties": {"cause": {"type": "string", "minLength": 1}}}},
+        {"if": {"properties": {"kind": {"enum": ["agent_stopped", "harness_failure", "config_error"]}}, "required": ["kind"]},
+         "then": {"required": ["reason"], "properties": {"reason": {"type": "string", "minLength": 1}}}}
+      ]
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the run cost. Model latency never affects play (R1.3).",
+      "properties": {
+        "model_calls": {"type": "integer", "minimum": 0},
+        "prompt_tokens": {"type": "integer", "minimum": 0},
+        "completion_tokens": {"type": "integer", "minimum": 0},
+        "decisions": {"type": "integer", "minimum": 0},
+        "invalid_actions": {"type": "integer", "minimum": 0},
+        "parse_failures": {"type": "integer", "minimum": 0},
+        "wall_seconds": {"type": "number", "minimum": 0},
+        "cost_usd": {"type": ["number", "null"], "minimum": 0}
+      }
+    },
+    "notes": {"type": "array", "items": {"type": "string"}, "description": "Short free-text notes about the run itself, not game knowledge."}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

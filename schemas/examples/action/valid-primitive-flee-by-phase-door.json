@@ -1,0 +1,7 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "primitive",
+  "primitive": {"name": "flee", "by": "phase_door"},
+  "reason": "Two thirds of my hit points are gone and the stairs are far.",
+  "note": "Melee with three jackals at once cost 20 hit points in six turns."
+}

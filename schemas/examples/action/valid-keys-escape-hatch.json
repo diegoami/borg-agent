@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "keys",
+  "keys": {"keys": "\u001b", "why": "An unexpected menu is open and no command closes it."},
+  "reason": "Get out of the menu and look again."
+}

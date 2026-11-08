@@ -1,0 +1,5 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "primitive",
+  "primitive": {"name": "explore_floor"}
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "borg-agent/run-record@1",
+  "run_id": "play-20261109-nocause",
+  "created": "2026-11-09T09:02:00Z",
+  "mode": "play",
+  "deterministic": false,
+  "intervention": false,
+  "engine": {"name": "c-4.2.6", "pins": {"better-borg-c": "b3c825c97c8aef18b252a7fb7d9b7dceef83d586"},
+              "build_key": "dc71f56c5d3e2876",
+              "binary_sha256": "1f0a1f8a2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7"},
+  "game": {"seed": 7, "birth": {"race": "Human", "class": "Warrior"}, "turn_cap": 5000},
+  "mind": {"kind": "scripted"},
+  "action_stream": {"count": 1, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+  "outcome": {"kind": "death", "turn": 300}
+}

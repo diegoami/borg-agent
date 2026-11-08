@@ -1,0 +1,6 @@
+{
+  "schema": "borg-agent/action@1",
+  "kind": "command",
+  "command": {"name": "fire", "item": "c", "target": {"x": 3, "y": 4}, "target_nearest": true},
+  "reason": "Shoot it."
+}

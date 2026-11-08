@@ -1,0 +1,26 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "druids-die-more-often-than-paladins-early",
+  "statement": "Under the same early-game conditions a Druid dies far more often than a Paladin.",
+  "area": "class",
+  "scope": {"character_level": {"min": 1, "max": 20}, "version": "4.2.6"},
+  "engine": "c-4.2.6",
+  "status": "corroborated",
+  "basis": {"kind": "quantified", "trials": 1800, "successes": 1260},
+  "evidence": [
+    {"kind": "run", "run_id": "post-mortem-20261109-druid-01", "turn": 8800, "note": "A Druid death at depth 2."},
+    {"kind": "run", "run_id": "post-mortem-20261109-paladin-01", "turn": 100000, "note": "A Paladin alive at the cap."}
+  ],
+  "confidence": {
+    "rests_on": "Two post-mortems of this agent's own runs, and a counted difference over many seeds.",
+    "alternatives_ruled_out": ["A difference in seeds: both classes were played on the same seeds."]
+  },
+  "phase": 1,
+  "sources": ["own-play"],
+  "created": "2026-11-09T13:00:00Z",
+  "produced_by": {"mind": "model", "model": "qwen3.8-max", "family": "qwen", "profile": "alibaba"},
+  "reviews": [
+    {"by": "glm-5.3", "family": "glm", "verdict": "agree", "created": "2026-11-09T13:30:00Z",
+     "note": "The evidence matches the statement, and the scope is not wider than the runs."}
+  ]
+}

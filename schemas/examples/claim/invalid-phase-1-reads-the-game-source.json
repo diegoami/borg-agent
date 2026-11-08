@@ -1,0 +1,15 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "floating-eye-gaze-is-paralysis",
+  "statement": "The floating eye's gaze applies paralysis with no saving throw below a certain level.",
+  "area": "monster",
+  "scope": {"version": "4.2.6"},
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {"kind": "static:game-source", "reference": "lib/gamedata/monster.txt at b3c825c9"},
+  "evidence": [{"kind": "manual", "reference": "lib/gamedata/monster.txt"}],
+  "confidence": {"rests_on": "The monster data file.", "alternatives_ruled_out": []},
+  "phase": 1,
+  "sources": ["game-source"],
+  "created": "2026-11-09T10:05:00Z"
+}

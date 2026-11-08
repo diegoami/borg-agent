@@ -1,0 +1,19 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "stairs-connect-on-arrival",
+  "statement": "With the default birth options the player arrives on a staircase leading back the way they came.",
+  "area": "dungeon",
+  "scope": {"version": "4.2.6"},
+  "engine": "c-4.2.6",
+  "status": "documented",
+  "basis": {"kind": "manual", "reference": "docs/birth.rst, \"Connected stairs\""},
+  "evidence": [{"kind": "manual", "reference": "docs/birth.rst, \"Connected stairs\""}],
+  "confidence": {
+    "rests_on": "The manual's description of the birth option, which is on by default.",
+    "alternatives_ruled_out": []
+  },
+  "phase": 1,
+  "sources": ["manual"],
+  "created": "2026-11-09T10:00:00Z",
+  "produced_by": {"mind": "person"}
+}

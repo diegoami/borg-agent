@@ -1,0 +1,40 @@
+{
+  "schema": "borg-agent/observation@1",
+  "run_id": "play-20261108-seed7-warrior",
+  "decision": 0,
+  "turn": 10,
+  "reason_asked": "start",
+  "character": {
+    "name": "Agent", "race": "Human", "class": "Warrior",
+    "level": 1, "max_level": 1, "exp": 0,
+    "hp": 18, "max_hp": 18, "sp": 0, "max_sp": 0,
+    "depth": 0, "max_depth": 0, "gold": 270, "ac": 2, "speed": 0,
+    "food": "Fed",
+    "stats": {"str": "17", "int": "10", "wis": "10", "dex": "16", "con": "16"},
+    "conditions": []
+  },
+  "map": {
+    "player": {"x": 34, "y": 11},
+    "origin": {"x": 0, "y": 0},
+    "rows": [
+      "                                  ",
+      "   1    2    3    4    5    6     ",
+      "   .................@............ ",
+      "   .............................. "
+    ],
+    "level_feeling": null
+  },
+  "monsters": [],
+  "objects": [],
+  "inventory": [
+    {"label": "a", "description": "4 Rations of Food", "count": 4},
+    {"label": "b", "description": "2 Flasks of oil", "count": 2}
+  ],
+  "equipment": [
+    {"label": "a", "description": "a Dagger (1d4)"},
+    {"label": "b", "description": "a Wooden Torch (5000 turns)"}
+  ],
+  "messages": ["You have 4 Rations of Food (a)."],
+  "shop": null,
+  "prompt": {"kind": "none"}
+}

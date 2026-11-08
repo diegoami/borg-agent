@@ -1,0 +1,16 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "deep-diving-is-best",
+  "statement": "Diving deep as early as possible beats clearing levels.",
+  "area": "readiness",
+  "scope": {"version": "4.2.6"},
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {"kind": "observed"},
+  "evidence": [],
+  "confidence": {"rests_on": "A feeling.", "alternatives_ruled_out": []},
+  "test": {"how": "Compare depth reached at turn 20,000 with and without clearing each level.", "mode": "zoo-experiment"},
+  "phase": 1,
+  "sources": ["own-play"],
+  "created": "2026-11-09T10:05:00Z"
+}
