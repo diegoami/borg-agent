@@ -6,7 +6,7 @@ work and updates "Current state".
 ## Current state
 
 - **Milestone 2 is complete and waiting for the owner's review.** Its review
-  PR is `main` into `reviewed` ([#14](https://github.com/diegoami/borg-agent/pull/14)); the owner merges it, which advances
+  PR is `main` into `reviewed` ([#15](https://github.com/diegoami/borg-agent/pull/15)); the owner merges it, which advances
   `reviewed`. **A session does not start milestone 3 until then** (RULES 7).
 - Milestone 2 delivered, all merged: **T03** the bridge (#8), **T13** the open
   sources, decision D8 (#9), **T04** records and replay (#11), **T05** the

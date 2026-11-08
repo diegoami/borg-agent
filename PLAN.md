@@ -35,7 +35,7 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | Milestone | What it delivers | Tasks | State |
 |---|---|---|---|
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)); `reviewed` stands there |
-| **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12 | **complete; in review** ([#14](https://github.com/diegoami/borg-agent/pull/14)) |
+| **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12 | **complete; in review** ([#15](https://github.com/diegoami/borg-agent/pull/15)) |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08 | not started |
 | **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | not started |
 | later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
