@@ -122,7 +122,19 @@ keys come from the environment, which the owner fills from
 `~/.config/ai-keys.env`.
 
 Heavy local runs take the lock `/tmp/angband-validation.lock` with `flock`,
-as the owner's other Angband work does.
+as the owner's other Angband work does. Every run in this repository takes it
+itself, so
+
+```sh
+.venv/bin/python -m pytest -q -m slow                      # locks itself
+flock /tmp/angband-validation.lock .venv/bin/python -m pytest -q -m slow
+```
+
+both work: an outer `flock` is detected (the lock is already held by an
+ancestor, so the runs inside do not take it again). `BORG_AGENT_NO_LOCK=1`
+skips it altogether, and `BORG_AGENT_LOCK` points it at another file. A run
+that waits more than ten minutes for the lock gives up and says which process
+is holding it, rather than hanging.
 
 ## Where things are
 

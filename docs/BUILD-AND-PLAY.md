@@ -65,9 +65,17 @@ site is an error, never a silent skip.
 `python -m borg_agent play` plays the **stock Borg** — nothing in this
 repository decides anything yet — through the test frontend, with the
 runner's birth input (splash, first race, first class, default point buy,
-then the Borg's own `C-z`), which gives a Human Warrior. Heavy runs take
-`/tmp/angband-validation.lock` with `flock`, as the owner's other Angband
-work does (`--no-lock` skips it).
+then the Borg's own `C-z`), which gives a Human Warrior.
+
+Heavy runs take `/tmp/angband-validation.lock` with `flock`, as the owner's
+other Angband work does. Each run takes it itself, and an **outer `flock` on
+the same file is detected**: if a process we are a child of already holds the
+lock, the run does not try to take it again — it cannot succeed, because the
+holder is waiting for us. `flock /tmp/angband-validation.lock pytest -m slow`
+therefore works, which it did not before: it deadlocked, and a reviewer lost
+an afternoon to it. `--no-lock` or `BORG_AGENT_NO_LOCK=1` skips the lock,
+`BORG_AGENT_LOCK` points it elsewhere, and a wait longer than ten minutes
+gives up naming the holder instead of hanging.
 
 A run directory holds `input.txt`, `trace.txt`, `terminal.log` and
 `result.json` (seed, cap, birth, build key, binary hash, outcome, cause,

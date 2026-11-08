@@ -5,6 +5,10 @@ work and updates "Current state".
 
 ## Current state
 
+- **T14** (#16) fixed a deadlock the milestone 2 reviewer hit: the documented
+  `flock /tmp/angband-validation.lock pytest -m slow` waited for ever, because
+  the suite's own runs took the same lock. An outer `flock` is now detected.
+  The review PR's diff moved with it.
 - **Milestone 2 is complete and waiting for the owner's review.** Its review
   PR is `main` into `reviewed` ([#15](https://github.com/diegoami/borg-agent/pull/15)); the owner merges it, which advances
   `reviewed`. **A session does not start milestone 3 until then** (RULES 7).
@@ -35,6 +39,38 @@ work and updates "Current state".
 - Settled: `default_profile: alibaba` stays (the owner, 2026-11-08 — the
   general notes about that provider do not apply here, since D7 makes the
   profile the only model rule).
+
+## 2026-11-09: T14, the heavy-run lock under an outer flock
+
+Branch `task/T14-lock-under-flock`, PR
+[#16](https://github.com/diegoami/borg-agent/pull/16). Found by the milestone 2
+reviewer, not by a test.
+
+`flock /tmp/angband-validation.lock .venv/bin/python -m pytest -q -m slow` —
+the command AGENTS.md invites — deadlocked: the outer `flock` holds the lock,
+and every run inside the suite opened the same file and waited for a lock its
+own parent held. The reviewer sat there for an hour and three quarters.
+
+- `heavy_lock` skips the lock when a process we are a child of already holds
+  it (`held_by_an_ancestor`, via `/proc`), because the work is already
+  serialized by that ancestor.
+- It acquires without blocking, so a wait is reported every thirty seconds and
+  gives up after ten minutes naming the holder, instead of hanging.
+- `BORG_AGENT_NO_LOCK` is honoured everywhere now, not only in tests, and
+  `BORG_AGENT_LOCK` points the lock at another file.
+- A test builds a small fake `/proc` and checks both the ancestor case and a
+  real holder, so neither needs an actual deadlock to verify.
+
+Facts the next sessions will need:
+- **Verified in the shape the reviewer used**: with `BORG_AGENT_LOCK` on a
+  scratch file, `flock <that file> pytest -q -m slow` ran all seven gates in
+  31 s. Before the fix it never finished.
+- There were four orphaned `angband` processes on the owner's machine from an
+  earlier session's probes, holding nothing but still alive after four hours.
+  A run that is killed between `mkfifo` and the handshake leaves the game
+  waiting on a pipe; the bounded handshake stops the *agent* side waiting, but
+  the game child can still linger. If a machine feels busy, look for
+  `build/*/game/angband` processes with a long elapsed time.
 
 ## 2026-11-08: T12, the milestone-1 review findings
 

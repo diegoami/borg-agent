@@ -239,3 +239,55 @@ def test_a_slow_mind_is_not_called_a_stall(tmp_path):
     assert record['outcome'] in play.GOOD_OUTCOMES, record
     assert record['decisions'] >= 5
     assert record['wall_seconds'] > record['decisions'] * 0.25
+
+
+# --- the heavy-run lock -----------------------------------------------------
+
+def test_the_lock_is_skipped_when_asked():
+    os.environ['BORG_AGENT_NO_LOCK'] = '1'
+    try:
+        with play.heavy_lock() as handle:
+            assert handle is None
+    finally:
+        os.environ.pop('BORG_AGENT_NO_LOCK')
+
+
+def test_the_lock_is_skipped_when_an_ancestor_holds_it(tmp_path):
+    """`flock <lock> pytest -m slow` must not deadlock against itself.
+
+    The documented way to run heavy work is under an outer flock, and the
+    suite's own runs take the same lock. A second acquire from inside that
+    tree can never succeed, because the holder is waiting for us.
+    """
+    procfs = tmp_path / 'proc'
+    lock = tmp_path / 'the.lock'
+    lock.write_text('')
+    # A tiny /proc: 100 is the parent of 200, which is this process's parent,
+    # and 100 holds the lock.
+    for pid, ppid, holds in ((100, 1, True), (200, 100, False), (300, 1, True)):
+        (procfs / str(pid) / 'fd').mkdir(parents=True)
+        (procfs / str(pid) / 'stat').write_text(f'{pid} (flock) S {ppid} 0 0')
+        if holds:
+            (procfs / str(pid) / 'fd' / '3').symlink_to(lock)
+    assert play.lock_holders(lock, procfs) == [100, 300]
+    assert play.parents(200, procfs) == [200, 100]
+    assert play.held_by_an_ancestor(lock, procfs, pid=200) is True
+    # A holder that is not an ancestor is a real wait, not a deadlock.
+    (procfs / '100' / 'fd' / '3').unlink()
+    assert play.held_by_an_ancestor(lock, procfs, pid=200) is False
+
+
+def test_waiting_for_the_lock_gives_up_with_an_explanation(tmp_path, monkeypatch):
+    lock = tmp_path / 'held.lock'
+    monkeypatch.setattr(play, 'LOCK_PATH', str(lock))
+    holder = open(lock, 'a+')
+    import fcntl
+
+    fcntl.flock(holder, fcntl.LOCK_EX)
+    try:
+        with pytest.raises(TimeoutError, match='BORG_AGENT_NO_LOCK'):
+            with play.heavy_lock(timeout=0, log=lambda *a: None):
+                pass
+    finally:
+        fcntl.flock(holder, fcntl.LOCK_UN)
+        holder.close()
