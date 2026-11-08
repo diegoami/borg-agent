@@ -4,33 +4,69 @@ The requirements are in [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Where
 this plan and the requirements differ, the requirements win; say so in your
 PR and propose a fix to whichever is wrong.
 
-## Milestone 1: a first learner on C 4.2.6
+## Milestones, and when we stop for a review
 
-Goal: the agent plays the pinned C game through the Borg's connection,
-every run replays exactly without the model, and a pilot produces its first
-claims with evidence. Stop after the pilot report (T10). Phase 2, the Neo
-adapter and larger runs wait for the owner.
+A **milestone** is a named set of tasks. Inside a milestone a session works
+normally: one task per branch and PR, and **it merges its own PR into `main`
+once CI is green** — no approval needed, nothing waits for the owner.
+
+**When the last task of a milestone is merged, the session stops.** It does
+not start the next milestone's work. Instead it opens the **review PR**:
+
+```sh
+gh pr create --base reviewed --head main --title "Milestone N review: <what it delivers>"
+```
+
+- `reviewed` is a long-lived branch that stands at the last reviewed state of
+  `main`. So the review PR's diff is **exactly everything delivered since the
+  previous milestone**, with every task's commits in it.
+- Its body lists the tasks in the milestone, what each one verified, what was
+  not checked, and the open questions. The prompt a reviewer needs goes in the
+  body or in a comment.
+- The owner's reviewer — a model of another family, or the owner — goes
+  through that PR and posts findings on it. Findings that span tasks may also
+  be gathered in an issue; milestone 1's are in
+  [#7](https://github.com/diegoami/borg-agent/issues/7).
+- The **owner merges the review PR**, which advances `reviewed`. That is the
+  only merge a session never makes (RULES 1).
+- A session then turns the findings into a task of its own, as T12 does for
+  milestone 1, and the next milestone begins.
+
+| Milestone | What it delivers | Tasks | State |
+|---|---|---|---|
+| **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)); `reviewed` stands there |
+| **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12 | T03 and T13 merged; **T04, T05 and T12 left** |
+| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08 | not started |
+| **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | not started |
+| later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
+
+Milestones 1 to 4 together are the goal the requirements set for this stage:
+**the agent plays the pinned C game through the Borg's connection, every run
+replays exactly without the model, and a pilot produces its first claims with
+evidence.** Phase 2, the Neo adapter and larger runs wait for the owner.
+
+## The tasks
 
 ### Status
 
 Each task's PR updates its row. Statuses: `todo`, `in progress` (with the
 branch), `in review` (with the PR), `done` (merged).
 
-| Task | Title | Needs | Runs in a cloud session | Status |
-|---|---|---|---|---|
-| T01 | Build and play the pinned game headless | none | yes | done (#3) |
-| T02 | Schemas | none | yes | done (#5) |
-| T03 | C bridge | T01, T02 | yes | in review (#8) |
-| T04 | Recording and replay | T03 | yes | todo |
-| T05 | Executor primitives | T03 | yes | todo |
-| T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
-| T07 | Knowledge store | T02 | yes | todo |
-| T08 | Post-mortem start from a Borg run | T04 | yes | todo |
-| T09 | Model trial | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
-| T10 | Pilot | T01–T09 | with a profile whose key variables are set in the environment | todo |
-| T11 | Zoo import contract | T04 | yes | todo |
-| T12 | Milestone-1 review findings | T01, T02 | yes | todo |
-| T13 | Open the playing agent's sources (D8) | T02 | yes | in review (#9) |
+| Task | Title | Milestone | Needs | Runs in a cloud session | Status |
+|---|---|---|---|---|---|
+| T01 | Build and play the pinned game headless | 1 | none | yes | done (#3) |
+| T02 | Schemas | 1 | none | yes | done (#5) |
+| T03 | C bridge | 2 | T01, T02 | yes | done (#8) |
+| T04 | Recording and replay | 2 | T03 | yes | todo |
+| T05 | Executor primitives | 2 | T03 | yes | todo |
+| T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
+| T07 | Knowledge store | 3 | T02 | yes | todo |
+| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | todo |
+| T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
+| T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
+| T11 | Zoo import contract | 4 | T04 | yes | todo |
+| T12 | Milestone-1 review findings | 2 | T01, T02 | yes | todo |
+| T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 
 ### T01. Build and play the pinned game headless
 
@@ -334,9 +370,11 @@ Not in this task, because they are the owner's: which profile
 `default_profile` should name, and whether the OpenRouter reviewer is the free
 variant or the paid one (review finding 8).
 
-## Later milestones (not started)
+## After milestone 4 (not started)
 
 - Neo Angband adapter (R1.5).
 - Mode C probes at scale, and repeat runs to measure how much the agent
   varies.
 - Phase 2, the Borg archaeologist, and phase 3, the reconciler.
+
+Each of these becomes a milestone of its own, reviewed the same way.

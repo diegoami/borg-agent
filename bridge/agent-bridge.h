@@ -4,7 +4,7 @@
  * src/borg_agent/build.py). It adds a connection and changes no rule of the
  * game and no decision of the Borg: with the agent mode off, every function
  * here returns at once and play is byte-identical to the unpatched build
- * (RULES 8).
+ * (RULES 9).
  *
  * Same licensing as the files it is built with; never part of the ordinary
  * product.

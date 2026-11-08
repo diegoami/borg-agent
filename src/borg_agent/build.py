@@ -44,7 +44,7 @@ RECIPE_VERSION = 'borg-agent/observer-build@2'
 # The bridge of T03: this repository's own C, in bridge/. It is applied on top
 # of the observer, so its site is the observer's own line. With the agent mode
 # off (no BORG_AGENT_OBS and BORG_AGENT_ACT) the branch falls through to
-# borg_think and play is byte-identical to the stock Borg's (RULES 8).
+# borg_think and play is byte-identical to the stock Borg's (RULES 9).
 BRIDGE_DIR = pins.ROOT / 'bridge'
 BRIDGE_FILES = ('agent-bridge.c', 'agent-bridge.h')
 BRIDGE_INCLUDE_SITES = ('borg/borg.c',)

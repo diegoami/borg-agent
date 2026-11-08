@@ -53,7 +53,7 @@ def game_environment(**extra):
     """The environment the game process gets: nothing of ours but the game's own.
 
     A model key in this session's environment has no business in a child that
-    never calls a model, nor in the terminal log it writes (RULES 15).
+    never calls a model, nor in the terminal log it writes (RULES 16).
     """
     env = {name: os.environ[name] for name in ENVIRONMENT_ALLOWLIST if name in os.environ}
     env.update(LC_ALL='C.UTF-8', LANG='C.UTF-8')

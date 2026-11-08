@@ -5,31 +5,52 @@ work and updates "Current state".
 
 ## Current state
 
-- **Merged on 2026-11-08: #3 (T01), #4 (T06's documents), #5 (T02) and #6**
-  (bookkeeping). **T03 is in review** ([#8](https://github.com/diegoami/borg-agent/pull/8), branch `task/T03-c-bridge`).
-- **Reviews happen at milestones, not per PR** (the owner, RULES 6a). The
-  first milestone review is issue
-  [#7](https://github.com/diegoami/borg-agent/issues/7): it holds the prompt
-  and the review of `main` at `11c8303` by a model of another family, with a
-  triage table. Its thirteen findings are either fixed in T03's PR or on the
-  plan as **T12**; two are the owner's to decide.
-- **T13 is in review** ([#9](https://github.com/diegoami/borg-agent/pull/9), branch `task/T13-open-sources`, stacked on
-  #8): decision **D8**, the playing agent's sources are open.
-- **Done:** T01, T02 and T03. T06's documents are in, but T06 itself is still
-  `todo`: the loader for `models.yaml`, the three minds and the prompt pack.
-- The next tasks are **T04** (recording and replay, needs T03), **T05**
-  (executor primitives, needs T03) and **T07** (knowledge store, needs
-  nothing); **T12** carries the review findings.
+- **Milestone 2 is in progress.** PLAN.md's milestone table is the map:
+  milestone 1 (foundation) is **reviewed**, milestone 2 (the connection) has
+  T03 and T13 merged and **T04, T05 and T12 left**, milestones 3 and 4 have
+  not started.
+- **How reviews work** (RULES 7, the owner on 2026-11-08): inside a milestone
+  a session merges its own task PRs as soon as CI is green, with no approval.
+  When the milestone's last task is merged it **stops** and opens the review
+  PR, `gh pr create --base reviewed --head main`. The `reviewed` branch stands
+  at the last reviewed state of `main` — today `11c8303`, milestone 1 — so
+  that PR's diff is exactly the milestone's work. The owner merges it, which
+  advances `reviewed`.
+- Merged so far: #3 (T01), #4 (T06's documents, D7), #5 (T02), #6, #8 (T03,
+  the bridge), #9 (T13, D8).
+- Milestone 1's review is issue
+  [#7](https://github.com/diegoami/borg-agent/issues/7), with the prompt, the
+  review itself and a triage table. Six of its findings are fixed, two partly;
+  the rest are **T12**, in milestone 2.
 - Open owner questions:
   - which models do which job (T09 measures the `trial:` candidates, then
     decision D6);
-  - which profile `default_profile` should name — it is `alibaba`, which the
-    owner's own notes call not recommended and nearly exhausted (review
-    finding 8);
   - whether the OpenRouter reviewer is `nvidia/nemotron-3-ultra-550b-a55b` or
-    the `:free` variant (review finding 8);
+    the `:free` variant — **the owner will decide later**;
   - whether `claim@1` should carry `superseded` as a status as well as the
     `superseded_by` field.
+- Settled on 2026-11-08: `default_profile: alibaba` **stays**. The owner's
+  general notes about that provider (not recommended, not monitored) do not
+  apply here; decision D7 makes the profile the only model rule in this
+  repository.
+
+## 2026-11-08: the milestone process
+
+Not a plan task; the owner's process, written down.
+
+- **RULES 1** now says a session merges its own task PRs once CI is green.
+- **RULES 7** says reviews happen at milestones: PLAN.md's table says which
+  tasks make up each one, a session stops when the last of them is merged,
+  and the review PR is `main` into `reviewed`.
+- The **`reviewed`** branch was created at `11c8303`, the commit milestone 1
+  was reviewed at. Never commit to it; it moves only when the owner merges a
+  review PR.
+- PLAN.md gained the milestone table and a `Milestone` column in the status
+  table; `tests/test_repository.py` checks that every task belongs to a
+  milestone, that no task needs work from a later one, and that the process
+  is written down.
+- AGENTS.md's "Choosing the work" now says: work only inside the milestone in
+  progress, merge your own PRs, and stop at the milestone's end.
 
 ## 2026-11-08: T13, the playing agent's sources are open (D8)
 
@@ -98,7 +119,7 @@ What exists now:
 decisions; both reproduced byte-identical action streams and traces on a
 second run. T01's gate was rerun on the bridge build and still gives seed 7's
 trace `2242a3f5…`, which is the evidence that the bridge changes no play
-(RULES 8).
+(RULES 9).
 
 Facts the next sessions will need:
 - **The Borg's own trackers are stale under the agent.** `borg_grids`,
@@ -304,7 +325,7 @@ Environment, on the owner's machine:
   gate). CI runs both.
 
 Left for the owner:
-- a review by another model family (RULES 12, AGENTS.md): T01's PR needs
+- a review by another model family (RULES 13, AGENTS.md): T01's PR needs
   one.
 - T09 (model trial) and T10 (pilot) still need model access, and the model
   choice per job is still open; see "Current state".

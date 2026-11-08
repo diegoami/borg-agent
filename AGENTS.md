@@ -39,23 +39,34 @@ starts.
 
 ## Choosing the work
 
-Take the first task in PLAN.md's status table whose status is `todo`, whose
-"Needs" are `done` or in an open PR you can stack on (RULES 5), and which
-runs in your kind of session. Set its row to `in progress` with your branch
-in your first commit.
-
-Reviews happen at milestones, not per PR (RULES 6a): a session opens a
-"Milestone N review" issue where a reviewer posts, and reads the findings
-from there.
+PLAN.md's milestone table says which tasks belong to the milestone in
+progress. **Work only inside that milestone.** Take the first task of it
+whose status is `todo`, whose "Needs" are `done` or in an open PR you can
+stack on (RULES 5), and which runs in your kind of session. Set its row to
+`in progress` with your branch in your first commit.
 
 At the end of a task:
 1. tests pass (`python -m pytest -q`, and the task's own checks);
 2. PLAN.md's row and docs/HANDOVER.md are updated: what was done, what was
    found, what is left, and anything the owner has to decide;
-3. a PR is open, with what changed, how it was checked, and what was not
-   checked.
+3. a PR says what changed, how it was checked and what was not checked;
+4. **you merge it yourself** once CI is green (RULES 1) — nothing waits for
+   the owner inside a milestone.
 
-Then take the next task, or stop if the stack is at three unmerged PRs.
+Then take the next task of the same milestone.
+
+**When the milestone's last task is merged, stop.** Do not start the next
+milestone. Open the review PR instead (RULES 7):
+
+```sh
+gh pr create --base reviewed --head main --title "Milestone N review: ..."
+```
+
+Its diff is everything since the last review, because `reviewed` stands at
+the last reviewed state of `main`. Say in the body what each task delivered,
+what was verified, what was not checked and what the owner has to decide, and
+give the prompt a reviewer needs. The owner merges that PR; a later session
+turns the findings into a task.
 
 ## Choosing models
 
