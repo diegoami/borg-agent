@@ -36,7 +36,7 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 |---|---|---|---|
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
-| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08; the pins T17 and T18 and the sources T19 landed here too | **in progress**: T17, T18 and T19 done, T06 next |
+| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08; the pins T17 and T18 and the sources T19 and T20 landed here too | **in progress**: T17–T20 done, T06 next |
 | **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | not started |
 | later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
@@ -72,7 +72,8 @@ branch), `in review` (with the PR), `done` (merged).
 | T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
 | T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | done (#24) |
 | T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | done (#26) |
-| T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (branch `claude/elegant-volta-r5qdic`) |
+| T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
+| T20 | The user manual as a source | 3 | T19 | yes | done (branch `claude/elegant-volta-r5qdic`) |
 
 ### T01. Build and play the pinned game headless
 
@@ -308,6 +309,23 @@ Left for later tasks, not this one:
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
 
+### T20. The user manual as a source
+
+The owner, 2026-11-09, after T19: add `docs/user-manual.md` from the same
+branch too.
+
+- The pin is renamed **`c-borg-reference`**, after the branch, since it now
+  serves two documents; nothing had read it under its first name. `sources`
+  gains `user_manual` at that pin.
+- `claim@1` gains the source `user-manual` and the basis `static:user-manual`
+  (additive; never `documented`).
+- A test reads the file at the pin and finds its command reference and its Borg
+  chapter. Its tables come from `lib/gamedata/`, which T19's test keeps equal
+  to the game pin's.
+- A spot-check of its key table (original and roguelike) against
+  `docs/command.rst` agreed, including the `autoexplore_commands` key. Nothing
+  else in its 3,700 lines was checked.
+
 ### T19. The strategy manual and the online command reference as sources
 
 The owner, 2026-11-09: include
@@ -315,7 +333,8 @@ The owner, 2026-11-09: include
 and [the online command reference](https://angband.readthedocs.io/en/latest/command.html)
 in the sources.
 
-- **The strategy manual** is a new pin, `strategy-manual`, at `471e1214`
+- **The strategy manual** is a new pin at `471e1214` (named `strategy-manual`
+  here, renamed `c-borg-reference` in T20)
   (the branch's head that day), and a `strategy_manual` entry in `pins.json`'s
   `sources`. The branch is angband/angband `e473720` (our `original` pin) plus
   three documentation commits, and its `lib/gamedata/` is byte-identical to the

@@ -136,7 +136,8 @@
             "static:borg-spec",
             "static:deaths",
             "static:issue",
-            "static:strategy-manual"
+            "static:strategy-manual",
+            "static:user-manual"
           ],
           "description": "How the claim was arrived at. A 'static:*' basis means it was read in a source rather than seen in play; any phase may use one (decision D8), and the distinction is what phase 3 needs. 'quantified' means counted trials."
         },
@@ -353,7 +354,8 @@
           "deaths",
           "issue",
           "zoo-results",
-          "strategy-manual"
+          "strategy-manual",
+          "user-manual"
         ]
       }
     },
