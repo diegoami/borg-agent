@@ -74,6 +74,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | done (#26) |
 | T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
+| T21 | The finished strategy manual as a source | 3 | T19 | yes | in progress (task/T21-c-manual) |
 
 ### T01. Build and play the pinned game headless
 
@@ -308,6 +309,36 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T21. The finished strategy manual as a source
+
+The owner, 2026-11-09:
+[`docs/c-manual/README.md`](https://github.com/diegoami/neo-angband-tracker/blob/master/docs/c-manual/README.md).
+
+It turns out to be the **finished version of what T19 added**. T19's source
+was `docs/strategy/` on the `c-borg-reference` branch: an index, six
+appendices and eight chapters that did not exist. That directory is gone from
+master, and `docs/c-manual/` is the same work completed — seventeen chapters
+(00 to 16), ten appendices generated from `lib/gamedata/`, and a copy of the
+official user manual. About 940 KB of chapters.
+
+So this task **repoints** `sources.strategy_manual` rather than adding a
+thirteenth source: one document, at its finished home. The `borg-spec` pin
+moves from `eefc5500` to `777eea1d` to reach it, which is safe because the
+specification and the Tunable Borg Plan are **byte-identical at both
+commits** — a test asserts that, since one pin now serves three documents.
+The pin keeps its name for the sake of what already cites it.
+
+Chapter 15, "notes for the borg", is the part this repository will argue with
+most: a machine-oriented distillation with rule ids, conditions, thresholds,
+sources and confidence. It says of itself that its rules are "a starting
+policy to be measured, not truths" and its constants tunables — which is
+exactly how a claim read in it enters the store: `static:strategy-manual`,
+status `hypothesis`, never `documented`. The manual and the claim lifecycle
+agree about their own standing, which is the most useful thing about it.
+
+Its copy of the official user manual is **not** a separate source: the game's
+own manual at the game pin is the authority.
 
 ### T20. The user manual as a source
 

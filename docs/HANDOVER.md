@@ -86,7 +86,7 @@ Three manual-like texts, and they are not equal:
 |---|---|---|
 | the game's manual | `docs/*.rst` and `lib/help/` at the game pin | the game's own words; **required** reading, and the only basis a `documented` claim may rest on |
 | the user manual | `docs/user-manual.md` at the `c-borg-reference` pin, 3,740 lines | written by a model, with tables generated from `lib/gamedata/`. Advice to test, not fact |
-| the strategy manual | `docs/strategy/` at the same pin: a README, six generated appendices (A1-A6) and the generator | the same — a model wrote the prose. Its README links to **eight chapters that do not exist** (`01-mechanics.md` … `08-phase-strategy.md`, fourteen dead links) |
+| the strategy manual | `docs/c-manual/` at the **`borg-spec`** pin (T21, 2026-11-09): seventeen chapters, ten generated appendices, ~940 KB | a model wrote the prose, and chapter 15 says so of itself: "a starting policy to be measured, not truths". Until T21 this source was the half-built `docs/strategy/` on the `c-borg-reference` branch, whose README linked to eight chapters that did not exist; that directory is gone from master |
 
 Verified on 2026-11-09, so nobody need re-derive it:
 - `lib/gamedata/` is **byte-identical** across the `c-borg-reference`,
@@ -134,6 +134,42 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T21, the strategy manual at its finished home
+
+Branch `task/T21-c-manual`, PR
+[#37](https://github.com/diegoami/borg-agent/pull/37). The owner asked for
+`docs/c-manual/README.md` on neo-angband-tracker's master.
+
+It is the **finished version of the source T19 added two tasks earlier**.
+T19's `docs/strategy/` on the `c-borg-reference` branch was an index, six
+appendices and eight chapters that did not exist; `docs/c-manual/` is that work
+completed — seventeen chapters, ten appendices, about 940 KB — and
+`docs/strategy/` is gone from master. So this task **repoints**
+`sources.strategy_manual` instead of adding a source: one document, at its
+finished home.
+
+Facts the next sessions will need:
+- **The `borg-spec` pin moved** from `eefc5500` to `777eea1d` to reach it. That
+  is safe because the specification and the Tunable Borg Plan are
+  **byte-identical at both commits**, which a test now asserts — one pin
+  serves three documents, and that is only honest while the other two have not
+  changed. If the pin moves again, check that test first.
+- The pin is still called `borg-spec` although it now serves the manual too.
+  Renaming it would touch `sources`, the docs and the tests for no gain.
+- **Chapter 15, "notes for the borg"** (44 KB), is the part this repository
+  will argue with most: rule ids, conditions, thresholds, sources, confidence,
+  and the inputs each rule needs, classified by whether a human player could
+  know them. It says of itself that its rules are "a starting policy to be
+  measured, not truths" and its constants tunables — which is exactly the
+  status a claim read in it gets (`static:strategy-manual`, `hypothesis`,
+  never `documented`). It is the natural first thing for T09's consolidators
+  to disagree with, and the natural source of mode C probe questions.
+- Its `user-manual/` copy of the official manual is **not** a source: the
+  game's own manual at the game pin is the authority.
+- A test that described the superseded source was rewritten rather than
+  deleted: the `lib/gamedata` identity check it carried still matters, because
+  T20's user manual was extracted from that data.
 
 ## 2026-11-09: T07, the knowledge store and mode D
 

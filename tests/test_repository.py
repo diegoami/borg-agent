@@ -147,24 +147,26 @@ def test_each_pin_says_which_milestone_it_is():
         assert re.search(r'milestone \d+', data['pins'][name]['role']), name
 
 
-def test_the_strategy_manual_is_pinned_and_readable():
-    """The owner's addition of 2026-11-09: docs/strategy on c-borg-reference."""
+def test_the_user_manual_rests_on_the_same_game_data():
+    """The user manual's tables were extracted from `lib/gamedata/`, so they
+    describe the game we play only while that data is the same.
+
+    (This check was written for `docs/strategy/` on the same pin. That source
+    moved to the finished manual at the `borg-spec` pin on 2026-11-09; the
+    data comparison is still worth keeping, because T20's user manual is still
+    read here.)
+    """
     from borg_agent import pins
 
     data = json.loads((ROOT / 'pins.json').read_text())
-    assert data['sources']['strategy_manual'] == {'pin': 'c-borg-reference',
-                                                   'paths': ['docs/strategy/']}
+    assert data['sources']['user_manual'] == {'pin': 'c-borg-reference',
+                                              'paths': ['docs/user-manual.md']}
     commit = pins.pin('c-borg-reference')['commit']
-    listing = pins.git('c-borg-reference', 'ls-tree', '--name-only',
-                       commit + ':docs/strategy').decode().split()
-    for appendix in ('A1-monster-compendium.md', 'A2-uniques.md', 'A3-monster-spells.md',
-                     'A4-artifacts.md', 'A5-ego-items.md', 'A6-objects.md', 'README.md'):
-        assert appendix in listing, appendix
-    # The appendices are generated from lib/gamedata, so they describe the game
-    # we play only while that data is the same. Compare it with the game pin.
+
     def gamedata(name, at):
         rows = pins.git(name, 'ls-tree', at + ':lib/gamedata').decode().splitlines()
         return {row.split('\t')[1]: row.split()[2] for row in rows}
+
     assert gamedata('c-borg-reference', commit) == gamedata(
         'better-borg-c', pins.pin('better-borg-c')['commit'])
 
@@ -195,3 +197,38 @@ def test_the_user_manual_is_pinned_and_readable():
         assert heading in text, heading
     # Its tables come from lib/gamedata, so it describes the game we play only
     # while the test above finds that data equal to the game pin's.
+
+
+def test_the_strategy_manual_is_the_finished_one():
+    """The owner's source of 2026-11-09: docs/c-manual, not the old index."""
+    from borg_agent import pins
+
+    data = json.loads((ROOT / 'pins.json').read_text())
+    source = data['sources']['strategy_manual']
+    assert source['pin'] == 'borg-spec' and source['paths'] == ['docs/c-manual/']
+    commit = data['pins']['borg-spec']['commit']
+    entries = pins.git('borg-spec', 'ls-tree', '--name-only',
+                       f'{commit}:docs/c-manual').decode().split()
+    chapters = sorted(name for name in entries if re.fullmatch(r'\d\d-.*\.md', name))
+    assert len(chapters) >= 17, chapters
+    # The chapters the old copy's README linked to and did not have.
+    assert chapters[0].startswith('00-') and any(c.startswith('15-') for c in chapters)
+    # Chapter 15 is the one written for a borg, and it says what it is.
+    borg = pins.show('borg-spec', 'docs/c-manual/15-notes-for-the-borg.md', commit).decode()
+    assert 'starting policy to be measured' in borg
+    appendices = pins.git('borg-spec', 'ls-tree', '--name-only',
+                          f'{commit}:docs/c-manual/appendices').decode().split()
+    assert len(appendices) >= 10, appendices
+
+
+def test_moving_the_tracker_pin_did_not_move_the_specification():
+    """One pin serves the spec and the manual, which is only honest if the
+    spec is the same document at the new commit as at the old one."""
+    from borg_agent import pins
+
+    commit = json.loads((ROOT / 'pins.json').read_text())['pins']['borg-spec']['commit']
+    PREVIOUS = 'eefc55000dd5d5f43d8f077f6543b4594807ce08'
+    for path in ('docs/c-borg/BORG_SPEC.md', 'docs/c-borg/TUNABLE-BORG-PLAN.md'):
+        now = pins.git('borg-spec', 'rev-parse', f'{commit}:{path}').decode().strip()
+        before = pins.git('borg-spec', 'rev-parse', f'{PREVIOUS}:{path}').decode().strip()
+        assert now == before, path

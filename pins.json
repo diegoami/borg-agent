@@ -25,9 +25,9 @@
     },
     "borg-spec": {
       "repository": "diegoami/neo-angband-tracker",
-      "commit": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
+      "commit": "777eea1d9bd6c4094e87fff23af3984dd23f7edb",
       "path": "docs/c-borg/BORG_SPEC.md",
-      "role": "The Borg specification and the Tunable Borg Plan: what the remake is meant to be. A source for the playing agent (docs/SOURCES.md, decision D8) and for phases 2 and 3."
+      "role": "diegoami/neo-angband-tracker at master. Three documents are read here: the Borg specification (docs/c-borg/BORG_SPEC.md) and the Tunable Borg Plan, which are byte-identical at the previous pin eefc5500, and docs/c-manual/, the strategy manual - 17 chapters, ten appendices generated from lib/gamedata, and a copy of the official user manual. Chapter 15, notes-for-the-borg, is a machine-oriented distillation with rule ids, thresholds, sources and confidence, and says of itself that its rules are a starting policy to be measured, not truths. The pin is still called borg-spec for the sake of what already cites it."
     },
     "borg-rs": {
       "repository": "diegoami/borg-rs",
@@ -122,10 +122,11 @@
       ]
     },
     "strategy_manual": {
-      "pin": "c-borg-reference",
+      "pin": "borg-spec",
       "paths": [
-        "docs/strategy/"
-      ]
+        "docs/c-manual/"
+      ],
+      "note": "The finished strategy manual, at the owner's request (2026-11-09). Until then this source was docs/strategy/ on the c-borg-reference branch: an index, six appendices and eight chapters that did not exist. That directory is gone from master; this is the same work completed. Its prose is still written by a model, so a claim read in it is `static:strategy-manual` and never `documented`."
     },
     "user_manual": {
       "pin": "c-borg-reference",
