@@ -69,7 +69,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
-| T16 | Milestone-2 re-review findings | 2 | T15 | yes | in progress (task/T16-rereview-findings) |
+| T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
 
 ### T01. Build and play the pinned game headless
 
