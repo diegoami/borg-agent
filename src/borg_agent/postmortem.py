@@ -58,7 +58,16 @@ def post_mortem(build_out, death, mind, output, before=DEFAULT_BEFORE, cap=None,
     `death` is what `death_of` returned. The run that comes back is a branch of
     that death: its record names the parent and the turn it took over at.
     """
+    if before < 0:
+        raise ValueError(f'--before is how many turns before the death to take over, '
+                         f'so it cannot be {before}')
     handover = max(1, (death['turn'] or 0) - before)
+    if death['turn'] and handover >= death['turn']:
+        raise ValueError(f'the handover at turn {handover} is not before the death at turn '
+                         f"{death['turn']}: there would be nothing for the agent to change")
+    if cap and death['turn'] and cap <= handover:
+        raise ValueError(f'the cap of {cap} turns stops the game at or before the handover at '
+                         f'turn {handover}')
     result = agent.play_with_mind(
         build_out, seed=death['seed'], cap=cap or death['turn_cap'], output=output,
         mind=mind, timeout=timeout, stall_timeout=stall_timeout,
@@ -76,7 +85,15 @@ def post_mortem(build_out, death, mind, output, before=DEFAULT_BEFORE, cap=None,
             and result['final_turn'] > death['turn']),
         'died_again': result['outcome'] == 'death',
         'same_cause': result['outcome'] == 'death' and result.get('cause') == death['cause'],
+        # Nothing about the death is answered by a run the agent never played:
+        # the flags describe the Borg's own game then, not the agent's, and
+        # they read as if the agent had tried and failed (review finding 7).
+        'agent_played': bool(result.get('decisions')),
     }
+    if not result['post_mortem']['agent_played']:
+        result['post_mortem']['warning'] = (
+            'the agent never got a decision: the game ended at or before the handover, so the '
+            'other fields describe the Borg\'s own play')
     Path(output).joinpath('result.json').write_text(
         json.dumps(result, indent=2, sort_keys=True) + '\n')
     log(json.dumps({'death': f"{death['cause']} at turn {death['turn']}",

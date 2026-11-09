@@ -16,6 +16,10 @@ caller can report them all at once. `enforce` raises instead.
 
 PROMOTED = ('supported', 'corroborated', 'refuted')
 COUNTED = ('quantified', 'intervened')
+# `documented` ranks above `hypothesis` too, and the schema only ties it to the
+# `manual` basis: a model asserting "the manual says so" is the same act R4.3
+# distrusts, so it is refused here as well (milestone 3 review, finding 10).
+MODEL_MAY_NOT_CLAIM = PROMOTED + ('documented',)
 
 
 def enforce(problems, what='document'):
@@ -72,4 +76,23 @@ def check_claim(claim):
                             f'({own_family!r}), which does not promote a claim (R4.3)')
     if status == 'corroborated' and not reviews and basis.get('kind') not in COUNTED:
         problems.append("'corroborated' names the probe or the review that moved it (R4.3)")
+
+    if produced_by.get('mind') == 'model' and status in MODEL_MAY_NOT_CLAIM:
+        if status == 'documented':
+            problems.append(
+                "a model does not give its own claim the status 'documented': the game's manual "
+                'says so or it does not, and someone else checks that (R4.3)')
+
+    # A review with no family is a probe (claim@1: `by` is the probe run's id),
+    # and nothing checked that the run existed -- so an invented probe review
+    # promoted a claim. A probe names a run this claim's own evidence carries.
+    # Mode C rests on this (PLAN.md T22).
+    runs = {evidence.get('run_id') for evidence in (claim.get('evidence') or [])
+            if evidence.get('kind') == 'run'}
+    for review in reviews:
+        if review.get('family') is None and review.get('by') != 'owner' \
+                and review.get('by') not in runs:
+            problems.append(
+                f'the probe review {review.get("by")!r} names no run in this claim\'s evidence, '
+                f'so there is nothing to check it against (R4.3)')
     return problems

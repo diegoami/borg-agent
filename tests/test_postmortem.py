@@ -83,6 +83,34 @@ def test_a_second_death_from_the_same_cause_is_noticed(tmp_path, monkeypatch):
     assert result['post_mortem']['survived_past_the_death'] is True   # by ten turns
 
 
+def test_a_handover_that_is_not_before_the_death_is_refused(tmp_path):
+    # Milestone 3 review, finding 7: with before=0 (or a cap that stops the
+    # game first) the Borg dies before the agent has a decision, and the
+    # post-mortem block read as if the agent had played and failed.
+    death = postmortem.death_of(a_death(tmp_path))
+    for arguments, message in (({'before': 0}, 'not before the death'),
+                               ({'before': -5}, 'cannot be -5'),
+                               ({'before': 200, 'cap': 1500}, 'cap of 1500')):
+        with pytest.raises(ValueError, match=message):
+            postmortem.post_mortem('build', death, mind.ScriptedMind(), tmp_path / 'branch',
+                                   log=lambda *a: None, **arguments)
+
+
+def test_a_post_mortem_the_agent_never_played_says_so(tmp_path, monkeypatch):
+    # The handover is before the death, but the game ended first anyway.
+    monkeypatch.setattr(agent, 'play_with_mind',
+                        lambda *a, **k: (Path(k['output']).mkdir(parents=True, exist_ok=True),
+                                         {'outcome': 'death', 'final_turn': 1700, 'seed': 7,
+                                          'decisions': 0, 'cause': 'a stegocentipede',
+                                          'calendar': {'utc': 'x'}})[-1])
+    death = postmortem.death_of(a_death(tmp_path))
+    result, _parent = postmortem.post_mortem('build', death, mind.ScriptedMind(),
+                                             tmp_path / 'branch', before=200,
+                                             log=lambda *a: None)
+    assert result['post_mortem']['agent_played'] is False
+    assert 'never got a decision' in result['post_mortem']['warning']
+
+
 # --- the bridge's side of it -------------------------------------------------
 
 def test_the_bridge_hands_over_at_a_turn_and_says_so():
