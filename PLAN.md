@@ -78,6 +78,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | done (#44) |
 | T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | done (#43) |
 | T24 | Birth by race and class | 4 | T22 | yes, and it needs no model | done (#45) |
+| T25 | The consolidation keeps its own call log | 4 | T07, T23 | yes | in review |
 
 ### T01. Build and play the pinned game headless
 
@@ -322,6 +323,29 @@ construction; `survived_past_the_death` still rests on sampled turns, which
 understates both sides; and a mode B prefix that outlives the wall limit is
 still classified `crash` rather than `harness_failure` — bounded, non-good, and
 left where the reviewer found it.
+
+### T25. The consolidation keeps its own call log
+
+Found while preparing T11, by running `verify` on the **first real model run**:
+it now says `verified: false`, `record_mismatch: the model calls is not what
+the record published`. Every state hash and both trace hashes agreed; the
+record published **5 calls** and the file held **7 lines**.
+
+Nothing had tampered with it. Mode D's consolidation wrote its own model calls
+into the play's `model-calls.jsonl`, after the record had published that file's
+hash and count — so a run that was consolidated could never verify again. The
+defect was always there; T23's finding 2 (compare the model call log too) is
+what made it visible, which is the argument for that finding in one line.
+
+- mode D writes `consolidate-calls.jsonl`, and `consolidation.json` carries
+  that file's count and hash, as R2.1 asks for every call;
+- a test consolidates a run and then checks the record still matches it, which
+  is the regression nobody would notice by hand.
+
+The first model run's own directory keeps its polluted log: it is evidence of
+what happened, and editing it to make a check pass is the one thing a run
+directory must never have done to it. A fresh model run replaces it as the
+example (see [records/](records/)).
 
 ### T24. Birth by race and class
 

@@ -297,7 +297,7 @@ def cmd_consolidate(args):
         args.run, choice, store=knowledge_module.Store(),
         pack=prompts.load_pack(args.pack),
         budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
-        call_log=model_mind.CallLog(Path(args.run) / 'model-calls.jsonl'),
+        call_log=model_mind.CallLog(Path(args.run) / consolidate_module.CALL_LOG),
         timeout=args.timeout)
     return 0 if result['added'] or not result['refused'] else 1
 

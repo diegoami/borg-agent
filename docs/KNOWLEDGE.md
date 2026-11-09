@@ -63,6 +63,13 @@ Everything accepted goes into the store, the views are rebuilt, and
 `consolidation.json` beside the run records what was offered, what was added,
 what was refused **and why**, the model, the pack and the tokens.
 
+Mode D writes its calls to **`consolidate-calls.jsonl`**, its own log, and
+`consolidation.json` carries that file's hash and count. It must not be the
+play's `model-calls.jsonl`: the run record publishes that file's hash, so
+appending to it afterwards makes the record disagree with the run — which is
+what `verify` reported for the first real model run (5 calls published, 7 lines
+on disk) once T23 taught it to compare that stream.
+
 ## What a prompt carries
 
 `Store.for_prompt(observation)` gives the play prompt one line per claim, best

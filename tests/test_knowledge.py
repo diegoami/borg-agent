@@ -312,6 +312,49 @@ def test_consolidation_puts_what_it_accepts_in_the_store(tmp_path):
     assert (tmp_path / 'knowledge/monster.md').exists()
 
 
+def test_consolidating_does_not_touch_the_runs_own_call_log(tmp_path):
+    """T25. The run record publishes `model-calls.jsonl`'s hash and count, so a
+    consolidation that appends its calls there makes the record disagree with
+    the run beside it -- and `verify` says the run was altered.
+
+    It was: the first real model run published 5 calls and the file held 7
+    after it was consolidated.
+    """
+    from borg_agent import agent, replay
+
+    run = a_run(tmp_path)
+    played = run / agent.MODEL_CALL_LOG
+    played.write_text(''.join(json.dumps({'decision': i, 'reply': 'walk'}) + '\n'
+                              for i in range(5)))
+    recorded = {'evidence': {'model_calls_sha256': record_sha(played)},
+                'usage': {'model_calls': 5}}
+    assert replay.check_record_against_run(recorded, run, 0) == (True, None)
+
+    result = consolidate.consolidate(
+        run, CHOICE, store=store(tmp_path), pack=prompts.load_pack('consolidate-1'),
+        call_log=knowledge_call_log(run), transport=replying(json.dumps([a_claim()])),
+        log=lambda *a: None)
+
+    # The play's log is untouched, so the record still matches the run.
+    assert replay.check_record_against_run(recorded, run, 0) == (True, None)
+    # And mode D's calls are beside it, with their own hash in its record.
+    assert (run / consolidate.CALL_LOG).exists()
+    assert result['model_calls']['count'] == 1
+    assert result['model_calls']['path'] == consolidate.CALL_LOG
+
+
+def record_sha(path):
+    from borg_agent.build import sha
+
+    return sha(path)
+
+
+def knowledge_call_log(run):
+    from borg_agent import model_mind
+
+    return model_mind.CallLog(Path(run) / consolidate.CALL_LOG)
+
+
 def test_a_claim_the_store_refuses_is_recorded_not_hidden(tmp_path):
     run = a_run(tmp_path)
     kept = store(tmp_path)
