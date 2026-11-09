@@ -237,6 +237,9 @@ class ApiMind:
         self.pack = pack or prompts.load_pack()
         self.budget = budget or Budget()
         self.call_log = call_log
+        # Either fixed text or a callable the mind asks at each decision. It
+        # has to be the second one for retrieval to mean anything: a claim's
+        # scope is about the character and where it is (review finding 5).
         self.knowledge = knowledge
         self.timeout = timeout
         if transport is None:
@@ -249,81 +252,21 @@ class ApiMind:
 
     # --- the call ----------------------------------------------------------
 
-    def act(self, observation):
-        decision = observation['decision']
-        question = self.directory / QUESTION_PATTERN.format(decision=decision)
-        answer = self.directory / ANSWER_PATTERN.format(decision=decision)
-        question.write_text(json.dumps({
-            'observation': observation,
-            'prompt': prompts.render(self.pack, observation),
-            'answer_to': str(answer),
-        }, indent=2, sort_keys=True) + '\n')
-        self.log(f'waiting for {answer}')
-        deadline = time.monotonic() + self.timeout
-        while not answer.exists():
-            if time.monotonic() >= deadline:
-                raise signals.CannotAct(f'no answer in {answer} after {self.timeout}s')
-            time.sleep(self.poll)
-        self.decisions += 1
-        return json.loads(answer.read_text())
+    def knowledge_for(self, observation):
+        """The claims this decision may use.
 
-
-class ApiMind:
-    """A model over an OpenAI-compatible chat API, from the active profile (D7)."""
-
-    name = 'api'
-    kind = 'api'
-
-    def __init__(self, choice, pack=None, budget=None, call_log=None, knowledge=None,
-                 timeout=120, environ=None, transport=None, choice_record=None,
-                 knowledge_sha256=None):
-        self.choice = choice
-        # What the loader said about this job, for the record. Passed in so the
-        # mind never re-reads the configuration behind the run's back.
-        self.choice_record = choice_record or {}
-        self.knowledge_sha256 = knowledge_sha256
-        self.pack = pack or prompts.load_pack()
-        self.budget = budget or Budget()
-        self.call_log = call_log
-        self.knowledge = knowledge
-        self.timeout = timeout
-        if transport is None:
-            choice.key(environ)              # fails here, before play, if unset
-        self.client = None if transport else ChatClient(choice, environ, timeout)
-        self.transport = transport or self.client.post
-        self.decisions = 0
-        self.parse_failures = 0
-        self.journal = []
-
-    # --- the call ----------------------------------------------------------
-
-    def _post(self, messages):
-        """One chat completion. The key is a header and never leaves this method."""
-        body = json.dumps({
-            'model': self.choice.model,
-            'messages': messages,
-            **({'reasoning_effort': self.choice.effort} if self.choice.effort else {}),
-        }).encode()
-        request = urllib.request.Request(
-            self.choice.base_url.rstrip('/') + '/chat/completions', data=body,
-            headers={'Content-Type': 'application/json',
-                     'Authorization': f'Bearer {self._key}'})
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                return json.loads(response.read().decode())
-        except urllib.error.HTTPError as error:
-            # The body may explain the refusal; it may also quote the request,
-            # so only the status and the first line are kept.
-            detail = (error.read(400).decode(errors='replace') or '').splitlines()
-            raise signals.ModelFailed(
-                f'{self.choice.provider} answered {error.code} '
-                f'({detail[0][:160] if detail else "no body"})') from None
-        except (urllib.error.URLError, TimeoutError, OSError) as error:
-            raise signals.ModelFailed(
-                f'{self.choice.provider} could not be reached: {type(error).__name__}') from None
+        Retrieval happens per decision. `cli` used to resolve it once, at mind
+        construction, with no observation at all, so the store's scope filter
+        never ran: a Mage-only, depth-20 claim rode every decision of a
+        level-1 Warrior in the town (milestone 3 review, finding 5).
+        """
+        if callable(self.knowledge):
+            return self.knowledge(observation) or None
+        return self.knowledge
 
     def act(self, observation):
-        messages = prompts.render(self.pack, observation, knowledge=self.knowledge)
+        messages = prompts.render(self.pack, observation,
+                                  knowledge=self.knowledge_for(observation))
         for attempt in range(1, TRIES + 1):
             self.budget.check()
             started = time.monotonic()

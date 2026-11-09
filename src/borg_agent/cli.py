@@ -34,15 +34,19 @@ def api_mind(args):
     from . import knowledge as knowledge_module
 
     store = knowledge_module.Store()
-    learned = None if args.no_knowledge else (store.for_prompt() or None)
-    if learned:
-        print(f'carrying {len(learned.splitlines())} claims into the prompt '
+    # Asked at every decision, with that decision's observation: the store
+    # leaves out a claim whose scope the character does not match, and that
+    # filter only runs when it is given the character (review finding 5).
+    learned = None if args.no_knowledge else (
+        lambda observation: store.for_prompt(observation) or None)
+    if learned and store.all():
+        print(f'{len(store.all())} claims in the store, retrieved per decision '
               f'(knowledge {store.sha256()[:12]})')
     return model_mind.ApiMind(
         choice, pack=pack,
         budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
         choice_record=configuration.record('play'),
-        knowledge=learned, knowledge_sha256=store.sha256() if learned else None,
+        knowledge=learned, knowledge_sha256=store.sha256() if store.all() else None,
         timeout=args.model_timeout)
 
 
