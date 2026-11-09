@@ -18,7 +18,8 @@ level and no PR open.*
   family (Kimi K3). Every finding of both rounds is answered: T12 for
   milestone 1's, T15 and T16 for milestone 2's.
 - **Milestone 3 is in progress.** T17 (the game pin to better-borg-c
-  milestone 8) and T18 (the borg-rs pin) are done. **T06 is next**: the
+  milestone 8), T18 (the borg-rs pin) and T19 (the strategy manual and the
+  online command reference as sources) are done. **T06 is next**: the
   `models.yaml` loader, the prompt pack and the three minds. Then T07 (the
   knowledge store) and T08 (the post-mortem start).
 - **What works end to end:** the pinned game builds; the stock Borg plays it
@@ -95,6 +96,33 @@ pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T19, the strategy manual and the online command reference
+
+The owner asked for two more sources: `docs/strategy/` on the
+`c-borg-reference` branch of diegoami/neo-angband-tracker, and
+<https://angband.readthedocs.io/en/latest/command.html>.
+
+- **`strategy-manual` pin** at `471e1214`, read as `docs/strategy/`: an index
+  and six generated appendices (monsters, uniques, monster spells, artifacts,
+  egos, objects). The branch is the `original` pin plus three doc commits; its
+  `lib/gamedata/` equals the game pin's, and a test compares them, so the
+  appendices stay true of the game we play. **Its README links to eight
+  chapters that do not exist**, and its prose and "ten rules" were written by a
+  model: advice to test, not facts.
+- **`claim@1`** gains source `strategy-manual` and basis
+  `static:strategy-manual`. A claim from it is never `documented`; check the
+  number against `lib/gamedata/` and add `game-source` where it matters. T06's
+  prompt pack should list it by that name.
+- **The online page** is `manual_online` in `sources`: unpinned, cited as
+  `docs/command.rst` at the `better-borg-c` pin, which is byte-identical to
+  upstream `master` (`e473720`) on this date. readthedocs is **not reachable
+  from the cloud session's network**, so the rendered page was not read here;
+  a session that needs it as a web page needs `angband.readthedocs.io` allowed.
+- Not added, though on the same branch: `docs/user-manual.md`, a single-file
+  manual (3,700 lines) a model wrote the same day. The owner may want it too.
+- The run-record examples still list the pins of before T18 (no `borg-rs`, no
+  `strategy-manual`); `scripts/refresh-examples.py` regenerates them.
 
 ## 2026-11-09: T18, the Rust remake is a pinned source
 

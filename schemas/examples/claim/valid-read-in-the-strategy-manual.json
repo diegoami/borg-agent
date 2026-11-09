@@ -1,0 +1,39 @@
+{
+  "schema": "borg-agent/claim@1",
+  "id": "fire-breath-is-a-third-of-current-hp",
+  "statement": "A fire breath does the breather's current hit points divided by 3, capped at 1600, before resistance.",
+  "area": "danger",
+  "scope": {
+    "version": "4.2.6"
+  },
+  "engine": "c-4.2.6",
+  "status": "hypothesis",
+  "basis": {
+    "kind": "static:strategy-manual",
+    "reference": "docs/strategy/A3-monster-spells.md, breath table, at neo-angband-tracker 471e1214 (c-borg-reference)"
+  },
+  "evidence": [
+    {
+      "kind": "manual",
+      "reference": "docs/strategy/A3-monster-spells.md at neo-angband-tracker 471e1214"
+    }
+  ],
+  "confidence": {
+    "rests_on": "The strategy manual's breath table, which its script generates from lib/gamedata/projection.txt.",
+    "alternatives_ruled_out": [
+      "That the manual's generator misread the data: projection.txt at the better-borg-c pin gives divisor 3 and damage-cap 1600 for FIRE."
+    ]
+  },
+  "phase": 1,
+  "sources": [
+    "strategy-manual",
+    "game-source"
+  ],
+  "created": "2026-11-09T10:10:00Z",
+  "produced_by": {
+    "mind": "model",
+    "model": "qwen3.8-max",
+    "family": "qwen",
+    "profile": "alibaba"
+  }
+}

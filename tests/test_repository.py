@@ -97,6 +97,7 @@ def test_the_agents_sources_are_pinned_and_readable():
     assert sources['manual']['required'] is True
     for name, source in sources.items():
         if name == 'note' or 'unpinned' in source:
+            assert name == 'note' or source['unpinned'], name
             continue
         assert source['pin'] in data['pins'], name
         assert source['paths'], name
@@ -144,3 +145,38 @@ def test_each_pin_says_which_milestone_it_is():
     data = json.loads((ROOT / 'pins.json').read_text())
     for name in ('better-borg-c', 'borg-rs'):
         assert re.search(r'milestone \d+', data['pins'][name]['role']), name
+
+
+def test_the_strategy_manual_is_pinned_and_readable():
+    """The owner's addition of 2026-11-09: docs/strategy on c-borg-reference."""
+    from borg_agent import pins
+
+    data = json.loads((ROOT / 'pins.json').read_text())
+    assert data['sources']['strategy_manual'] == {'pin': 'strategy-manual',
+                                                  'paths': ['docs/strategy/']}
+    commit = pins.pin('strategy-manual')['commit']
+    listing = pins.git('strategy-manual', 'ls-tree', '--name-only',
+                       commit + ':docs/strategy').decode().split()
+    for appendix in ('A1-monster-compendium.md', 'A2-uniques.md', 'A3-monster-spells.md',
+                     'A4-artifacts.md', 'A5-ego-items.md', 'A6-objects.md', 'README.md'):
+        assert appendix in listing, appendix
+    # The appendices are generated from lib/gamedata, so they describe the game
+    # we play only while that data is the same. Compare it with the game pin.
+    def gamedata(name, at):
+        rows = pins.git(name, 'ls-tree', at + ':lib/gamedata').decode().splitlines()
+        return {row.split('\t')[1]: row.split()[2] for row in rows}
+    assert gamedata('strategy-manual', commit) == gamedata(
+        'better-borg-c', pins.pin('better-borg-c')['commit'])
+
+
+def test_the_online_command_page_is_read_at_a_pin():
+    # readthedocs' "latest" moves with upstream, so the record cites the file
+    # it is built from, at a pin.
+    from borg_agent import pins
+
+    online = json.loads((ROOT / 'pins.json').read_text())['sources']['manual_online']
+    assert online['url'] == 'https://angband.readthedocs.io/en/latest/command.html'
+    pinned = online['pinned_as']
+    assert pinned['path'] in pins.pins()['manual']['paths']
+    assert pinned['pin'] == pins.pins()['manual']['pin']
+    assert b'Command Descriptions' in pins.show(pinned['pin'], pinned['path'])
