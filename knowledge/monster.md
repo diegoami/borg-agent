@@ -2,6 +2,27 @@
 
 *Generated from `claims.jsonl` by `python -m borg_agent knowledge views`. Do not edit: a claim changes by being superseded, never by being rewritten.*
 
+## A level-1 Human Warrior who melees an adjacent floating eye at depth 1 usually lives.
+
+- **id** `floating-eye-melee-probe` · **status** supported
+- **basis** quantified, 10 of 10 — probe floating-eye-melee, seeds [11, 12, 13, 14, 15, 16, 17, 18, 19, 20], cap 1200, an intervention (D4)
+- **scope** class Warrior, race Human, version 4.2.6, character level 1–1, depth 1–1
+- **engine** c-4.2.6 · **phase** 1 · **sources** own-play
+- **rests on** 10 of 10 counted trials of probe floating-eye-melee, the control arm 9 of 10
+- **ruled out**: A different situation: every trial checked that the situation the probe asked for was there before the action was tried.; NOT ruled out: the control arm ended the situation too (the monster died in 9 of its 10 trials), so these counts do not separate the action from simply being there.
+- **evidence**
+  - run `action-seed11`, seed 11, turn 109 — agent_stopped
+  - run `action-seed12`, seed 12, turn 112 — agent_stopped
+  - run `action-seed13`, seed 13, turn 112 — agent_stopped
+  - run `action-seed14`, seed 14, turn 167 — agent_stopped
+  - run `action-seed15`, seed 15, turn 109 — agent_stopped
+  - run `action-seed16`, seed 16, turn 109 — agent_stopped
+  - run `action-seed17`, seed 17, turn 109 — agent_stopped
+  - run `action-seed18`, seed 18, turn 109 — agent_stopped
+  - run `action-seed19`, seed 19, turn 112 — agent_stopped
+  - run `action-seed20`, seed 20, turn 109 — agent_stopped
+- **review** by action-seed11 (a probe): agree — counted by the probe itself: 10 of 10
+
 ## A Human Warrior can kill a giant yellow centipede in melee on dungeon depth 1.
 
 - **id** `giant-yellow-centipede-melee-kill-depth-1` · **status** hypothesis

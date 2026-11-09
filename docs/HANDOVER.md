@@ -6,7 +6,7 @@ work and updates "Current state".
 ## Current state
 
 *Written on 2026-11-09, with milestone 3 reviewed and merged, its ten findings
-closed in T23, and T22 (mode C) the next task.*
+closed in T23, and **mode C running**: the first probe has an answer.*
 
 ### Where the work stands
 
@@ -37,6 +37,9 @@ closed in T23, and T22 (mode C) the next task.*
   `verify` (which also checks the record against the run), branched at a turn,
   and read with `view`, `dump` and `explain`. 347 fast tests and 15 slow gates,
   both in CI.
+- **Mode C works, and the knowledge base has its first counted claim** (T22):
+  the floating-eye question is answered — 10 of 10 trials survived meleeing it
+  — with the claim at `supported`, set by the harness and not by any model.
 - **The records of the two real runs are in git**, under
   [records/](../records/): the first model play and the first post-mortem. The
   review could not check either, because `runs/` is git-ignored and R5's own
@@ -174,6 +177,56 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T22, mode C -- the first probe
+
+Branch `task/T22-mode-c-probes`. `src/borg_agent/probe.py`,
+`schemas/probe@1.json`, `probes/floating-eye-melee.yaml`,
+`python -m borg_agent probe`, and [docs/PROBE.md](PROBE.md).
+
+**The experiment the plan asked for came out the cheap way.** T22 was written
+expecting the bridge to push `CMD_WIZ_SUMMON_NAMED` with `cmd_set_arg_number`,
+which would have been new C beside the Borg. It is not needed: the game's debug
+commands answer to **keys**, through the escape hatch R1.2 already has. What
+the session learned at the keyboard, so nobody has to learn it again:
+
+- the sequence is `^A` + the command's letter from `cmd_debug*` in
+  `src/ui-game.c`, then the game's questions: *"Are you sure you want to use
+  the debug commands?"* (once per character, and it sets `NOSCORE_WIZARD` --
+  the intervention marker is the game's own), then the command's own prompt;
+- **a step cannot be one key string.** The game asks those questions in
+  between, and a key queued behind a question is eaten by it: `^A n Floating
+  eye\n` sent at once loses the name. One keypress per decision, driven by what
+  the screen shows;
+- a level jump then asks *"Choose cave profile? [y/n]"*. The probe answers
+  **no** to every question the setup did not ask for, because a probe that
+  chose a cave profile would be arranging the dungeon as well as the monster;
+- the bridge needed **one** change, and it is the kind that only shows up in
+  use: `borg_keypresses` passes a signed `char` to a keycode, so a byte above
+  0x7f arrives as `0xffffff9c`, and this game's Enter is the keycode
+  `KC_ENTER` (0x9c), not `'\r'`. Raw keys now send unsigned bytes and read a
+  newline as Enter. Without it **no text prompt can be answered at all**.
+
+The first probe's answer, and the honest part of it:
+
+| Arm | Survived | The eye died | Deaths |
+|---|---|---|---|
+| melee it | **10 of 10** | 10 | 0 |
+| explore on | 9 of 10 | 9 | 1, at turn 1,069 |
+
+- **The eye dies in one or two blows** -- every action trial ended between turn
+  109 and 167 -- so the paralysis it is feared for never gets a chance against
+  a Warrior. The zoo's 4-of-13 figure is Neo, through Mandos, and other
+  classes; this is the C side, one class, at this pin.
+- **The control did not isolate the action.** `explore_floor` walks into a
+  monster in its path, and walking into a monster attacks it, so the eye died
+  in 9 of the 10 control trials too. The result carries
+  `control_isolated_the_action: false` and the claim says **NOT ruled out** in
+  as many words. A control that really walks away needs a primitive that
+  avoids monsters, which the executor does not have -- worth knowing before
+  T09 leans on these arms.
+- **Every trial is the harness's assigned birth**, a Human Warrior (R1.6). A
+  probe about a Mage waits for a birth a probe can choose.
 
 ## 2026-11-09: T23, the milestone 3 review findings
 

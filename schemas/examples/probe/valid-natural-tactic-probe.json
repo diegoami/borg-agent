@@ -1,0 +1,44 @@
+{
+  "action": {
+    "primitive": {
+      "name": "take_stairs"
+    }
+  },
+  "area": "tactic",
+  "control": {
+    "primitive": {
+      "name": "rest_until_healed"
+    }
+  },
+  "id": "stairs-when-hurt",
+  "notes": [
+    "A natural setup builds nothing: the Borg plays to the turn named and the situation is whatever the game gives."
+  ],
+  "question": "Does taking the stairs when badly hurt at depth 2 end better than resting?",
+  "schema": "borg-agent/probe@1",
+  "scope": {
+    "class": "Warrior",
+    "depth": {
+      "max": 2,
+      "min": 2
+    },
+    "race": "Human",
+    "version": "4.2.6"
+  },
+  "setup": {
+    "expect": {
+      "depth": 2
+    },
+    "kind": "natural",
+    "take_over_at": 2000
+  },
+  "success": "survived",
+  "trials": {
+    "cap": 4000,
+    "seeds": [
+      31,
+      32,
+      33
+    ]
+  }
+}

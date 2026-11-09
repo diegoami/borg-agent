@@ -75,8 +75,8 @@ branch), `in review` (with the PR), `done` (merged).
 | T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
 | T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
-| T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | todo |
-| T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | in review (#43) |
+| T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | in review |
+| T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | done (#43) |
 
 ### T01. Build and play the pinned game headless
 
@@ -400,6 +400,25 @@ Done when the floating-eye probe runs end to end: every trial replays with
 `verify`, the result is a claim with `quantified N of M` and `intervened` whose
 status the **harness** set, a `setup_failed` trial is counted apart, and a
 second probe file with a different question needs no new Python.
+
+**What it took, and what the first probe showed** (2026-11-09). The experiment
+the task asked for settled the setup mechanism: **no new C beside the Borg is
+needed.** The debug commands answer to keys through the escape hatch of R1.2 —
+`^A j`, the confirmation, `1` and Enter, then `^A n` and the monster's name —
+so a step is a *list of keypresses*, because the game asks questions in between
+and a key queued behind a question is eaten by it. The bridge needed one
+change: raw keys now carry a byte above 0x7f and read a newline as the game's
+`KC_ENTER` (0x9c), without which a text prompt cannot be answered at all.
+
+The first probe answers its question and says what it does not answer:
+**10 of 10** survived meleeing the eye, against 9 of 10 exploring on, with no
+setup failures. The eye dies in one or two blows, so the paralysis it is feared
+for never gets a chance against *this class* — and the control arm **did not
+isolate the action**, because `explore_floor` walks into a monster in its path,
+so the eye died in 9 of its 10 trials as well. The claim records that as **NOT
+ruled out** rather than claiming a comparison it did not earn. Every trial is
+the harness's assigned birth, a Human Warrior, so the scope says so and means
+it. See [docs/PROBE.md](docs/PROBE.md).
 
 ### T09. Model trial
 

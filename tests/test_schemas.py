@@ -1,4 +1,4 @@
-"""The four schemas of T02, and every example beside them.
+"""The four schemas of T02, the probe of T22, and every example beside them.
 
 Each schema has valid examples that must validate and invalid ones that must
 not. The invalid examples carry the rule each breaks in their file name, so a
@@ -14,7 +14,7 @@ from jsonschema import Draft202012Validator, FormatChecker
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / 'schemas'
 EXAMPLES = SCHEMAS / 'examples'
-NAMES = ('observation', 'action', 'run-record', 'claim')
+NAMES = ('observation', 'action', 'run-record', 'claim', 'probe')
 # The zoo's outcome classes (docs/DESIGN.md at the borg-zoo pin), plus this
 # repository's own, which R5 names.
 ZOO_OUTCOMES = {'death', 'completion', 'turn_cap', 'stalled', 'wall_timeout', 'crash',

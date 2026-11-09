@@ -148,5 +148,7 @@ is holding it, rather than hanging.
 | `bridge/` | the C patch applied to the pinned game tree (T03); see [docs/BRIDGE.md](docs/BRIDGE.md) |
 | `schemas/` | JSON Schemas (from T02) |
 | `knowledge/` | claims, JSON Lines and their Markdown views (from T07) |
+| `probes/` | the probes, one file each, and their results (from T22); see [docs/PROBE.md](docs/PROBE.md) |
+| `records/` | the run records worth citing, which R5 keeps in git |
 | `docs/reports/` | pilot and experiment reports |
 | `tests/` | tests; `test_repository.py` keeps pins, plan and docs consistent |

@@ -302,6 +302,36 @@ def cmd_consolidate(args):
     return 0 if result['added'] or not result['refused'] else 1
 
 
+def cmd_probe(args):
+    """Mode C: answer one question in counted trials (R3, T22)."""
+    from . import knowledge as knowledge_module, probe as probe_module
+
+    definition = probe_module.load(args.probe)
+    out = build_module.prepare()
+    output = Path(args.output) if args.output else run_dir(f'probe-{definition["id"]}')
+    print(f'{definition["id"]}: {definition["question"]}')
+    print(f'{len(definition["trials"]["seeds"])} seeds x {len(probe_module.ARMS)} arms, '
+          f'cap {definition["trials"]["cap"]}'
+          + (', an intervention (D4)' if definition['setup']['kind'] == 'intervened' else ''))
+    result = probe_module.run(out, definition, output, timeout=args.timeout,
+                              stall_timeout=args.stall_timeout, lock=not args.no_lock)
+    results = probe_module.PROBES / probe_module.RESULTS
+    results.mkdir(parents=True, exist_ok=True)
+    kept = results / f'{definition["id"]}.json'
+    kept.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+    print(kept)
+    if args.claim:
+        claim = probe_module.claim_from(result, definition)
+        # The harness writes a probe's claim, so `by_model` is false: this is
+        # the one promoter of a claim that is not a model (R4.3).
+        store = knowledge_module.Store()
+        store.add(claim)
+        store.render_views()
+        print(f'claim {claim["id"]}: {claim["status"]}, '
+              f'{claim["basis"]["successes"]} of {claim["basis"]["trials"]}')
+    return 0
+
+
 def cmd_post_mortem(args):
     """Mode B: hand over to a mind shortly before a recorded death (R3)."""
     from . import postmortem
@@ -440,6 +470,17 @@ def main(argv=None):
             reader.add_argument('--window', type=int, default=3,
                                 help='how many decisions either side to show')
         reader.set_defaults(func=handler)
+
+    prober = sub.add_parser('probe', help='answer one question in counted trials (mode C)')
+    prober.add_argument('--probe', required=True,
+                        help='the probe file, or its name under probes/')
+    prober.add_argument('--output', type=Path)
+    prober.add_argument('--claim', action='store_true',
+                        help='write the claim the result makes into knowledge/')
+    prober.add_argument('--timeout', type=int, default=900)
+    prober.add_argument('--stall-timeout', type=int, default=120)
+    prober.add_argument('--no-lock', action='store_true')
+    prober.set_defaults(func=cmd_probe)
 
     mortem = sub.add_parser('post-mortem',
                             help="take over shortly before the Borg's death (mode B)")

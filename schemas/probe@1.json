@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/diegoami/borg-agent/schemas/probe@1.json",
+  "title": "Probe (borg-agent/probe@1)",
+  "description": "One question, answered in counted trials (R3, mode C). A probe is data: this document says what is asked, how the situation is made, which action is tried against which control, which seeds are declared before it runs, and what counts as a success. Running it plays one trial per seed per arm; the result is 'quantified N of M', written by the harness and never by a model (R4.3). A setup built with the game's debug commands is an intervention, marked as such and kept out of survival figures (decision D4).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "question",
+    "area",
+    "scope",
+    "setup",
+    "action",
+    "control",
+    "trials",
+    "success"
+  ],
+  "properties": {
+    "schema": {
+      "const": "borg-agent/probe@1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "The probe's name, and the id its claim and its result are filed under. A probe file edited after it has a result is a new probe with a new id."
+    },
+    "question": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 240,
+      "pattern": "^[^\\n\\r]+$",
+      "description": "The one question, in a line. 'Can a level-1 Warrior melee a floating eye and live?'"
+    },
+    "statement": {
+      "type": "string",
+      "pattern": "^[^\\n\\r]+$",
+      "description": "The claim's statement, if the answer should be phrased differently from the question. The question is used when it is absent."
+    },
+    "area": {
+      "type": "string",
+      "enum": [
+        "monster",
+        "item",
+        "spell",
+        "class",
+        "race",
+        "town",
+        "dungeon",
+        "mechanic",
+        "danger",
+        "tactic",
+        "readiness"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "description": "What the answer is about, in the claim's own vocabulary (R4): the class, race, character level, depth, gear and version it holds for.",
+      "properties": {
+        "class": {
+          "type": "string"
+        },
+        "race": {
+          "type": "string"
+        },
+        "character_level": {
+          "$ref": "#/$defs/window"
+        },
+        "depth": {
+          "$ref": "#/$defs/window"
+        },
+        "gear": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "description": "How the situation comes about.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "natural",
+            "intervened"
+          ],
+          "description": "'natural': found in deterministic play, so the trial counts in survival figures. 'intervened': built with the game's own debug commands, marked as an intervention and kept out of them (D4)."
+        },
+        "take_over_at": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "The game turn the agent takes over at, with the Borg playing the prefix (BORG_AGENT_FROM_TURN, as mode B does). Absent means from birth."
+        },
+        "steps": {
+          "type": "array",
+          "description": "The debug commands that build the situation, in order, each typed as a person types it: the debug prefix, the command's own letter from the game's debug table, and the answer to its prompt. Only for an intervened setup.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "step"
+            ],
+            "properties": {
+              "step": {
+                "type": "string",
+                "enum": [
+                  "summon",
+                  "depth",
+                  "cure_all",
+                  "detect_monsters"
+                ]
+              },
+              "monster": {
+                "type": "string",
+                "description": "For 'summon': the monster's name as lib/gamedata/monster.txt spells it."
+              },
+              "depth": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 127,
+                "description": "For 'depth': the level to jump to."
+              }
+            }
+          }
+        },
+        "expect": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "What the game must show before the action is tried. A trial that never sees it is `setup_failed` and counted apart -- never as a trial the character survived.",
+          "properties": {
+            "monster_adjacent": {
+              "type": "string",
+              "description": "A monster of this name, next to the player."
+            },
+            "depth": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "action": {
+      "$ref": "#/$defs/arm",
+      "description": "The action under test, tried every decision once the situation is there."
+    },
+    "control": {
+      "$ref": "#/$defs/arm",
+      "description": "The other thing the character could do, played on the same seeds. Without it a count says how often the character lived, not whether the action mattered."
+    },
+    "trials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seeds",
+        "cap"
+      ],
+      "properties": {
+        "seeds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4294967295
+          },
+          "description": "Declared here before the probe runs, and named in the result, so a probe cannot be run again until it gives the answer someone wanted."
+        },
+        "cap": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Game turns per trial."
+        }
+      }
+    },
+    "success": {
+      "type": "string",
+      "enum": [
+        "survived",
+        "killed_it_and_lived"
+      ],
+      "description": "The predicate, mechanical and decided from the run: 'survived' is any end but death; 'killed_it_and_lived' also asks that the monster is gone from the last observation."
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Anything a reader of the result needs to know about how the question was put."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "setup": {
+            "properties": {
+              "kind": {
+                "const": "intervened"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "required": [
+          "setup"
+        ]
+      },
+      "then": {
+        "properties": {
+          "setup": {
+            "required": [
+              "steps"
+            ]
+          }
+        },
+        "description": "An intervened setup says what it does to the game."
+      }
+    }
+  ],
+  "$defs": {
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min": {
+          "type": "integer"
+        },
+        "max": {
+          "type": "integer"
+        }
+      }
+    },
+    "arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "description": "One thing to try: an executor primitive, or a single game command. Exactly one of them.",
+      "properties": {
+        "primitive": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "enum": [
+                "walk_to",
+                "explore_floor",
+                "fight_nearest",
+                "rest_until_healed",
+                "take_stairs",
+                "flee",
+                "read_unknown_scroll",
+                "shop_list"
+              ]
+            }
+          }
+        },
+        "command": {
+          "type": "object",
+          "required": [
+            "name"
+          ]
+        }
+      }
+    }
+  }
+}
