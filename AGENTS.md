@@ -152,4 +152,5 @@ is holding it, rather than hanging.
 | `records/` | the run records worth citing, which R5 keeps in git |
 | `docs/reports/` | pilot and experiment reports |
 | `docs/ZOO-IMPORT.md` | what the zoo needs to import and replay an agent run (T11) |
+| `report --run <dir>` | one run as a self-contained HTML page: timeline, calls, maps (T30) |
 | `tests/` | tests; `test_repository.py` keeps pins, plan and docs consistent |

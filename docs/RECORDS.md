@@ -12,6 +12,7 @@ python -m borg_agent branch --run runs/<name> --turn 500    # play on from turn 
 python -m borg_agent view    --run runs/<name> --turn 500
 python -m borg_agent dump    --run runs/<name> --turn 500
 python -m borg_agent explain --run runs/<name> --turn 500
+python -m borg_agent report  --run runs/<name>              # the whole run as one page
 ```
 
 ## What a run directory holds
@@ -165,6 +166,23 @@ the executor's mechanical reasons, so without the journal a record could not
 say why the agent stopped exploring at a turn — which is what R2 has
 primitives report stops for. Its hash goes into the record's evidence as
 `journal_sha256`.
+
+## The page (T30)
+
+`report --run <dir>` writes **one self-contained HTML file** — no server, no
+dependencies, nothing fetched, so it opens from a `file://` URL and can be
+attached to a pull request. It holds the header the record gives (who played,
+how it ended, the model, the calls and tokens, the build), the turns worth
+jumping to, **a row per decision** with what the mind chose and why, the model
+calls with their reasoning folded away, the known map at a few moments, and the
+inventory, equipment and spells at the end. `--verdict verify.json` quotes a
+verification; without one the page says the run was not verified here rather
+than implying it was.
+
+It reads and never writes, needs no model and no key, and is not where facts
+live: a claim cites the run and the turn, not the page (R4). The owner asked for
+it after reading a timeline a throwaway script had produced, and asked for the
+link after every run.
 
 ## The date
 

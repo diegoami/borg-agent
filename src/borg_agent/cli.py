@@ -334,6 +334,15 @@ def cmd_probe(args):
     return 0
 
 
+def cmd_report(args):
+    """One run, as a page a person can read (T30)."""
+    from . import report as report_module
+
+    path = report_module.write(args.run, output=args.output, verdict=args.verdict)
+    print(path)
+    return 0
+
+
 def cmd_post_mortem(args):
     """Mode B: hand over to a mind shortly before a recorded death (R3)."""
     from . import postmortem
@@ -482,6 +491,14 @@ def main(argv=None):
             reader.add_argument('--window', type=int, default=3,
                                 help='how many decisions either side to show')
         reader.set_defaults(func=handler)
+
+    reporter = sub.add_parser('report', help='write one run as a readable HTML page')
+    reporter.add_argument('--run', type=Path, required=True)
+    reporter.add_argument('--output', type=Path,
+                          help='where to write it (default: report.html beside the run)')
+    reporter.add_argument('--verdict', type=Path,
+                          help="a verify.json to quote, when the run has been verified")
+    reporter.set_defaults(func=cmd_report)
 
     prober = sub.add_parser('probe', help='answer one question in counted trials (mode C)')
     prober.add_argument('--probe', required=True,

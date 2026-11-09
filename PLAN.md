@@ -83,7 +83,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T27 | Keep the model's reasoning | 4 | T06 | yes | in review |
 | T28 | Ask by state, not by event (D12) | 4 | T06, T27 | yes | todo |
 | T29 | The action surface: magic, items, and a refusal that is not fatal | 4 | T22 | yes | done (#50) |
-| T30 | A viewer for one run ([#51](https://github.com/diegoami/borg-agent/issues/51)) | 4 | T04, T27 | yes | todo |
+| T30 | A viewer for one run ([#51](https://github.com/diegoami/borg-agent/issues/51)) | 4 | T04, T27 | yes | in review |
 
 ### T01. Build and play the pinned game headless
 
@@ -485,8 +485,19 @@ no dependencies, attachable to a PR.
   hit-point drops, deaths, parse failures, **refusals**, budget and cap stops.
 
 It reads and never writes: a run directory and a record are immutable (R4.1),
-and it must need no model and no key. `view` should also stop printing the
-sparse `borg_what_text` screen and render the observation's own map instead.
+and it must need no model and no key.
+
+**Built**, 2026-11-09: `src/borg_agent/report.py` and
+`python -m borg_agent report --run <dir> [--output …] [--verdict verify.json]`.
+One file, 30 KB for an 83-decision run, with **nothing fetched** — a test
+refuses `src=`, `href=`, `http` and `<script` in the output, which is what
+"self-contained" has to mean. The page escapes everything it prints (a test
+puts a `<script>` in a game message). Without a verdict it says the run was
+**not verified here** rather than implying it was.
+
+Left undone on purpose: `view` still prints the sparse `borg_what_text` screen
+rather than the observation's own map; an index page over several runs, for a
+probe's arms or a trial's candidates; and `watch --run <id>`, the X11 replay.
 
 Beyond it, and not required: an index over several runs, for a probe's arms or
 a trial's candidates; and `watch --run <id>`, which would replay the recorded
