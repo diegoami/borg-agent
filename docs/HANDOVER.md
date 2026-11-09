@@ -5,47 +5,37 @@ work and updates "Current state".
 
 ## Current state
 
-- **T14** (#16) fixed a deadlock the milestone 2 reviewer hit: the documented
-  `flock /tmp/angband-validation.lock pytest -m slow` waited for ever, because
-  the suite's own runs took the same lock. An outer `flock` is now detected.
-  The review PR's diff moved with it.
-- **Milestone 2 was reviewed twice.** The re-review of T15's fixes found two
-  new issues, both in the new code, and they are closed in **T16** (#20). The
-  reviewer confirmed all four original findings closed in substance.
-- **Milestone 2 has been reviewed** (Kimi K3, a different family, on
-  [#15](https://github.com/diegoami/borg-agent/pull/15), 2026-11-09) and its
-  four findings are answered in **T15** (#18). The review PR's diff moved with
-  them; it is still the owner's to merge, and milestone 3 waits for that.
-- **Milestone 2 is complete and waiting for the owner's review.** Its review
-  PR is `main` into `reviewed` ([#15](https://github.com/diegoami/borg-agent/pull/15)); the owner merges it, which advances
-  `reviewed`. **A session does not start milestone 3 until then** (RULES 7).
-- Milestone 2 delivered, all merged: **T03** the bridge (#8), **T13** the open
-  sources, decision D8 (#9), **T04** records and replay (#11), **T05** the
-  executor's primitives (#12), **T12** the milestone-1 review findings (#13).
-- Milestone 1 (foundation) was reviewed at `11c8303`, issue
-  [#7](https://github.com/diegoami/borg-agent/issues/7). All thirteen of its
-  findings are now answered: eleven fixed, one (the mind block versus R2.4's
-  three jobs) carried into T06, and one left to the owner — see below.
+- **Milestone 2 is reviewed, merged and closed.** The owner merged the review
+  PR ([#15](https://github.com/diegoami/borg-agent/pull/15)) on 2026-11-09, so
+  `reviewed` stands at that merge and `main` is level with it. Milestone 2 was
+  reviewed **twice** by a model of another family (Kimi K3): the first round's
+  four findings are T15, the re-review's two are T16, and both rounds are
+  comments on #15.
+- **Milestone 3 is next**: **T06** (the model-backed mind, the `models.yaml`
+  loader and the prompt pack), **T07** (the knowledge store) and **T08** (the
+  post-mortem start). All three have what they need; nothing blocks them but
+  the owner's answers below.
 - **What works end to end today:** the pinned game builds; the stock Borg
   plays it reproducibly; an agent plays through the Borg's own connection with
-  the eight primitives of R2; every run can be recorded, replayed with
-  `verify`, branched at a turn, and read with `view`, `dump` and `explain`.
-  No model has played yet: that is milestone 3.
-- Open owner questions:
-  - **the seasonal window** (review finding 1): neutralizing the game's one
-    `time()` read would make replay independent of the calendar, at the price
-    of play differing from the unpatched build on 24-26 December. That is a
-    RULES 9 exception, so it is the owner's call. Today every run records
-    `calendar.seasonal` and `verify` refuses to compare across the window;
-  - which models do which job (T09 measures the `trial:` candidates, then
-    decision D6);
-  - whether the OpenRouter reviewer is `nvidia/nemotron-3-ultra-550b-a55b` or
-    the `:free` variant — the owner will decide later;
-  - whether `claim@1` should carry `superseded` as a status as well as the
-    `superseded_by` field.
-- Settled: `default_profile: alibaba` stays (the owner, 2026-11-08 — the
-  general notes about that provider do not apply here, since D7 makes the
-  profile the only model rule).
+  the eight primitives of R2; a run is recorded, replayed with `verify` (and
+  the record is checked against the run), branched at a turn, and read with
+  `view`, `dump` and `explain`. 221 fast tests, 13 slow gates. **No model has
+  played yet** — that is T06.
+- Waiting on the owner:
+  - **the seasonal window**: neutralize the game's one `time()` read, which
+    would make replay date-independent at the price of play differing from the
+    unpatched build on 24-26 December (a RULES 9 exception), or leave `verify`
+    refusing to compare across the window as it does now;
+  - **the OpenRouter reviewer**: `nvidia/nemotron-3-ultra-550b-a55b` or the
+    `:free` variant;
+  - **`claim@1`'s `superseded`**: a status as well as the `superseded_by`
+    field, or the field alone;
+  - **whether milestone 3 may spend plan quota** on real model calls, or
+    should stop at the `scripted` and `external` minds until the owner says
+    go.
+  - Which models do which job is not a question yet: T09 measures the
+    `trial:` candidates and the answer becomes decision D6.
+- Settled: `default_profile: alibaba` stays (the owner, 2026-11-08).
 
 ## 2026-11-09: T16, the milestone-2 re-review findings
 
