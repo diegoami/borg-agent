@@ -25,6 +25,14 @@ def api_mind(args):
     if missing:
         raise models_module.ConfigurationError(
             f'the play job needs ${missing[0]}, which is not set')
+    # R2.3: every run has a budget. With both flags unset the only ceilings
+    # were the decision cap and the wall clock, which in tokens is enormous --
+    # so the ceiling is said out loud, one way or the other (review finding 9).
+    if args.budget_calls is None and args.budget_tokens is None \
+            and not getattr(args, 'no_budget', False):
+        raise models_module.ConfigurationError(
+            'an api run needs a budget (R2.3): pass --budget-calls, --budget-tokens, or '
+            '--no-budget to run without a ceiling on purpose')
     pack = prompts.load_pack(args.pack)
     if pack.job != 'play':
         raise prompts.PromptError(f'the pack {pack.version!r} is for the {pack.job} job')
@@ -34,15 +42,19 @@ def api_mind(args):
     from . import knowledge as knowledge_module
 
     store = knowledge_module.Store()
-    learned = None if args.no_knowledge else (store.for_prompt() or None)
-    if learned:
-        print(f'carrying {len(learned.splitlines())} claims into the prompt '
+    # Asked at every decision, with that decision's observation: the store
+    # leaves out a claim whose scope the character does not match, and that
+    # filter only runs when it is given the character (review finding 5).
+    learned = None if args.no_knowledge else (
+        lambda observation: store.for_prompt(observation) or None)
+    if learned and store.all():
+        print(f'{len(store.all())} claims in the store, retrieved per decision '
               f'(knowledge {store.sha256()[:12]})')
     return model_mind.ApiMind(
         choice, pack=pack,
         budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
         choice_record=configuration.record('play'),
-        knowledge=learned, knowledge_sha256=store.sha256() if learned else None,
+        knowledge=learned, knowledge_sha256=store.sha256() if store.all() else None,
         timeout=args.model_timeout)
 
 
@@ -208,7 +220,13 @@ def cmd_branch(args):
     result, parent = replay_module.branch(
         args.run, args.turn, output, build_mind(args), timeout=args.timeout,
         stall_timeout=args.stall_timeout, lock=not args.no_lock)
-    record_module.write_record(output, mode='post_mortem', parent=parent)
+    # Mode B is "a death, taken over before the end". A branch of an ordinary
+    # run is mode A with a parent, and was being labelled post_mortem too
+    # (milestone 3 review, smaller notes).
+    original = json.loads((Path(args.run) / 'result.json').read_text())
+    mode = ('post_mortem' if original.get('from_turn') or original.get('outcome') == 'death'
+            else 'play')
+    record_module.write_record(output, mode=mode, parent=parent)
     print(output)
     return 0 if result['outcome'] in play_module.GOOD_OUTCOMES else 1
 
@@ -355,6 +373,8 @@ def main(argv=None):
                        help='stop after this many model calls; the outcome is budget_cap (R2.3)')
         p.add_argument('--budget-tokens', type=int, default=None,
                        help='stop after this many tokens; the outcome is budget_cap')
+        p.add_argument('--no-budget', action='store_true',
+                       help='run an api mind with no ceiling at all; say it deliberately')
         p.add_argument('--external-dir', type=Path, help='where the external mind reads answers')
         p.add_argument('--no-executor', action='store_true',
                        help='give the model the game directly, without the primitives')
@@ -396,6 +416,7 @@ def main(argv=None):
     brancher.add_argument('--profile')
     brancher.add_argument('--pack', default='play-1')
     brancher.add_argument('--budget-calls', type=int, default=None)
+    brancher.add_argument('--no-budget', action='store_true')
     brancher.add_argument('--budget-tokens', type=int, default=None)
     brancher.add_argument('--external-dir', type=Path)
     brancher.add_argument('--no-executor', action='store_true')
@@ -433,6 +454,7 @@ def main(argv=None):
     mortem.add_argument('--profile')
     mortem.add_argument('--pack', default='play-1')
     mortem.add_argument('--budget-calls', type=int, default=None)
+    mortem.add_argument('--no-budget', action='store_true')
     mortem.add_argument('--budget-tokens', type=int, default=None)
     mortem.add_argument('--external-dir', type=Path)
     mortem.add_argument('--no-executor', action='store_true')

@@ -36,8 +36,8 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 |---|---|---|---|
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
-| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **complete; in review** ([#41](https://github.com/diegoami/borg-agent/pull/41)) |
-| **4. Probe, trial and pilot** | a question is answered in counted trials, which model does which job is measured, the pilot runs, and the zoo can import a run | T22 first (D11), then T09, T10, T11 | **next**, once the owner merges milestone 3's review |
+| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
+| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, then T22 (D11), T09, T10, T11 | **in progress** |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -76,6 +76,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
 | T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
 | T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | todo |
+| T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | in review (#43) |
 
 ### T01. Build and play the pinned game headless
 
@@ -233,6 +234,93 @@ it.
 
 Done when replaying the Borg's prefix reproduces the zoo's death when left
 to the Borg, and a branch k turns before it hands over to another mind.
+
+### T23. Milestone-3 review findings
+
+A review of milestone 3 by a model of another family on
+[#41](https://github.com/diegoami/borg-agent/pull/41), 2026-11-09: **ten
+findings** and six smaller notes, from a fresh clone with the 326 fast tests
+and the 14 slow gates passing. Eight of the ten were confirmed in the code
+before any was touched. All are closed here.
+
+- **(1) `branch` could not branch a post-mortem.** `verify` passes
+  `from_turn` and says why; `branch` did not, so a post-mortem's recorded
+  actions — which begin at its handover turn, deep in a dungeon — were fed to
+  a newborn character in the town. The result was a self-consistent recording
+  of a **different game** under the parent's name, and it verified, because the
+  branch's own `result.json` carried no `from_turn` and the replay repeated the
+  mistake. T10 plans two branches per mode B case, so this was on its way to
+  producing evidence that looked fine and meant nothing. Branching before the
+  parent's handover is refused by name. The test is the cheap shape of the real
+  thing — a 400-turn run that takes over at turn 200 — and it compares the
+  branch's first observation with the parent's **by state hash**; it fails
+  without the fix and costs 0.3 s.
+- **(2) `verify` never compared the model call log**, although the record
+  publishes its hash and its count. That log is what R2.1 asks for, so an
+  edited one is edited evidence. It joins the other three streams, and the
+  count is checked on its own because `usage` publishes it even when the hash
+  is absent.
+- **(3) The call log redacted only `reply`.** `reason` and `note` come out of
+  the same model answer, and a credential in them was logged intact —
+  reproduced by the reviewer. Every field is replaced where it stands now, and
+  a field named like a key goes too. A log is redacted where a record is
+  refused, because the call has happened and the entry is the evidence.
+- **(4) A claim entered the store unscanned for credentials.** Claims are
+  model words with a worse destination than a log: `knowledge/claims.jsonl` is
+  in git, the views are generated from it, and `for_prompt` reads it back into
+  every later prompt. `knowledge.validate` runs the record's own scan first.
+- **(5) The documented scope filter was dead in the wiring.** The store leaves
+  out a claim whose scope the character does not match — and `cli` resolved
+  `for_prompt()` once, at mind construction, **with no observation**, so the
+  filter never ran and a Mage-only, depth-20 claim rode every decision of a
+  level-1 Warrior in the town. The mind takes a retriever and asks it per
+  decision. Two tests: the mind's side, and the wiring, which the mind cannot
+  check for itself.
+- **(6) `ApiMind` was defined twice**, the first a copy of `ExternalMind.act`
+  over an `ApiMind.__init__` referencing attributes it never set, plus a dead
+  `_post` referencing `self._key`, which only `ChatClient` has. 75 lines of
+  dead code in the module whose one job is that the key never leaves one
+  method. Deleted.
+- **(7) Mode B edges.** A handover at or past the death left the agent with
+  zero decisions while the block recorded `died_again` and `same_cause` as if
+  it had played and failed. The handover must now be before the death and the
+  cap after it, `--before` cannot be negative, and a run the agent never played
+  carries `agent_played: false` with a warning.
+- **(8) The pack hash did not cover the generated primitives.**
+  `primitive_help()` comes from the executor and is in every system message,
+  but it was generated at render time, so two runs with the same pack sha could
+  have been told different things about the primitives. It is generated at load
+  time for a `play` pack and folded into the hash.
+- **(9) An api run had no budget by default** (R2.3: every run has one). It is
+  refused now, with `--no-budget` to say it deliberately.
+- **(10) Two holes in the claim guard.** A model-produced claim could call
+  itself `documented`, which ranks above `hypothesis`; and a review with no
+  family is a probe, whose existence nothing checked — `{'verdict': 'agree',
+  'family': null}` promoted a claim on its own word. A probe review must now
+  name a run the claim's own evidence carries. **Mode C rests on that rule**,
+  so it is closed before T22 lands.
+
+**The smaller notes, acted on:** `supersede` writes atomically; a reply shaped
+like `["a claim"]` is refused with its reason instead of ending the run with an
+`AttributeError`; `models.yaml`'s validator messages and its YAML parse errors
+go through a credential filter, because a key pasted into `model:` was printed
+back; a branch of an ordinary run is mode `play` with a parent, not
+`post_mortem`; the run record carries `from_turn`, so a record alone says where
+the agent's play began; and the handover's stale test counts are corrected.
+
+**What the review could not check, and what was done about it:** `runs/` is
+git-ignored, so the two real runs the milestone reported — the first model play
+and the first post-mortem — were not in the clone and their numbers were taken
+on trust. R5 says run summaries and hashes go into git, and they did not, which
+is the finding behind the finding. The two records are committed under
+[records/](records/) with a README saying what each proves and what it does
+not.
+
+**Not changed:** the trace is still outside `prefix`'s comparison by
+construction; `survived_past_the_death` still rests on sampled turns, which
+understates both sides; and a mode B prefix that outlives the wall limit is
+still classified `crash` rather than `harness_failure` — bounded, non-good, and
+left where the reviewer found it.
 
 ### T22. Mode C probes: a question answered in counted trials
 

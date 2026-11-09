@@ -1,4 +1,5 @@
 """The model-backed mind and the one at a file (T06), without a provider."""
+import argparse
 import json
 from pathlib import Path
 
@@ -143,6 +144,97 @@ def test_an_action_that_breaks_the_schema_counts_as_a_parse_failure():
     assert mind.parse_failures == 1
 
 
+# --- the knowledge a decision gets (finding 5) ------------------------------
+
+def test_the_knowledge_is_retrieved_for_each_decision(tmp_path):
+    """Milestone 3 review, finding 5.
+
+    The store filters a claim whose scope the character does not match, but
+    only when it is given the character. The wiring resolved the text once, at
+    mind construction, with no observation -- so the filter never ran and a
+    Mage-only claim rode a Warrior's whole run. The store's own test passed
+    throughout: this one is about the wiring.
+    """
+    from borg_agent import knowledge
+
+    kept = knowledge.Store(root=tmp_path / 'knowledge')
+    mage = json.loads((ROOT / 'schemas/examples/claim'
+                       / 'valid-hypothesis-from-one-death.json').read_text())
+    kept.add({**mage, 'id': 'for-a-mage', 'statement': 'A Mage should not melee a floating eye.',
+              'scope': {'class': 'Mage', 'version': '4.2.6'}})
+    kept.add({**mage, 'id': 'for-anyone', 'statement': 'A floating eye can paralyse.',
+              'scope': {'version': '4.2.6'}})
+
+    transport = answered(json.dumps(ACTION), json.dumps(ACTION))
+    mind = model_mind.ApiMind(
+        CHOICE, pack=prompts.load_pack('play-1'), transport=transport,
+        environ={'HOUSE_KEY': 'sk-not-real'},
+        knowledge=lambda observation: kept.for_prompt(observation) or None)
+
+    mind.act(observation())                                  # a Human Warrior
+    warrior_prompt = json.dumps(transport.calls[-1])
+    assert 'can paralyse' in warrior_prompt
+    assert 'A Mage should not' not in warrior_prompt, 'the scope filter never ran'
+
+    as_a_mage = observation()
+    as_a_mage['character'] = {**as_a_mage['character'], 'class': 'Mage'}
+    mind.act(as_a_mage)
+    mage_prompt = json.dumps(transport.calls[-1])
+    assert 'A Mage should not' in mage_prompt and 'can paralyse' in mage_prompt
+
+
+def test_fixed_knowledge_text_still_works(tmp_path):
+    transport = answered(json.dumps(ACTION))
+    mind = model_mind.ApiMind(CHOICE, pack=prompts.load_pack('play-1'), transport=transport,
+                             environ={'HOUSE_KEY': 'sk-not-real'},
+                             knowledge='- one claim, as a string')
+    mind.act(observation())
+    assert 'one claim, as a string' in json.dumps(transport.calls[-1])
+
+
+def test_the_cli_hands_the_mind_a_retriever_not_a_snapshot(tmp_path, monkeypatch, capsys):
+    """The wiring itself: `cli` must pass something that can be asked later.
+
+    This is the half of finding 5 that the mind cannot test for itself -- the
+    old code resolved `for_prompt()` once, with no observation, and handed the
+    mind a finished string.
+    """
+    from borg_agent import cli
+
+    monkeypatch.setenv('ALIBABA_TOKEN_PLAN_API_KEY', 'sk-not-real')
+    monkeypatch.delenv('BORG_AGENT_PROFILE', raising=False)
+    captured = {}
+
+    class Caught:
+        def __init__(self, *args, **keywords):
+            captured.update(keywords)
+
+    monkeypatch.setattr(model_mind, 'ApiMind', Caught)
+    arguments = argparse.Namespace(
+        profile='alibaba', pack='play-1', no_knowledge=False, budget_calls=50,
+        budget_tokens=None, model_timeout=240, no_budget=False)
+    cli.api_mind(arguments)
+    assert callable(captured['knowledge']), 'the mind was given a snapshot, not a retriever'
+
+
+def test_an_api_run_without_a_budget_is_refused(monkeypatch):
+    """Milestone 3 review, finding 9: R2.3 says every run has a budget."""
+    from borg_agent import cli, models as models_module
+
+    monkeypatch.setenv('ALIBABA_TOKEN_PLAN_API_KEY', 'sk-not-real')
+    monkeypatch.delenv('BORG_AGENT_PROFILE', raising=False)
+    arguments = argparse.Namespace(
+        profile='alibaba', pack='play-1', no_knowledge=True, budget_calls=None,
+        budget_tokens=None, model_timeout=240, no_budget=False)
+    with pytest.raises(models_module.ConfigurationError, match='needs a budget'):
+        cli.api_mind(arguments)
+    # And it can be said deliberately.
+    captured = {}
+    monkeypatch.setattr(model_mind, 'ApiMind', lambda *a, **k: captured.update(k))
+    cli.api_mind(argparse.Namespace(**{**vars(arguments), 'no_budget': True}))
+    assert captured['budget'].allowed == {'model_calls': None, 'tokens': None}
+
+
 # --- the call log (R2.1) ----------------------------------------------------
 
 def test_every_call_is_logged_with_what_r2_1_asks_for(tmp_path):
@@ -177,6 +269,30 @@ def test_a_reply_that_looks_like_a_credential_is_not_logged(tmp_path):
     text = (tmp_path / 'calls.jsonl').read_text()
     assert 'sk-abcdefghijklmnop' not in text
     assert 'looked like a credential' in text
+
+
+def test_a_credential_in_the_reason_is_not_logged_either(tmp_path):
+    # Milestone 3 review, finding 3: `reason` and `note` come out of the same
+    # model answer as the reply, and only the reply was redacted.
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    action = {**ACTION, 'reason': 'my key is sk-abcdefghijklmnop1234 and I will walk',
+              'note': 'bearer abcdefghijklmnop is the token'}
+    mind = api(answered(json.dumps(action)), log=log)
+    mind.act(observation())
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert 'sk-abcdefghijklmnop1234' not in json.dumps(entry)
+    assert 'abcdefghijklmnop' not in json.dumps(entry)
+    assert entry['reason'] == model_mind.REMOVED
+    # The rest of the entry is still the evidence R2.1 asks for.
+    assert entry['model'] and entry['decision'] is not None
+
+
+def test_a_field_named_like_a_key_is_removed_from_the_log(tmp_path):
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    log.write({'reply': 'fine', 'tokens': 12, 'authorization': 'whatever it holds'})
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert entry['authorization'] == model_mind.REMOVED
+    assert entry['tokens'] == 12 and entry['reply'] == 'fine'
 
 
 def test_a_parse_failure_is_logged_with_its_reason(tmp_path):

@@ -72,6 +72,17 @@ mechanical; whether a claim is *useful* is the mind's judgement, not the
 store's. `--no-knowledge` plays without it, and the run record carries the
 knowledge base's hash so a decision can be traced to what the agent knew.
 
+**It is asked once per decision, with that decision's observation.** The
+milestone 3 review found the wiring resolving it once, at mind construction,
+with no observation at all — so the filter never ran and every claim rode every
+decision. The mind takes a retriever, not a finished string, and the store's
+own test was never the thing in doubt.
+
+A claim is **scanned for credentials before it enters** (RULES 16), like a run
+record. It is model words with a worse destination than a log: `claims.jsonl`
+is in git, the views are generated from it, and `for_prompt` reads it back into
+every later prompt.
+
 ## The first real claims, and what they showed
 
 On 2026-11-09 `qwen3.8-max` consolidated the first model-played run (51

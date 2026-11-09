@@ -130,6 +130,10 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
         'calendar': result['calendar'],
         'mode': mode,
         'parent': parent,
+        # What a replay needs to play the same prefix (mode B). It was in the
+        # run directory's result.json only, so the record alone did not say
+        # where the agent's own play began (milestone 3 review, smaller notes).
+        'from_turn': result.get('from_turn'),
         # Only a model's choices are non-deterministic (R1.4, R6.3).
         'deterministic': kind in ('stock-borg', 'scripted', 'replay'),
         'intervention': intervention,

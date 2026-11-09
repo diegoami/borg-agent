@@ -37,10 +37,38 @@ class KnowledgeError(ValueError):
     """A claim cannot enter the store, and why."""
 
 
+def _write_atomically(path, text):
+    """Replace a file in one step, so a crash cannot leave half a store."""
+    import os
+    import tempfile
+
+    path = Path(path)
+    handle, temporary = tempfile.mkstemp(dir=str(path.parent), prefix=path.name + '.')
+    try:
+        with os.fdopen(handle, 'w') as out:
+            out.write(text)
+        os.replace(temporary, path)
+    except BaseException:
+        Path(temporary).unlink(missing_ok=True)
+        raise
+
+
 def validate(claim):
-    """Against `claim@1`, then against the rules a schema cannot express."""
+    """Against `claim@1`, then against the rules a schema cannot express.
+
+    A claim is scanned for credentials first, like a run record (RULES 16). It
+    is model words with a worse destination than a log: `knowledge/claims.jsonl`
+    is in git, the Markdown views are generated from it, and `for_prompt` reads
+    it back into every later prompt. Milestone 3's review found this path
+    unscanned (finding 4).
+    """
     from jsonschema import Draft202012Validator, FormatChecker
 
+    from .record import secrets_in
+
+    leaks = secrets_in(claim)
+    if leaks:
+        raise KnowledgeError('; '.join(leaks[:4]))
     schema = json.loads((pins.ROOT / 'schemas' / 'claim@1.json').read_text())
     errors = sorted(Draft202012Validator(schema, format_checker=FormatChecker())
                     .iter_errors(claim), key=str)
@@ -114,7 +142,8 @@ class Store:
             if existing['id'] == old_id:
                 existing = {**existing, 'superseded_by': added['id']}
             claims.append(existing)
-        self.path.write_text(''.join(json.dumps(c, sort_keys=True) + '\n' for c in claims))
+        _write_atomically(self.path,
+                          ''.join(json.dumps(c, sort_keys=True) + '\n' for c in claims))
         return added
 
     # --- reading ------------------------------------------------------------

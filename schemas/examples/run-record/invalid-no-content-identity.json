@@ -6,22 +6,22 @@
   },
   "calendar": {
     "TZ_environment": null,
-    "local": "2026-11-09T10:18:58.144302+01:00",
+    "local": "2026-11-09T13:40:35.110148+01:00",
     "seasonal": false,
     "timezone_name": "CET",
-    "utc": "2026-11-09T09:18:58.144302+00:00"
+    "utc": "2026-11-09T12:40:35.110148+00:00"
   },
-  "created": "2026-11-09T09:18:58.144302+00:00",
+  "created": "2026-11-09T12:40:35.110148+00:00",
   "deterministic": true,
   "engine": {
-    "binary_sha256": "b5fe5f6507a7a7251a57131866acc88174ee43934d1bae6cba482e16f14dd1f7",
-    "build_key": "d887202f7a196ca5",
+    "binary_sha256": "358a4c5f6dbc62d3ba0153fa673d691c92ee3da132edce0aaeda76868741c653",
+    "build_key": "f9d4c320cefbc476",
     "commit": "0fd4af4000000000000000000000000000000000",
     "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
     "dirty": "",
     "name": "c-4.2.6",
     "patch_sha256": {
-      "agent-bridge.c": "27bfc88afbdbdb8d80003a559896385d0398186878981dd412bb49730d26da14",
+      "agent-bridge.c": "05638ade9925d8a2d182b941ae9f732c47f42e7068ee4d0574d722a720a7800f",
       "agent-bridge.h": "f634bf096ed76d2883710f1430cb180cb1022be0198e0452503834674e2994a6",
       "native-observer.c": "9c10fcedd8b2f44e211f63235b38bad7cec351ec45216366689e73cb3f0a9ad7",
       "native-observer.h": "faa6a800ce6fb6e73795b044663ff36d39cc7eae837f9a53aae1ef04f3241730"
@@ -29,7 +29,7 @@
     "pins": {
       "better-borg-c": "017e038e8726a7a423887a366b5d40e89c0550a1",
       "borg-rs": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
-      "borg-spec": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
+      "borg-spec": "777eea1d9bd6c4094e87fff23af3984dd23f7edb",
       "borg-zoo": "4c675343fa6aed8aeb9ff265d9d10a22054e0ac5",
       "c-borg-reference": "471e1214cdf457c8035878a13c34cb6b9669b434",
       "original": "e473720ed88a0f0c7ca66815cef3000eb4a38bc3",
@@ -42,6 +42,7 @@
     "state_hashes_sha256": "54df3c693301b67e2dc6f89ac005a7110c981068a9aee7f0edbc47f2c67f00b6",
     "trace_sha256": "ec228ad934c5b8363d7f8e2822e6bb11c34b4e63f3ec8cadb2823f708092f397"
   },
+  "from_turn": null,
   "game": {
     "birth": {
       "class": "Warrior",
@@ -137,6 +138,6 @@
   "usage": {
     "decisions": 101,
     "model_calls": 0,
-    "wall_seconds": 0.492
+    "wall_seconds": 0.368
   }
 }

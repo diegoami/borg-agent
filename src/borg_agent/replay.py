@@ -102,6 +102,11 @@ def check_record_against_run(recorded, run_dir, actions):
         ('the state hashes', evidence.get('state_hashes_sha256'),
          run_dir / record.STATE_HASHES_NAME),
         ('the journal', evidence.get('journal_sha256'), run_dir / agent.JOURNAL_LOG),
+        # The stream this milestone added. T16's rule is every count and hash
+        # the record published, and the model calls were left out of it
+        # (milestone 3 review, finding 2).
+        ('the model calls', evidence.get('model_calls_sha256'),
+         run_dir / agent.MODEL_CALL_LOG),
     ]
     compared = False
     for what, published, path in checks:
@@ -117,6 +122,19 @@ def check_record_against_run(recorded, run_dir, actions):
         if stream['count'] != actions:
             return False, (f"the record says {stream['count']} actions, but "
                            f'{agent.ACTION_LOG} holds {actions}')
+    # The count is published in `usage` even when the hash is not, so it is
+    # checked on its own.
+    published_calls = (recorded.get('usage') or {}).get('model_calls')
+    if published_calls:
+        compared = True
+        log = run_dir / agent.MODEL_CALL_LOG
+        if not log.exists():
+            return False, (f'the record says {published_calls} model calls, but '
+                           f'{agent.MODEL_CALL_LOG} is not beside the run')
+        calls = len([line for line in log.read_text().splitlines() if line.strip()])
+        if calls != published_calls:
+            return False, (f'the record says {published_calls} model calls, but '
+                           f'{agent.MODEL_CALL_LOG} holds {calls}')
     return (True if compared else None), None
 
 
@@ -258,17 +276,28 @@ def branch(run_dir, turn, output, new_mind, timeout=900, stall_timeout=120, lock
     run_dir, output = Path(run_dir), Path(output)
     original = json.loads((run_dir / 'result.json').read_text())
     actions = recorded_actions(run_dir)
+    # A post-mortem's recorded actions start at its handover turn, so a branch
+    # of one has to play the same prefix before the stream means anything --
+    # exactly what `verify` does above. Without this the stream was fed to a
+    # newborn character in town and the branch recorded a different game under
+    # the parent's name (milestone 3 review, finding 1).
+    from_turn = original.get('from_turn')
+    if from_turn and turn < from_turn:
+        raise ValueError(
+            f'this run took over at turn {from_turn}, so it has no recorded actions at turn '
+            f'{turn}: branch at {from_turn} or later, or branch the run it came from')
     branching = ReplayMind(actions, then=new_mind, until_turn=turn)
     result = agent.play_with_mind(
         build_out=pins_build(original), seed=original['seed'], cap=original['turn_cap'],
         output=output, mind=branching, timeout=timeout, stall_timeout=stall_timeout,
-        lock=lock, log=lambda *a: None)
+        from_turn=from_turn, lock=lock, log=lambda *a: None)
     parent = {'run_id': original.get('run_id') or run_dir.name,
               'turn': branching.handed_over_at if branching.handed_over else turn}
     result['parent'] = parent
     result['branch'] = {'requested_turn': turn,
                         'handed_over_at': branching.handed_over_at,
                         'replayed_actions': branching.replayed,
+                        'parent_from_turn': from_turn,
                         'mind': new_mind.name}
     (output / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
     log(json.dumps({'branch_of': parent, 'outcome': result['outcome'],

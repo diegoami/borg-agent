@@ -392,10 +392,15 @@ def run_directory(tmp_path, actions=4, record_it=True):
         for i in range(actions)))
     hashes = record.state_hashes(run / agent.OBSERVATION_LOG)
     (run / record.STATE_HASHES_NAME).write_text(''.join(h + '\n' for h in hashes))
+    (run / agent.MODEL_CALL_LOG).write_text(''.join(
+        json.dumps({'decision': i, 'reply': 'walk', 'model': 'm'}) + '\n'
+        for i in range(actions)))
     recorded = {
         'action_stream': {'count': actions, 'sha256': record.sha(run / agent.ACTION_LOG)},
         'evidence': {'observations_sha256': record.sha(run / agent.OBSERVATION_LOG),
-                     'state_hashes_sha256': record.sha(run / record.STATE_HASHES_NAME)},
+                     'state_hashes_sha256': record.sha(run / record.STATE_HASHES_NAME),
+                     'model_calls_sha256': record.sha(run / agent.MODEL_CALL_LOG)},
+        'usage': {'model_calls': actions},
     }
     return run, recorded
 
@@ -426,12 +431,31 @@ def test_a_run_cut_short_at_the_end_is_caught(tmp_path):
     ('the observations', lambda run: (run / agent.OBSERVATION_LOG).write_text('{}\n')),
     ('the state hashes', lambda run: (run / record.STATE_HASHES_NAME).write_text('nope\n')),
     ('a missing file', lambda run: (run / record.STATE_HASHES_NAME).unlink()),
+    # The stream milestone 3 added: published, and not compared (finding 2).
+    ('the model calls', lambda run: (run / agent.MODEL_CALL_LOG).write_text('{"a": 1}\n')),
+    ('the model calls, truncated', lambda run: (run / agent.MODEL_CALL_LOG).write_text('')),
+    ('the model call log, gone', lambda run: (run / agent.MODEL_CALL_LOG).unlink()),
 ])
 def test_every_stream_the_record_names_is_compared(tmp_path, what, break_it):
     run, recorded = run_directory(tmp_path)
     break_it(run)
     matches, reason = replay.check_record_against_run(recorded, run, 4)
     assert matches is False and reason, what
+
+
+def test_a_truncated_model_call_log_is_caught_by_its_count(tmp_path):
+    """Milestone 3 review, finding 2.
+
+    The call log is what R2.1 asks for -- what the model was told, what it
+    answered and what it cost -- so an edited one is edited evidence. The
+    record published its hash and its count; neither was compared.
+    """
+    run, recorded = run_directory(tmp_path, actions=4)
+    lines = (run / agent.MODEL_CALL_LOG).read_text().splitlines()
+    (run / agent.MODEL_CALL_LOG).write_text('\n'.join(lines[:-1]) + '\n')
+    matches, reason = replay.check_record_against_run(recorded, run, 4)
+    assert matches is False
+    assert 'model calls' in reason, reason
 
 
 def test_a_record_with_nothing_to_compare_says_so(tmp_path):

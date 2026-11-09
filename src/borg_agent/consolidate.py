@@ -175,8 +175,13 @@ def consolidate(run_dir, choice, store=None, pack=None, budget=None, call_log=No
     for claim in offered:
         try:
             added.append(store.add(anchor(claim, run_facts, choice), by_model=True))
-        except (knowledge.KnowledgeError, KeyError, TypeError) as problem:
-            refused.append({'id': (claim or {}).get('id'), 'why': str(problem)[:300]})
+        # A model's reply can be any shape at all, so every way `anchor` can
+        # fail on one is a refusal, not a crash (review's smaller notes:
+        # `["a claim"]` raised AttributeError and ended the run).
+        except (knowledge.KnowledgeError, AttributeError, KeyError,
+                TypeError, ValueError) as problem:
+            refused.append({'id': claim.get('id') if isinstance(claim, dict) else None,
+                            'why': str(problem)[:300]})
     store.render_views()
 
     consolidation = {

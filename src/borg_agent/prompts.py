@@ -72,6 +72,11 @@ class Pack:
     templates: dict
     extracts: dict
     sha256: str
+    # The primitives section, generated from the executor at load time. It is
+    # in every system message, so the hash has to cover it: with it generated
+    # at render time instead, two runs with the same pack sha could have been
+    # told different things about the primitives (review finding 8).
+    primitives: str = ''
 
     def record(self):
         """What the run record says about the pack (R2.1)."""
@@ -137,8 +142,11 @@ def load_pack(version='play-1', root=None):
         extracts[extract.name] = extract
         digest.update(extract.text.encode())
 
+    primitives = primitive_help() if manifest['job'] == 'play' else ''
+    digest.update(primitives.encode())
+
     return Pack(version=version, job=manifest['job'], templates=templates,
-                extracts=extracts, sha256=digest.hexdigest())
+                extracts=extracts, primitives=primitives, sha256=digest.hexdigest())
 
 
 # --- what the model is shown about the game ---------------------------------
@@ -263,7 +271,7 @@ def render(pack, observation, knowledge=None):
     # string.Template, not str.format: the templates show JSON, and braces in
     # an example are not placeholders.
     system = Template(pack.templates['system']).substitute(
-        primitives=primitive_help(),
+        primitives=pack.primitives or primitive_help(),
         commands_citation=commands.citation if commands else '(nothing)',
         movement_and_resting_commands=commands.text if commands else '(nothing)')
     if knowledge:

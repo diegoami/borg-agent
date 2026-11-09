@@ -88,11 +88,41 @@ def test_counted_trials_promote_without_a_review():
 
 
 def test_a_probe_review_promotes_although_it_has_no_family():
+    # The probe names a run this claim's evidence carries, which is what makes
+    # it checkable (milestone 3 review, finding 10).
     assert checks.check_claim(claim(
         status='corroborated',
         produced_by={'mind': 'model', 'model': 'qwen3.8-max', 'family': 'qwen'},
+        evidence=[{'kind': 'run', 'run_id': 'probe-20261109-floating-eye', 'seed': 7,
+                   'turn': 100, 'note': 'the probe itself'}],
         reviews=[{'by': 'probe-20261109-floating-eye', 'family': None, 'verdict': 'agree',
                   'created': '2026-11-09T13:30:00Z'}])) == []
+
+
+def test_an_invented_probe_review_does_not_promote():
+    """Milestone 3 review, finding 10.
+
+    A review with no family is a probe, and nothing checked that the probe
+    existed: `{'verdict': 'agree', 'family': None}` was enough to promote a
+    claim. Mode C (T22) rests on this rule, so it is closed before T22 lands.
+    """
+    problems = checks.check_claim(claim(
+        status='corroborated',
+        produced_by={'mind': 'model', 'model': 'qwen3.8-max', 'family': 'qwen'},
+        reviews=[{'by': 'probe-that-never-ran', 'family': None, 'verdict': 'agree',
+                  'created': '2026-11-09T13:30:00Z'}]))
+    assert problems and 'names no run' in problems[-1]
+
+
+def test_a_model_does_not_call_its_own_claim_documented():
+    problems = checks.check_claim(claim(
+        status='documented', basis={'kind': 'manual', 'reference': 'docs/command.rst'},
+        produced_by={'mind': 'model', 'model': 'qwen3.8-max', 'family': 'qwen'}))
+    assert problems and 'documented' in problems[0]
+    # The same claim, read by a person or written by the harness, is fine.
+    assert checks.check_claim(claim(
+        status='documented', basis={'kind': 'manual', 'reference': 'docs/command.rst'},
+        produced_by={'mind': 'harness'})) == []
 
 
 def test_a_model_cannot_promote_its_own_claim_by_itself():
