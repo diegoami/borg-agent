@@ -151,4 +151,5 @@ is holding it, rather than hanging.
 | `probes/` | the probes, one file each, and their results (from T22); see [docs/PROBE.md](docs/PROBE.md) |
 | `records/` | the run records worth citing, which R5 keeps in git |
 | `docs/reports/` | pilot and experiment reports |
+| `docs/ZOO-IMPORT.md` | what the zoo needs to import and replay an agent run (T11) |
 | `tests/` | tests; `test_repository.py` keeps pins, plan and docs consistent |

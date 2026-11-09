@@ -64,7 +64,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T08 | Post-mortem start from a Borg run | 3 | T04 | yes | done (#39) |
 | T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
-| T11 | Zoo import contract | 4 | T04 | yes | todo |
+| T11 | Zoo import contract | 4 | T04 | yes | in review |
 | T12 | Milestone-1 review findings | 2 | T01, T02 | yes | done (#13) |
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
@@ -78,7 +78,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | done (#44) |
 | T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | done (#43) |
 | T24 | Birth by race and class | 4 | T22 | yes, and it needs no model | done (#45) |
-| T25 | The consolidation keeps its own call log | 4 | T07, T23 | yes | in review |
+| T25 | The consolidation keeps its own call log | 4 | T07, T23 | yes | done (#47) |
 
 ### T01. Build and play the pinned game headless
 
@@ -565,10 +565,37 @@ Report in `docs/reports/pilot-1.md`:
 
 ### T11. Zoo import contract
 
-A document, `docs/ZOO-IMPORT.md`, for the zoo's own PR (R6): the run record
-fields the zoo needs, how its CI replays an imported run without a model,
-the build it needs for that, and how agent runs are marked
-non-deterministic. The zoo itself is not changed here.
+A document, [docs/ZOO-IMPORT.md](docs/ZOO-IMPORT.md), for the zoo's own PR
+(R6): the run record fields the zoo needs, how its CI replays an imported run
+without a model, the build it needs for that, and how agent runs are marked
+non-deterministic. The zoo itself is not changed here (RULES 8).
+
+Written in the shape the zoo already uses for another harness kind: Mandos's
+`docs/ZOO-HARNESS.md` is the interface for `zoo/mandos.py`, and this is the
+interface for a kind `agent`. What it settles:
+
+- **an agent run is the same game, not a new engine.** The pin, the recipe and
+  the observer are the zoo's own, so agent runs **pair with C runs by seed** --
+  unlike Mandos, where a Neo seed is a different game. What a borg-agent
+  "specimen" is instead is a tuple the record carries: game pin, this
+  repository's commit, the mind, the prompt pack and the knowledge hash;
+- **the import bundle is three files**: the record, `actions.jsonl` and
+  `state-hashes.txt`. The observations, the call log, the journal and the trace
+  stay here, addressed by hash, because they are the large part and the zoo
+  does not need them to confirm a run;
+- **the replay costs 0.3 s** for a 1,000-turn, 51-decision run, measured on the
+  first real model run. CI needs no model and no key, and must never be given
+  one;
+- a field-by-field mapping onto `borg-zoo/cell@1`, including what `play_sha256`
+  may and may not be used for: it identifies **that run**, never the agent;
+- what the zoo must not conclude: no "identical games" for two agent runs, no
+  agent run as a property of the agent, interventions out of survival figures
+  (D4), `budget_cap`/`agent_stopped`/`decision_cap` as outcomes rather than
+  deaths, mode B figures beside their parent, and agent results on their own
+  page until the owner says otherwise (R6.5);
+- **what this repository still owes**: `verify` reads a run directory today, so
+  a bundle-only mode is ours to add before the zoo's PR. The document says so
+  rather than letting the zoo work around it.
 
 ### T13. Open the playing agent's sources (D8)
 
