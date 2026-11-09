@@ -283,8 +283,11 @@ def test_the_model_chooses_a_primitive_and_the_executor_runs_it(tmp_path):
     log = model_mind.CallLog(tmp_path / 'calls.jsonl')
     model = api(answered(json.dumps(ACTION)), log=log)
     wrapped = executor.ExecutingMind(model, name='api:test')
+    # A map with somewhere unseen to walk to, so explore_floor can act.
+    unexplored = observation(decision=0, turn=1)
+    unexplored['map']['rows'] = ['#####', '#.@. ', '#####']
     # One model call, then the primitive answers the next decisions itself.
-    first = wrapped.act(observation(decision=0, turn=1))
+    first = wrapped.act(unexplored)
     assert first['kind'] == 'command'            # explore_floor became a step
     assert log.count == 1
     journal = wrapped.drain_journal()
