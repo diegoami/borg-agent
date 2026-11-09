@@ -71,7 +71,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
 | T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
 | T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | done (#24) |
-| T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | in progress (task/T18-pin-borg-rs) |
+| T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | done (#26) |
 
 ### T01. Build and play the pinned game headless
 
