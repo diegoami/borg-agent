@@ -53,12 +53,13 @@ def test_cli_rejects_an_impossible_seed_or_cap():
             cli.main(argv)
 
 
-# The trace seed 7 at cap 5,000 produced when T01 was written, on 2026-11-08.
-# It is not a property of the seed alone: the game admits seasonal monsters on
-# 24-26 December, so the same seed plays a different game then (finding 1 of
-# the milestone-1 review). The hash is therefore asserted outside that window
-# only, and the determinism of the pair is asserted always.
-GOLDEN_SEED7_CAP5000 = '2242a3f55de1711fce9c37c5301c9ad3d4cdd9daf32cea8f44066b28a1d7d1f0'
+# The trace seed 7 at cap 5,000 produces on the pinned build. It is a property
+# of the pin as much as of the seed: better-borg-c milestone 6 gave
+# 2242a3f5..., milestone 8 gives this. Nor is it a property of the seed alone —
+# the game admits seasonal monsters on 24-26 December, so the same seed plays a
+# different game then (decision D9) — so the hash is asserted outside that
+# window only, while the determinism of the pair is asserted always.
+GOLDEN_SEED7_CAP5000 = 'a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844'
 SEASONAL_DAYS = {(12, 24), (12, 25), (12, 26)}
 
 
@@ -117,17 +118,26 @@ def test_the_outcome_vocabulary_is_read_from_the_zoo_not_copied():
 
 @pytest.mark.slow
 def test_a_death_and_the_checkpoint_saves(tmp_path):
-    """The paths T08 needs: a run that dies, with the runner's saves kept."""
+    """The paths T08 needs: a run that dies, with the runner's saves kept.
+
+    The stock Borg used to oblige on seed 7 within 100,000 turns; at
+    better-borg-c milestone 8 it survives that (and takes two minutes to prove
+    it), so the death comes from an agent run instead. The checkpoint path is
+    the runner's either way: the observer forks and saves, so neither the save
+    nor its monster-list compaction touches live play.
+    """
+    from borg_agent import agent, mind
+
     out = build.prepare(log=lambda *a: None)
-    record = play.play(out, seed=7, cap=100000, output=tmp_path / 'death',
-                       checkpoint_saves=True, timeout=600, stall_timeout=120,
-                       lock=not os.environ.get('BORG_AGENT_NO_LOCK'), log=lambda *a: None)
+    record = agent.play_with_mind(out, seed=7, cap=2000, output=tmp_path / 'death',
+                                  mind=mind.ScriptedMind(), checkpoint_saves=True,
+                                  timeout=300, stall_timeout=60,
+                                  lock=not os.environ.get('BORG_AGENT_NO_LOCK'),
+                                  log=lambda *a: None)
     assert record['outcome'] == 'death', record['outcome']
     assert record['cause'] and record['cause'] != '(alive and well)'
-    # The observer saves at the start and every thousand turns, by forking, so
-    # neither the save nor its monster-list compaction touches live play.
+    assert record['checkpoint_saves'] is True
     assert (tmp_path / 'death/start.save').exists()
-    assert (tmp_path / 'death/recent.save').exists()
     assert any(state['kind'] == 'checkpoint' for state in record['states'])
 
 

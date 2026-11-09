@@ -5,47 +5,508 @@ work and updates "Current state".
 
 ## Current state
 
-- **T14** (#16) fixed a deadlock the milestone 2 reviewer hit: the documented
-  `flock /tmp/angband-validation.lock pytest -m slow` waited for ever, because
-  the suite's own runs took the same lock. An outer `flock` is now detected.
-  The review PR's diff moved with it.
-- **Milestone 2 was reviewed twice.** The re-review of T15's fixes found two
-  new issues, both in the new code, and they are closed in **T16** (#20). The
-  reviewer confirmed all four original findings closed in substance.
-- **Milestone 2 has been reviewed** (Kimi K3, a different family, on
-  [#15](https://github.com/diegoami/borg-agent/pull/15), 2026-11-09) and its
-  four findings are answered in **T15** (#18). The review PR's diff moved with
-  them; it is still the owner's to merge, and milestone 3 waits for that.
-- **Milestone 2 is complete and waiting for the owner's review.** Its review
-  PR is `main` into `reviewed` ([#15](https://github.com/diegoami/borg-agent/pull/15)); the owner merges it, which advances
-  `reviewed`. **A session does not start milestone 3 until then** (RULES 7).
-- Milestone 2 delivered, all merged: **T03** the bridge (#8), **T13** the open
-  sources, decision D8 (#9), **T04** records and replay (#11), **T05** the
-  executor's primitives (#12), **T12** the milestone-1 review findings (#13).
-- Milestone 1 (foundation) was reviewed at `11c8303`, issue
-  [#7](https://github.com/diegoami/borg-agent/issues/7). All thirteen of its
-  findings are now answered: eleven fixed, one (the mind block versus R2.4's
-  three jobs) carried into T06, and one left to the owner — see below.
-- **What works end to end today:** the pinned game builds; the stock Borg
-  plays it reproducibly; an agent plays through the Borg's own connection with
-  the eight primitives of R2; every run can be recorded, replayed with
-  `verify`, branched at a turn, and read with `view`, `dump` and `explain`.
-  No model has played yet: that is milestone 3.
-- Open owner questions:
-  - **the seasonal window** (review finding 1): neutralizing the game's one
-    `time()` read would make replay independent of the calendar, at the price
-    of play differing from the unpatched build on 24-26 December. That is a
-    RULES 9 exception, so it is the owner's call. Today every run records
-    `calendar.seasonal` and `verify` refuses to compare across the window;
-  - which models do which job (T09 measures the `trial:` candidates, then
-    decision D6);
-  - whether the OpenRouter reviewer is `nvidia/nemotron-3-ultra-550b-a55b` or
-    the `:free` variant — the owner will decide later;
-  - whether `claim@1` should carry `superseded` as a status as well as the
-    `superseded_by` field.
-- Settled: `default_profile: alibaba` stays (the owner, 2026-11-08 — the
-  general notes about that provider do not apply here, since D7 makes the
-  profile the only model rule).
+*Written on 2026-11-09, with milestone 3 complete, its review PR
+[#41](https://github.com/diegoami/borg-agent/pull/41) open, and milestone 4
+decided but not started.*
+
+### Where the work stands
+
+- **Milestones 1 and 2 are done, reviewed and merged.** Milestone 1
+  (foundation) was reviewed in issue
+  [#7](https://github.com/diegoami/borg-agent/issues/7); milestone 2 (the
+  connection) was reviewed **twice** on
+  [#15](https://github.com/diegoami/borg-agent/pull/15) by a model of another
+  family (Kimi K3). Every finding of both rounds is answered: T12 for
+  milestone 1's, T15 and T16 for milestone 2's.
+- **Milestone 3 is in progress.** Done: T17 (the game pin to better-borg-c
+  milestone 8), T18 (the borg-rs pin), T19 (the strategy manual and the online
+  command reference as sources), T20 (the user manual) and **T06** (the
+  `models.yaml` loader, the prompt pack and the three minds — a model has now
+  played), **T07** (the knowledge store — the first real claims are in
+  `knowledge/`), T21 (the finished strategy manual) and **T08** (mode B).
+  **Milestone 3 is complete**, and its review PR
+  [#41](https://github.com/diegoami/borg-agent/pull/41) is open (42 commits,
+  eight tasks, the reviewer prompt in its first comment). **No session starts
+  milestone 4 until the owner merges it** (RULES 7).
+- **Milestone 4 begins with a probe, not with the trial** — decision **D11**,
+  2026-11-09: T22 (mode C) comes before T09, T10 and T11. It is also the only
+  milestone-4 task that needs no model, so a cloud session with no key can
+  finish it.
+- **What works end to end:** the pinned game builds; the stock Borg plays it
+  reproducibly; an agent plays through the Borg's own connection choosing
+  between the eight primitives of R2; a run is recorded, replayed with
+  `verify` (which also checks the record against the run), branched at a turn,
+  and read with `view`, `dump` and `explain`. 223 fast tests and 13 slow gates,
+  both in CI.
+- **A model has played** (2026-11-09, T06): `qwen3.8-flash` on the Alibaba
+  Token Plan, seed 1 to 1,000 turns, **5 calls and no parse failures**, and
+  the run **replayed exactly** afterwards. See docs/MINDS.md.
+
+### Start here
+
+```sh
+bash scripts/setup.sh --strict        # four pinned clones; ends "setup: ready"
+uv venv .venv && uv pip install -e '.[test]' --python .venv/bin/python
+.venv/bin/python -m pytest -q         # 223; the slow gates are -m slow
+```
+
+Read [PLAN.md](../PLAN.md)'s milestone table first — it says which tasks
+belong to the milestone in progress, and RULES 7 says a session works only
+inside it, merges its own task PRs when CI is green, and **stops when the
+milestone's last task is merged** to open the review PR (`main` into
+`reviewed`).
+
+### Decisions that are closed — do not reopen them
+
+| | |
+|---|---|
+| **D7** | The agent's models come from `models.yaml` and the active profile, and from nothing else. No quota service anywhere in this repository. |
+| **D8** | The playing agent may read the manual (required), the game and Borg source, the specification, the deaths, the issues, the zoo's results and the Rust remake. What is asked instead is provenance: every claim names its sources and says whether a fact was read or seen. |
+| **D9** | The seasonal window stays as the game plays it. **No RULES 9 exception.** Every run records `calendar.seasonal` and `verify` refuses to compare across 24-26 December; a run made inside it replays only on such a day. The owner weighed this against neutralizing the game's one `time()` call and chose the game's behaviour. |
+| **D10** | Real model calls are allowed in **small** runs: milestone 3 may prove the `api` mind on short games, and every PR that spends reports the calls, tokens and cost. Trial scale (T09) and pilot scale (T10) still wait for the owner. |
+| 2026-11-09 | The OpenRouter reviewer is the **`:free`** variant; `default_profile: alibaba` stays (the owner's general notes about that provider do not apply here); `claim@1` keeps `superseded_by` and gains no `superseded` status. |
+
+### Known Borg deaths at the milestone 8 pin
+
+Mode B needs a death, and milestone 8's Borg is good enough that finding one
+takes minutes. Searched on 2026-11-09 at cap 30,000:
+
+| Seed | What the Borg did |
+|---|---|
+| **3** | **died: a green naga at turn 15,714** — the case T08's gate uses |
+| 1, 2, 11 | survived 30,000 turns |
+| 7 | survives 100,000 (it died to a green naga at 27,808 at milestone 6) |
+
+`BORG_AGENT_DEATH_SEED=3` points the slow gate at it. Add to this table rather
+than searching again.
+
+### Settled: where T08's cases come from
+
+**Deaths this build produces.** The zoo has no milestone 8 results, so its
+`classes-m6` floating-eye deaths are deaths of a build we no longer play. The
+pin's own `docs/deaths/` (19 cases, verified replays, assessments, issues)
+belongs to older builds and to turns in the hundreds of thousands: it is a
+**source to read** for the questions a post-mortem should ask, not a case list.
+See docs/POST-MORTEM.md.
+
+### Still open
+
+Only the review of #41. Both questions this section used to hold are answered:
+
+- **mode C** is decided: it comes before the model trial (**D11**) and is
+  written up as **T22**, the first task of milestone 4. The floating-eye
+  question — 4 of 13 Mandos characters in `mandos-classes-18`, and no C-side
+  number at all — is its first probe;
+- **the zoo and milestone 8** is now a request in the owner's own repository:
+  [borg-zoo#36](https://github.com/diegoami/borg-zoo/issues/36), asked for by
+  the owner on 2026-11-09 (which is the RULES 8 exception, written into the
+  rule). It asks for a `4.2.6-bbc-m8` specimen, an `m8-smoke` and a
+  `classes-m8` experiment on `classes-18`, and the death evidence retained per
+  run. Nothing here waits for it: T22 needs no zoo result, and mode B already
+  has seed 3.
+
+Expected soon: the owner is building **borg-rs milestone 8**, so the `borg-rs`
+pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
+
+One process note, not a problem: T19 and T20 were done by a cloud session,
+which cannot choose its branch name, so both used `claude/elegant-volta-r5qdic`
+rather than `task/Tnn-short-name` (RULES 5). The substance held — one task per
+PR, #30 and #31 — and the commits carry no AI attribution. If the rule should
+say what a session that cannot name its branch does, that is the owner's
+one-line change.
+
+### The sources the agent has, after T19 and T20
+
+Three manual-like texts, and they are not equal:
+
+| | What it is | How much to trust it |
+|---|---|---|
+| the game's manual | `docs/*.rst` and `lib/help/` at the game pin | the game's own words; **required** reading, and the only basis a `documented` claim may rest on |
+| the user manual | `docs/user-manual.md` at the `c-borg-reference` pin, 3,740 lines | written by a model, with tables generated from `lib/gamedata/`. Advice to test, not fact |
+| the strategy manual | `docs/c-manual/` at the **`borg-spec`** pin (T21, 2026-11-09): seventeen chapters, ten generated appendices, ~940 KB | a model wrote the prose, and chapter 15 says so of itself: "a starting policy to be measured, not truths". Until T21 this source was the half-built `docs/strategy/` on the `c-borg-reference` branch, whose README linked to eight chapters that did not exist; that directory is gone from master |
+
+Verified on 2026-11-09, so nobody need re-derive it:
+- `lib/gamedata/` is **byte-identical** across the `c-borg-reference`,
+  `better-borg-c` (m8) and `original` (e473720) pins — 46 files, the same blob
+  set. So an appendix generated from it describes the game we play.
+- `docs/command.rst` is the same blob (`fb6993d5`) at all three pins, which is
+  what makes the online command reference safe to cite *as that file*.
+- The online page itself (`angband.readthedocs.io/en/latest/command.html`) has
+  **never been read from here**: the network blocks it, and `latest` moves with
+  upstream. `pins.json` records the URL as unpinned, with that substitution.
+
+A claim read in either model-written manual uses `static:user-manual` or
+`static:strategy-manual`, and **can never be `documented`**: the schema's
+existing rule forces that status to rest on the game's own manual, and where
+the two disagree the game's manual wins. No new rule was needed for that.
+
+### What T06 should know before it starts
+
+- The observation carries **the whole of the player's known map**, about 4 KB
+  after 10,000 turns and growing. A prompt needs a summary of it, not a paste.
+- The run record's `mind` block is **one model per run**, while R2.4 speaks of
+  three jobs. A run that calls a player and a consolidator needs that to
+  become per-job; the milestone 1 review raised it and it was deferred to here.
+- `decisions.jsonl` already records what a chooser chose and why, and why each
+  primitive stopped. **The model call belongs on those lines** (R2.1).
+- The secret guard scans the run record but **not** the observation and action
+  logs. Model replies will land there, so it has to grow before an `api` run
+  writes anything.
+- The prompt pack's test is about **provenance, not permission** (D8): every
+  file a prompt draws on is named in `pins.json`'s `sources`, and the pack
+  records which. There are twelve sources now, three of them manual-like: the
+  pack names which it loads and **keeps the game's manual first**, since it is
+  the only one whose word is final.
+- `budget_cap` is an outcome, not a failure, and `verify` handles such a run
+  with its `prefix` scope. That path exists and is tested; use it.
+
+### Two lessons worth keeping
+
+- **When the bridge mirrors something the game shows, mirror the function the
+  UI calls, not the data behind it.** Reading `store->stock` instead of
+  `store_stock_list` made a shop label point at the wrong item: the agent
+  asked for wine and bought a Ration of Food. Buying the first label had
+  worked by luck, which is why the first live check passed.
+- **When a check is loosened, ask what the strict version was catching by
+  accident.** `verify`'s new tolerance for a stream that ends early also
+  accepted a run cut short at the end; the exact-length comparison it replaced
+  had been catching that without anyone intending it.
+
+## 2026-11-09: mode C before the trial (D11), and the zoo asked for milestone 8
+
+Branch `task/mode-c-before-the-trial`. **Documents only — no code, and no task
+started**: milestone 3's review PR
+[#41](https://github.com/diegoami/borg-agent/pull/41) is still open, and RULES
+7 holds.
+
+The owner decided the two questions milestone 3 left open.
+
+- **D11: mode C comes before the model trial.** Milestone 4 is now T22, then
+  T09, T10, T11. The reason is in the requirements and worth keeping in mind
+  while reading T09: every claim in the store today is a `hypothesis`, the
+  only promoter we have is a second model, and T09 measures a consolidator by
+  how many of its claims are **false**. A probe is the only check that is not
+  another model. It is also the one task in milestone 4 that needs no model,
+  so CI and a keyless cloud session can run it.
+- **T22 is written out in the plan**, with the parts that took reading the
+  game source to settle: a probe is a **file** under `probes/`, not code; a
+  `natural` setup reuses T08's takeover machinery with a condition instead of
+  a turn, while an `intervened` one uses the game's own wizard **commands**
+  (`CMD_WIZ_SUMMON_NAMED` takes the monster as a numeric `index`, so no debug
+  menu has to be typed at; `CMD_WIZ_JUMP_LEVEL`, `CMD_WIZ_CREATE_OBJ`,
+  `CMD_WIZ_CURE_ALL`, `CMD_WIZ_TELEPORT_TO` cover the rest). The game sets
+  `player->noscore |= NOSCORE_WIZARD` on that path, so **the game's own flag
+  is the intervention marker** — a run that claims to be untouched can be
+  checked rather than believed. And a summon can fail ("Could not place
+  monster"), so a trial whose setup did not take is `setup_failed` and counted
+  apart; counting it as a survivor would be the easiest way to fake a good
+  number.
+- **borg-zoo#36** asks for the milestone 8 specimen and run. It carries what
+  took measuring here: the runner and observer are byte-identical at the zoo's
+  harness pin and at m8 (so no harness change), m8 is **~8× slower per game
+  turn** than m6 (15 s against 1.9 s on seed 7 at cap 5,000, trace 10× the
+  size), and `IMPACT-MILESTONE8.md` does not exist yet, at the tag or on main,
+  so the specimen can only cite the tag.
+- **The owner moved the manuals the same day** (merge
+  [842dc5d0](https://github.com/diegoami/neo-angband-tracker/commit/842dc5d0eff96eee0fbfcb1c78cafd168aa6f256)):
+  `c-borg-reference` is now pristine angband/angband `e473720`, and the
+  manuals live on `workbench/c-borg`. **No pin changes**, and it was checked
+  rather than assumed: our `c-borg-reference` pin `471e1214` is an **ancestor
+  of `workbench/c-borg`** (26 behind its head, 0 ahead), so it is still
+  fetchable, and `docs/user-manual.md` is the **same blob** (`eedd740c`,
+  194,941 bytes) there. Two things to know: the branch no longer contains the
+  commit the pin is named after, which `pins.json` now says; and that branch's
+  `docs/strategy` is the **earlier eight-chapter** manual (01-08, A1-A6), not
+  the finished `docs/c-manual` (17 chapters, 10 appendices) that T21 repointed
+  to on master — so repointing the strategy manual at the workbench branch
+  would be a step backwards. `docs/strategy-manual` is safe for the owner to
+  delete: the pinned commit stays reachable through `workbench/c-borg`, which
+  must not be force-pushed below it.
+- **RULES 8 now says what just happened**: nothing is filed in another
+  repository unless the owner asks, and then only in one of their own. The
+  rule names #36 as the example, so the next session does not have to guess
+  whether it may do this (it may not, unasked).
+
+## 2026-11-09: T08, taking over before a death (mode B)
+
+Branch `task/T08-post-mortem`, PR
+[#39](https://github.com/diegoami/borg-agent/pull/39).
+`src/borg_agent/postmortem.py`, `python -m borg_agent post-mortem`, the
+bridge's `BORG_AGENT_FROM_TURN`, and `docs/POST-MORTEM.md`.
+
+**The gate passed in 119 seconds**: the Borg's death on seed 3 reproduced from
+the seed alone (same trace hash, same cause, same turn), the agent took over
+200 turns before it, and the post-mortem **verified** — so a mode B run is
+evidence like any other.
+
+Facts the next sessions will need:
+- **No save file is involved, and none is needed.** The Borg's play is
+  deterministic, so the bridge simply keeps the agent's hand off the wheel
+  until the turn the run names (`BORG_AGENT_FROM_TURN`): the Borg plays its own
+  prefix, the handover goes into the trace, and the agent plays on. `verify`
+  reads that turn from the record and does the same thing, which is why a
+  post-mortem replays. The runner's named-play save path is not used at all —
+  and its own notes say a save does not carry the Borg's memory, so this is the
+  better road.
+- The cost is time, not storage: taking over at turn 15,514 means playing
+  15,514 turns of Borg first, about 45 seconds at this pin.
+- **`final_turn` is the last *sampled* state**, not the last turn: the observer
+  writes a state every hundred Borg decisions. So
+  `survived_past_the_death` understates — in the real post-mortem the model's
+  own call log showed turn 16,229 where the record said 16,039.
+- **The play mind's timeout was too short.** A real post-mortem ended
+  `harness_failure` because one call went over 120 seconds mid-fight. It is 240
+  now, with `--model-timeout`. A provider's slowest answer sets that, not its
+  median.
+- The first real post-mortem: `qwen3.8-flash` took over 200 turns before the
+  green naga, fought something, and reached turn 16,039 — 325 turns past where
+  the Borg died — before the provider timed out. **Nothing about avoiding the
+  death is proved**, and the record says so: the facts are recorded and the
+  conclusion is not drawn. Mode C is what would settle it.
+
+## 2026-11-09: T21, the strategy manual at its finished home
+
+Branch `task/T21-c-manual`, PR
+[#37](https://github.com/diegoami/borg-agent/pull/37). The owner asked for
+`docs/c-manual/README.md` on neo-angband-tracker's master.
+
+It is the **finished version of the source T19 added two tasks earlier**.
+T19's `docs/strategy/` on the `c-borg-reference` branch was an index, six
+appendices and eight chapters that did not exist; `docs/c-manual/` is that work
+completed — seventeen chapters, ten appendices, about 940 KB — and
+`docs/strategy/` is gone from master. So this task **repoints**
+`sources.strategy_manual` instead of adding a source: one document, at its
+finished home.
+
+Facts the next sessions will need:
+- **The `borg-spec` pin moved** from `eefc5500` to `777eea1d` to reach it. That
+  is safe because the specification and the Tunable Borg Plan are
+  **byte-identical at both commits**, which a test now asserts — one pin
+  serves three documents, and that is only honest while the other two have not
+  changed. If the pin moves again, check that test first.
+- The pin is still called `borg-spec` although it now serves the manual too.
+  Renaming it would touch `sources`, the docs and the tests for no gain.
+- **Chapter 15, "notes for the borg"** (44 KB), is the part this repository
+  will argue with most: rule ids, conditions, thresholds, sources, confidence,
+  and the inputs each rule needs, classified by whether a human player could
+  know them. It says of itself that its rules are "a starting policy to be
+  measured, not truths" and its constants tunables — which is exactly the
+  status a claim read in it gets (`static:strategy-manual`, `hypothesis`,
+  never `documented`). It is the natural first thing for T09's consolidators
+  to disagree with, and the natural source of mode C probe questions.
+- Its `user-manual/` copy of the official manual is **not** a source: the
+  game's own manual at the game pin is the authority.
+- A test that described the superseded source was rewritten rather than
+  deleted: the `lib/gamedata` identity check it carried still matters, because
+  T20's user manual was extracted from that data.
+
+## 2026-11-09: T07, the knowledge store and mode D
+
+Branch `task/T07-knowledge-store`, PR
+[#35](https://github.com/diegoami/borg-agent/pull/35).
+`src/borg_agent/knowledge.py` (the store and the views),
+`src/borg_agent/consolidate.py` with `prompts/consolidate-1/`,
+`python -m borg_agent knowledge list|views` and `consolidate --run`, and
+`docs/KNOWLEDGE.md`.
+
+**The repository has its first knowledge.** `qwen3.8-max` consolidated the
+model-played run of T06 and offered seven claims; all seven were accepted,
+each anchored to the run, the seed and a turn. They are in
+`knowledge/claims.jsonl` and the generated views beside it.
+
+Facts the next sessions will need:
+- **The first claims are thin, and that is a finding about the prompt.** Two
+  are real game knowledge (*a Human Warrior can kill a giant yellow centipede
+  in melee on depth 1*); the rest restate the run (*the run ended because it
+  reached the cap*) — true, checkable, and worth nothing. `consolidate-1` never
+  says that a claim should be about **the game** rather than about this run's
+  narrative. Say it in the next version of the pack, and expect T09's trial to
+  measure it: its first number is false claims, its second is whether a claim
+  was worth having.
+- **Consolidation costs about ten play decisions**: one call, 13,373 tokens,
+  **284 seconds**. The first attempt timed out at the play mind's 120 s, so the
+  consolidator's default is 420 s. Budget T09 and T10 accordingly.
+- **The harness decides three things, not the model**: the status
+  (`hypothesis`, always — R4.3), `produced_by` (a model asserting its own
+  identity is worth nothing), and the seed and run id in every piece of
+  evidence. A claim that points at no turn of the run is refused, with the
+  reason recorded in `consolidation.json`.
+- **A model asked for `corroborated` on its very first try.** The store lowered
+  it and wrote why into the claim's `notes`. That rule earns its keep.
+- `claim@1` gained a `notes` array for exactly that: what the store had to say
+  when a claim entered, which is not the claim's content.
+- The views are generated and a test fails if one in git is stale. Run
+  `python -m borg_agent knowledge views` after anything that adds a claim.
+- Retrieval is mechanical: a claim scoped to another class, race or depth is
+  left out of a prompt, and a superseded claim never appears. Whether a claim
+  is *useful* is the mind's business.
+
+Left open: no probe (mode C), so nothing can move a claim past `hypothesis` by
+counting; no review job is called, though the rule is enforced; and
+consolidation finds no contradictions and asks no mode C questions, which R3
+also wants from mode D.
+
+## 2026-11-09: T06, the mind and the model calls
+
+Branch `task/T06-mind-and-model-calls`, PR
+[#33](https://github.com/diegoami/borg-agent/pull/33).
+
+What exists now: `src/borg_agent/models.py` (the `models.yaml` loader),
+`schemas/models@1.json`, `prompts/play-1/` with
+`src/borg_agent/prompts.py`, and `src/borg_agent/model_mind.py` with the
+`external` and `api` minds, the call log and the budget. `docs/MINDS.md`
+describes all of it. `--mind api|external` on `agent` and `branch`, with
+`--profile`, `--pack`, `--budget-calls` and `--budget-tokens`.
+
+**A model played.** `qwen3.8-flash`, profile `alibaba`, pack `play-1`, seed 1,
+cap 1,000: `turn_cap` after 51 decisions, **5 model calls**, no parse
+failures, 17,966 tokens, 14 s a call, 99 s in all. It explored the town, took
+the stairs down, explored, fought a giant centipede and rested at 15/40 hit
+points — its own reasons are in `model-calls.jsonl`. The record validates,
+`deterministic: false`, and **`verify` replayed the run exactly**: 51
+decisions, every state hash equal. A second run with `--budget-calls 2` ended
+`budget_cap`.
+
+Facts the next sessions will need:
+- **Five calls for a thousand game turns.** That is what the executor buys: a
+  model is asked when a primitive stops, not when the game wants a key. A
+  20,000-turn pilot run is therefore of the order of a hundred calls, not
+  thousands — the figure T09 and T10 should budget for, and worth measuring
+  again with a model that chooses worse and so stops more often.
+- **A prompt is about 2,000 tokens**, of which 1,600 is the system message and
+  identical every time. Prompt caching, if a provider offers it, would pay.
+- **The executor is transparent for run-level concerns.** `ExecutingMind`
+  delegates `call_log`, `budget`, `parse_failures`, `mind_record` and the
+  journal to the chooser inside it. The first real run wrote no call log
+  because the wrapper hid it; if a run-level feature seems missing with the
+  `api` mind, look there first.
+- **A key cannot reach a file.** The loader refuses a key-shaped field before
+  it validates anything (a validator's error message could otherwise quote
+  it), the call log replaces a reply that looks like a credential, and the key
+  lives only in the header of the one method that makes a request.
+- The prompt pack describes the primitives **from the executor's own code**,
+  including the stops each one reports, so a prompt cannot drift from what the
+  executor does.
+- `string.Template`, not `str.format`, for the templates: they show JSON, and
+  braces in an example are not placeholders.
+- A reply is read by finding the first balanced JSON object, so a model that
+  wraps its answer in prose or a fenced block is still answering. Twice
+  unreadable ends the run `agent_stopped`; the agent never guesses an action.
+
+Left for T07: the knowledge in the prompt. `render` takes a `knowledge`
+argument and the system message has a place for it; nothing fills it yet.
+
+## 2026-11-09: T20, the user manual is a source
+
+The owner, after T19: add `docs/user-manual.md` too. The pin is now named
+**`c-borg-reference`** (it serves both documents); `sources.user_manual` reads
+the file there; `claim@1` gains `user-manual` and `static:user-manual`. Like
+the strategy manual it was written by a model, so it is never the basis of a
+`documented` claim, and where it disagrees with the game's own manual the
+game's manual wins. Only its key table was spot-checked (it agreed with
+`docs/command.rst`).
+
+**For T06's prompt pack:** the agent now has three manual-like texts — the
+game's manual (required), the user manual and the strategy manual. The pack
+should name which it loads and keep the game's manual first; the user manual is
+a convenient single file, but it is the one that could be wrong.
+
+## 2026-11-09: T19, the strategy manual and the online command reference
+
+The owner asked for two more sources: `docs/strategy/` on the
+`c-borg-reference` branch of diegoami/neo-angband-tracker, and
+<https://angband.readthedocs.io/en/latest/command.html>.
+
+- **`strategy-manual` pin** (renamed `c-borg-reference` in T20) at `471e1214`,
+  read as `docs/strategy/`: an index
+  and six generated appendices (monsters, uniques, monster spells, artifacts,
+  egos, objects). The branch is the `original` pin plus three doc commits; its
+  `lib/gamedata/` equals the game pin's, and a test compares them, so the
+  appendices stay true of the game we play. **Its README links to eight
+  chapters that do not exist**, and its prose and "ten rules" were written by a
+  model: advice to test, not facts.
+- **`claim@1`** gains source `strategy-manual` and basis
+  `static:strategy-manual`. A claim from it is never `documented`; check the
+  number against `lib/gamedata/` and add `game-source` where it matters. T06's
+  prompt pack should list it by that name.
+- **The online page** is `manual_online` in `sources`: unpinned, cited as
+  `docs/command.rst` at the `better-borg-c` pin, which is byte-identical to
+  upstream `master` (`e473720`) on this date. readthedocs is **not reachable
+  from the cloud session's network**, so the rendered page was not read here;
+  a session that needs it as a web page needs `angband.readthedocs.io` allowed.
+- `docs/user-manual.md` on the same branch was added next, in T20.
+- The run-record examples still list the pins of before T18 (no `borg-rs`, no
+  `strategy-manual`); `scripts/refresh-examples.py` regenerates them.
+
+## 2026-11-09: T18, the Rust remake is a pinned source
+
+Branch `task/T18-pin-borg-rs`, PR
+[#26](https://github.com/diegoami/borg-agent/pull/26).
+
+The owner: borg-rs is at milestone 7. It is pinned at `ce27f5ed` ("Impact v7:
+carry better-borg-c milestone 7") and listed in `pins.json`'s `sources`, so
+the agent and the later phases may read it (decision D8) and a claim can cite
+a fixed version of the remake.
+
+Facts the next sessions will need:
+- **The two sides are not always on the same milestone.** When this was
+  written the game was at better-borg-c milestone 8 and borg-rs carried
+  milestone 7, with milestone 8 being built the same day. A claim, a design
+  record and anything phase 3 writes must say which side of the port **and
+  which milestone** it is about. Both pins' roles name a milestone, and the
+  test checks that they name one — not which one, which was a mistake in the
+  first version of that test and would have failed on the next repin.
+- **borg-rs has the same connection**: `borg-rs/src/borg.rs` holds the
+  `inkey_hack` callback, with `generate_keypress` beside it, exactly where the
+  C bridge attaches. A claim about the connection is not C-specific, which is
+  the most useful thing about pinning it.
+- Shape: 66 files under `borg-rs/src/`, 59 of them the converted Borg modules
+  (one per `src/borg/<x>.c`), no `unsafe` outside the FFI boundary;
+  `docs/PROGRESS.md` is 157 KB of conversion notes and is the place to start.
+- `scripts/setup.sh` clones it without any change, because it reads
+  `pins.json`. A fresh session now clones four repositories.
+- Nothing reads it yet. It is material for T07's claims (a claim may cite
+  `static:borg-source` on either side), for phase 2's design records and for
+  phase 3.
+
+## 2026-11-09: T17, the game pin moves to better-borg-c milestone 8
+
+Branch `task/T17-repin-milestone-8`, PR
+[#24](https://github.com/diegoami/borg-agent/pull/24).
+
+The owner asked for milestone 8 (`4.2.6-impact-v8`, `017e038e`, 88 carried
+fixes where milestone 6 had 63). It went through with two small changes and
+one casualty.
+
+Facts the next sessions will need:
+- **`borg_what_text` takes a buffer size at milestone 8** and did not at
+  milestone 6. That was the only API the bridge uses that moved. If a future
+  pin moves again, the build fails loudly at that call, which is the right
+  place to find out.
+- **The tree has its own `measure_activate_borg` now**, so the runner's "add
+  it if missing" is a no-op. The test asserts the instrumented tree ends with
+  exactly one, whichever way the pin behaves.
+- **The runner and the observer are byte-identical at the runner pin and at
+  milestone 8**, so the parity tests needed nothing.
+- **The new golden trace**: seed 7, cap 5,000, `a6ffbae0…`, 542,917 bytes,
+  about 15 seconds. Milestone 6: `2242a3f5…`, 53,040 bytes, 1.9 seconds. Ten
+  times the trace, eight times the time, 25 more fixes.
+- **Milestone 8's Borg survives seed 7 to 100,000 turns**, where milestone 6
+  died to a green naga at 27,808. The death-and-checkpoints gate used that
+  death, so it now takes its death from an agent run instead — and agent runs
+  gained the runner's `checkpoint_saves` option in the process, which T08
+  wanted anyway.
+- **The agent-side figures did not move at all**: the scripted mind still
+  makes 101 decisions on seed 1 at cap 1,000, still dies to a rock lizard at
+  turn 311 on seed 7, and the primitive chooser's action stream is still
+  `01aeca55…`. A scripted chooser does not depend on the Borg's thinking, so
+  only the stock-Borg numbers changed. That is a useful property: agent gates
+  survive a pin move, stock-Borg gates do not.
+- **T08's evidence is the casualty.** Its two floating-eye cases are deaths of
+  the zoo's `4.2.6-bbc-m6`; the zoo's newest bbc specimen is `4.2.6-bbc-m7`
+  and there are no m8 results. T08 must now take its cases from
+  `docs/deaths/` at the pin (19 entries), from deaths our own build produces,
+  or from an m8 zoo run the owner commissions. PLAN.md's T08 says so.
 
 ## 2026-11-09: T16, the milestone-2 re-review findings
 
@@ -202,7 +663,7 @@ Left for the owner: the seasonal-window decision above.
 
 ## 2026-11-08: T05, the executor's primitives
 
-Branch `task/T05-executor-primitives`, PR #TBD.
+Branch `task/T05-executor-primitives`, PR [#12](https://github.com/diegoami/borg-agent/pull/12).
 
 What exists now:
 - `src/borg_agent/executor.py`: the eight primitives of R2 (`walk_to`,
@@ -252,7 +713,7 @@ Left for the owner:
 
 ## 2026-11-08: T04, run records and replay
 
-Branch `task/T04-record-and-replay`, PR #TBD.
+Branch `task/T04-record-and-replay`, PR [#11](https://github.com/diegoami/borg-agent/pull/11).
 
 What exists now:
 - `src/borg_agent/record.py`: builds a run record from a finished run and

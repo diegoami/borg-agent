@@ -30,3 +30,26 @@ class StreamEnded(Exception):
         self.turn = turn
         super().__init__(f'the recorded action stream ended after {decisions} decisions, '
                          f'and the game asked again at turn {turn}')
+
+
+class BudgetSpent(Exception):
+    """The run has used the model calls or tokens it was given (R2.3).
+
+    An outcome (`budget_cap`), not a failure: a budget is what a run was
+    allowed, and reaching it is a result.
+    """
+
+    def __init__(self, used, allowed):
+        self.used = dict(used)
+        self.allowed = dict(allowed)
+        spent = ', '.join(f'{name} {used.get(name, 0)}/{limit}'
+                          for name, limit in allowed.items() if limit)
+        super().__init__(f'the run has spent its budget ({spent})')
+
+
+class ModelFailed(Exception):
+    """The provider could not be reached, or refused.
+
+    Infrastructure, not play: the run records `harness_failure` with this as
+    the reason, and nothing about the game is concluded from it.
+    """

@@ -23,15 +23,28 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [Records and replay](docs/RECORDS.md): what makes a run evidence, and the
   five tools that work on it.
 - [The executor](docs/EXECUTOR.md): the primitives a mind chooses between.
+- [The mind](docs/MINDS.md): which model decides, what it is told, and what a
+  call costs.
+- [The knowledge base](docs/KNOWLEDGE.md): the claims, the views, and how a
+  run becomes knowledge.
+- [Mode B](docs/POST-MORTEM.md): taking over shortly before a death the Borg
+  is known to come to.
 
 ## Status
 
-Initialized on 2026-11-08. T01 builds the pinned game headless and plays it
-with the stock Borg; see [building and playing](docs/BUILD-AND-PLAY.md). The
-bridge that gives the game's input to an agent (T03) is not written yet.
+Milestones 1 and 2 are done and reviewed (2026-11-09). An agent plays the
+pinned C game through the Borg's own connection, choosing between the eight
+executor primitives; every run is recorded, replays exactly without the mind,
+and can be branched at a turn. **No model has played yet** — that is milestone
+3 (T06), with T07's knowledge store and T08's post-mortems behind it.
+[PLAN.md](PLAN.md) has the milestones and [the handover](docs/HANDOVER.md)
+what the next session needs.
 
 ## Related repositories
 
+- [borg-rs](https://github.com/diegoami/borg-rs): the Rust Borg this
+  repository's knowledge is for — the "Borg reborn". Pinned at its milestone
+  7, and a source the agent may read (decision D8).
 - [borg-zoo](https://github.com/diegoami/borg-zoo): measures Borg versions on
   seed suites; it will import this agent's runs.
 - [better-borg-c](https://github.com/diegoami/better-borg-c): the C game and

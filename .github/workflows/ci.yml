@@ -35,6 +35,9 @@ jobs:
           key: game-${{ runner.os }}-${{ steps.recipe.outputs.key }}
       - run: python -m borg_agent build
       - run: python -m borg_agent determinism --seed 7 --cap 5000
+      # The mode B gate needs a seed whose Borg death is known, and finding
+      # one costs minutes of play; it is skipped here and run on the owner's
+      # machine (docs/POST-MORTEM.md).
       - run: python -m pytest -q -m slow
       - if: failure()
         uses: actions/upload-artifact@v4

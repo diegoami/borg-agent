@@ -1,0 +1,21 @@
+{
+  "schema": "borg-agent/prompt-pack@1",
+  "version": "play-1",
+  "job": "play",
+  "description": "Choosing the next primitive while playing. It carries no game knowledge the developer brought: what it says about the game comes from the extracts below, each named with the source it was taken from and the pin it was read at (docs/SOURCES.md, decision D8).",
+  "templates": {
+    "system": "system.md",
+    "decision": "decision.md"
+  },
+  "extracts": [
+    {
+      "as": "movement_and_resting_commands",
+      "source": "manual",
+      "pin": "better-borg-c",
+      "path": "docs/command.rst",
+      "from": "Movement Commands",
+      "to": "Alter Commands",
+      "why": "The manual is required reading so the agent knows the commands behind the primitives it chooses (decision D2, kept by D8)."
+    }
+  ]
+}

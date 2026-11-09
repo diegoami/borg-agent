@@ -39,8 +39,13 @@ These hold for every session working on this repository, local or cloud.
    merges it, which advances `reviewed`. The findings then become a task of
    their own (T12 is milestone 1's).
 8. No posts to angband/angband or any other upstream project or forum.
-   Nothing is filed in other repositories; a needed change there is
-   described in the handover for the owner.
+   Nothing is filed in another repository **unless the owner asks for it**,
+   and then only in one of their own: the needed change is otherwise
+   described in the handover for the owner to carry over. The owner asked on
+   2026-11-09 for the milestone 8 request to the zoo
+   ([borg-zoo#36](https://github.com/diegoami/borg-zoo/issues/36)), which is
+   what that exception looks like: a request, in the owner's own repository,
+   changing nothing there.
 
 ## Play and evidence
 

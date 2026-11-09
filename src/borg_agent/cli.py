@@ -15,10 +15,63 @@ from . import play as play_module
 from . import record as record_module
 from . import replay as replay_module
 
+def api_mind(args):
+    """The model of the active profile's `play` job (D7), with its budget."""
+    from . import model_mind, models as models_module, prompts
+
+    configuration = models_module.load(profile=args.profile)
+    choice = configuration['play']
+    missing = configuration.missing_keys(['play'])
+    if missing:
+        raise models_module.ConfigurationError(
+            f'the play job needs ${missing[0]}, which is not set')
+    pack = prompts.load_pack(args.pack)
+    if pack.job != 'play':
+        raise prompts.PromptError(f'the pack {pack.version!r} is for the {pack.job} job')
+    print(f'play: {choice.provider}/{choice.model} ({choice.family}), profile '
+          f'{choice.profile}, chosen by {choice.chosen_by}, pack {pack.version} '
+          f'{pack.sha256[:12]}')
+    from . import knowledge as knowledge_module
+
+    store = knowledge_module.Store()
+    learned = None if args.no_knowledge else (store.for_prompt() or None)
+    if learned:
+        print(f'carrying {len(learned.splitlines())} claims into the prompt '
+              f'(knowledge {store.sha256()[:12]})')
+    return model_mind.ApiMind(
+        choice, pack=pack,
+        budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
+        choice_record=configuration.record('play'),
+        knowledge=learned, knowledge_sha256=store.sha256() if learned else None,
+        timeout=args.model_timeout)
+
+
+def external_mind(args):
+    from . import model_mind
+
+    directory = Path(args.external_dir or (RUNS / 'external'))
+    print(f'write answers into {directory}')
+    return model_mind.ExternalMind(directory)
+
+
 MINDS = {'scripted': mind_module.ScriptedMind,
          # The primitives of R2, with a scripted chooser in front (T05).
          'scripted-primitives': lambda: executor_module.ExecutingMind(
              mind_module.PrimitiveMind(), name='scripted-primitives')}
+# The minds that need the run's arguments: a model, or a person at a file.
+CONFIGURED_MINDS = {'api': api_mind, 'external': external_mind}
+ALL_MINDS = sorted({*MINDS, *CONFIGURED_MINDS})
+
+
+def build_mind(args):
+    """The mind a run was asked for."""
+    if args.mind in CONFIGURED_MINDS:
+        inner = CONFIGURED_MINDS[args.mind](args)
+        if args.mind == 'api' and not args.no_executor:
+            # A model chooses primitives; the executor runs them (R2).
+            return executor_module.ExecutingMind(inner, name=f'api:{args.mind}')
+        return inner
+    return MINDS[args.mind]()
 
 RUNS = build_module.pins.ROOT / 'runs'
 
@@ -85,7 +138,7 @@ def cmd_agent(args):
     output = Path(args.output) if args.output else run_dir(
         f'agent-{args.mind}-seed{args.seed}-cap{args.cap}-{time.time_ns()}')
     record = agent_module.play_with_mind(
-        out, args.seed, args.cap, output, MINDS[args.mind](),
+        out, args.seed, args.cap, output, build_mind(args),
         timeout=args.timeout, stall_timeout=args.stall_timeout,
         decision_cap=args.decision_cap, validate=not args.no_validate,
         lock=not args.no_lock)
@@ -101,7 +154,7 @@ def cmd_agent_determinism(args):
     records, streams, traces = [], [], []
     for attempt in (1, 2):
         record = agent_module.play_with_mind(
-            out, args.seed, args.cap, base / f'run{attempt}', MINDS[args.mind](),
+            out, args.seed, args.cap, base / f'run{attempt}', build_mind(args),
             timeout=args.timeout, stall_timeout=args.stall_timeout,
             decision_cap=args.decision_cap, validate=not args.no_validate,
             lock=not args.no_lock)
@@ -153,7 +206,7 @@ def cmd_branch(args):
     output = Path(args.output) if args.output else run_dir(
         f'branch-{Path(args.run).name}-turn{args.turn}-{args.mind}')
     result, parent = replay_module.branch(
-        args.run, args.turn, output, MINDS[args.mind](), timeout=args.timeout,
+        args.run, args.turn, output, build_mind(args), timeout=args.timeout,
         stall_timeout=args.stall_timeout, lock=not args.no_lock)
     record_module.write_record(output, mode='post_mortem', parent=parent)
     print(output)
@@ -189,6 +242,81 @@ def cmd_explain(args):
     return 0
 
 
+def cmd_knowledge(args):
+    """Read the knowledge base, or regenerate its views (R4.2)."""
+    from . import knowledge as knowledge_module
+
+    store = knowledge_module.Store()
+    if args.what == 'views':
+        written = store.render_views()
+        for area, path in sorted(written.items()):
+            print(f'{area:12} {path}')
+        return 0
+    claims = store.all()
+    if args.area:
+        claims = [claim for claim in claims if claim['area'] == args.area]
+    for claim in claims:
+        print(f"[{claim['area']} {claim['status']}] {claim['id']}: {claim['statement']}")
+    print(f'{len(claims)} claims, knowledge {store.sha256() or "(empty)"}')
+    return 0
+
+
+def cmd_consolidate(args):
+    """Turn a run into claims with the consolidate model (mode D)."""
+    from . import consolidate as consolidate_module
+    from . import knowledge as knowledge_module
+    from . import model_mind, models as models_module, prompts
+
+    configuration = models_module.load(profile=args.profile)
+    choice = configuration['consolidate']
+    missing = configuration.missing_keys(['consolidate'])
+    if missing:
+        raise models_module.ConfigurationError(
+            f'the consolidate job needs ${missing[0]}, which is not set')
+    print(f'consolidate: {choice.provider}/{choice.model} ({choice.family}), profile '
+          f'{choice.profile}')
+    result = consolidate_module.consolidate(
+        args.run, choice, store=knowledge_module.Store(),
+        pack=prompts.load_pack(args.pack),
+        budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
+        call_log=model_mind.CallLog(Path(args.run) / 'model-calls.jsonl'),
+        timeout=args.timeout)
+    return 0 if result['added'] or not result['refused'] else 1
+
+
+def cmd_post_mortem(args):
+    """Mode B: hand over to a mind shortly before a recorded death (R3)."""
+    from . import postmortem
+
+    out = build_module.prepare()
+    if args.run:
+        death = postmortem.death_of(args.run)
+        if death is None:
+            print(f'{args.run} did not end in a death; mode B needs one')
+            return 1
+    else:
+        found = run_dir(f'death-seed{args.seed}-cap{args.cap}')
+        print(f'playing the Borg on seed {args.seed} to find its death...')
+        result = postmortem.find_death(out, args.seed, args.cap, found,
+                                       timeout=args.timeout,
+                                       stall_timeout=args.stall_timeout,
+                                       lock=not args.no_lock)
+        death = postmortem.death_of(found)
+        if death is None:
+            print(f'the Borg did not die on seed {args.seed} within {args.cap} turns '
+                  f'({result["outcome"]}); try another seed or a higher cap')
+            return 1
+    print(f'death: {death["cause"]} at turn {death["turn"]} (seed {death["seed"]})')
+    output = Path(args.output) if args.output else run_dir(
+        f'post-mortem-seed{death["seed"]}-turn{death["turn"]}-{args.mind}')
+    result, parent = postmortem.post_mortem(
+        out, death, build_mind(args), output, before=args.before, cap=args.cap,
+        timeout=args.timeout, stall_timeout=args.stall_timeout, lock=not args.no_lock)
+    postmortem.write_record(output, parent)
+    print(output)
+    return 0 if result['outcome'] in play_module.GOOD_OUTCOMES else 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='borg-agent', description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -219,7 +347,22 @@ def main(argv=None):
         p = sub.add_parser(name, help=help_text)
         p.add_argument('--seed', type=int, required=True)
         p.add_argument('--cap', type=int, required=True, help='game-turn cap')
-        p.add_argument('--mind', choices=sorted(MINDS), default='scripted')
+        p.add_argument('--mind', choices=ALL_MINDS, default='scripted')
+        p.add_argument('--profile', help='the models.yaml profile to use (api); '
+                                         'otherwise the active one (D7)')
+        p.add_argument('--pack', default='play-1', help='the prompt pack (api)')
+        p.add_argument('--budget-calls', type=int, default=None,
+                       help='stop after this many model calls; the outcome is budget_cap (R2.3)')
+        p.add_argument('--budget-tokens', type=int, default=None,
+                       help='stop after this many tokens; the outcome is budget_cap')
+        p.add_argument('--external-dir', type=Path, help='where the external mind reads answers')
+        p.add_argument('--no-executor', action='store_true',
+                       help='give the model the game directly, without the primitives')
+        p.add_argument('--no-knowledge', action='store_true',
+                       help='do not put the knowledge base in the prompt')
+        p.add_argument('--model-timeout', type=int, default=240,
+                       help='how long to wait for one model call; a provider that goes over '
+                            'this ends the run as a harness failure, not as play')
         p.add_argument('--output', type=Path)
         p.add_argument('--timeout', type=int, default=900)
         p.add_argument('--stall-timeout', type=int, default=120)
@@ -249,7 +392,15 @@ def main(argv=None):
     brancher = sub.add_parser('branch', help='replay to a turn, then play on with another mind')
     brancher.add_argument('--run', type=Path, required=True)
     brancher.add_argument('--turn', type=int, required=True)
-    brancher.add_argument('--mind', choices=sorted(MINDS), default='scripted')
+    brancher.add_argument('--mind', choices=ALL_MINDS, default='scripted')
+    brancher.add_argument('--profile')
+    brancher.add_argument('--pack', default='play-1')
+    brancher.add_argument('--budget-calls', type=int, default=None)
+    brancher.add_argument('--budget-tokens', type=int, default=None)
+    brancher.add_argument('--external-dir', type=Path)
+    brancher.add_argument('--no-executor', action='store_true')
+    brancher.add_argument('--no-knowledge', action='store_true')
+    brancher.add_argument('--model-timeout', type=int, default=240)
     brancher.add_argument('--output', type=Path)
     brancher.add_argument('--timeout', type=int, default=900)
     brancher.add_argument('--stall-timeout', type=int, default=120)
@@ -268,6 +419,46 @@ def main(argv=None):
             reader.add_argument('--window', type=int, default=3,
                                 help='how many decisions either side to show')
         reader.set_defaults(func=handler)
+
+    mortem = sub.add_parser('post-mortem',
+                            help="take over shortly before the Borg's death (mode B)")
+    mortem.add_argument('--seed', type=int, default=7,
+                        help='the seed whose Borg death to work from')
+    mortem.add_argument('--run', type=Path,
+                        help='a recorded Borg death to use instead of playing one')
+    mortem.add_argument('--cap', type=int, default=100000)
+    mortem.add_argument('--before', type=int, default=200,
+                        help='how many game turns before the death to take over')
+    mortem.add_argument('--mind', choices=ALL_MINDS, default='scripted-primitives')
+    mortem.add_argument('--profile')
+    mortem.add_argument('--pack', default='play-1')
+    mortem.add_argument('--budget-calls', type=int, default=None)
+    mortem.add_argument('--budget-tokens', type=int, default=None)
+    mortem.add_argument('--external-dir', type=Path)
+    mortem.add_argument('--no-executor', action='store_true')
+    mortem.add_argument('--no-knowledge', action='store_true')
+    mortem.add_argument('--model-timeout', type=int, default=240)
+    mortem.add_argument('--output', type=Path)
+    mortem.add_argument('--timeout', type=int, default=1800)
+    mortem.add_argument('--stall-timeout', type=int, default=120)
+    mortem.add_argument('--no-lock', action='store_true')
+    mortem.set_defaults(func=cmd_post_mortem)
+
+    reader = sub.add_parser('knowledge', help='read the knowledge base or rebuild its views')
+    reader.add_argument('what', choices=['list', 'views'], nargs='?', default='list')
+    reader.add_argument('--area', help='only this area')
+    reader.set_defaults(func=cmd_knowledge)
+
+    consolidator = sub.add_parser('consolidate', help='turn a run into claims (mode D)')
+    consolidator.add_argument('--run', type=Path, required=True)
+    consolidator.add_argument('--profile')
+    consolidator.add_argument('--pack', default='consolidate-1')
+    consolidator.add_argument('--budget-calls', type=int, default=2)
+    consolidator.add_argument('--budget-tokens', type=int, default=None)
+    consolidator.add_argument('--timeout', type=int, default=420,
+                              help='a consolidator reads a whole run; the first real call '
+                                   'needed five minutes')
+    consolidator.set_defaults(func=cmd_consolidate)
 
     args = parser.parse_args(argv)
     if args.command in ('play', 'determinism', 'agent', 'agent-determinism') and (

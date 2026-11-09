@@ -32,10 +32,16 @@ def test_include_sites_exist_and_call_the_observer(name):
     assert 'native-observer.h' not in text
 
 
-def test_activation_is_missing_at_the_pin_so_it_has_to_be_added():
+def test_the_activation_function_is_added_only_when_it_is_missing():
+    # The runner appends `measure_activate_borg` when the tree has none. At
+    # better-borg-c milestone 6 it was missing; at milestone 8 the tree has its
+    # own. Either way the instrumented tree must end up with exactly one.
     name, marker, addition = build.ACTIVATION
-    assert marker not in source(name)
     assert 'borg_cmd_start' in addition
+    text = source(name)
+    assert text.count(marker) <= 1
+    instrumented = text if marker in text else text + addition
+    assert instrumented.count(marker) == 1
 
 
 def test_build_key_covers_the_whole_recipe():
@@ -81,7 +87,8 @@ def test_instrumentation_applies_once_to_a_copy_of_the_pinned_files(tmp_path):
             # The bridge layer rewrote this very line; its own test checks it.
             continue
         assert new in text
-    assert build.ACTIVATION[1] in (tree / 'src' / build.ACTIVATION[0]).read_text()
+    activated = (tree / 'src' / build.ACTIVATION[0]).read_text()
+    assert activated.count(build.ACTIVATION[1]) == 1, 'exactly one activation function'
     for name in build.OBSERVER_FILES:
         assert (tree / 'src' / name).exists()
     cmake = (tree / 'CMakeLists.txt').read_text()

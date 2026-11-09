@@ -174,7 +174,8 @@ DEFAULT_TURN_STALL_DECISIONS = 500
 
 def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeout=120,
                    decision_cap=100000, turn_stall_decisions=DEFAULT_TURN_STALL_DECISIONS,
-                   validate=True, lock=True, log=print):
+                   checkpoint_saves=False, from_turn=None, validate=True, lock=True,
+                   log=print):
     """Play one game with `mind` deciding, and record everything it decided."""
     build_out, output = Path(build_out).resolve(), Path(output).resolve()
     manifest = json.loads((build_out / 'build.json').read_text())
@@ -198,9 +199,20 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                 for key, directory in (('gamedata', 'gamedata'), ('pref', 'customize'))]
     env = play.game_environment(
         BORG_MEASURE_SEED=seed, BORG_MEASURE_CAP=cap, BORG_MEASURE_DIR=output,
-        BORG_MEASURE_NO_SAVES=1, BORG_AGENT_OBS=obs_path, BORG_AGENT_ACT=act_path,
-        BORG_AGENT_RUN_ID=run_id)
+        BORG_AGENT_OBS=obs_path, BORG_AGENT_ACT=act_path, BORG_AGENT_RUN_ID=run_id)
+    if not checkpoint_saves:
+        env['BORG_MEASURE_NO_SAVES'] = '1'
+    if from_turn:
+        # Mode B: the Borg plays the prefix and this mind takes over at that
+        # turn, so the handshake may be a long way off.
+        env['BORG_AGENT_FROM_TURN'] = str(from_turn)
     validator = Validator(validate)
+    # A mind that calls a model writes its calls beside the run (R2.1), and a
+    # mind that does not has no attribute for it.
+    if getattr(mind, 'call_log', 'absent') is None:
+        from .model_mind import CallLog
+
+        mind.call_log = CallLog(output / 'model-calls.jsonl')
     record = {
         'schema': 'borg-agent/play@1',
         'mind': mind.name,
@@ -208,7 +220,8 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
         'run_id': run_id,
         'seed': seed, 'turn_cap': cap, 'decision_cap': decision_cap,
         'birth': play.BIRTH_DESCRIPTION,
-        'checkpoint_saves': False,
+        'checkpoint_saves': checkpoint_saves,
+        'from_turn': from_turn,
         'wall_limit_seconds': timeout, 'stall_limit_seconds': stall_timeout,
         'turn_stall_decisions': turn_stall_decisions,
         'build_key': manifest['build_key'],
@@ -283,6 +296,20 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                             record['error'] = str(exc)
                             journal_entries += drain_journal_into(mind, journal_log)
                             break
+                        except signals.BudgetSpent as exc:
+                            # What the run was allowed, spent. An outcome
+                            # (R2.3), not a failure.
+                            interrupted = 'budget_cap'
+                            record['error'] = str(exc)
+                            record['budget'] = exc.allowed
+                            journal_entries += drain_journal_into(mind, journal_log)
+                            break
+                        except signals.ModelFailed as exc:
+                            # The provider, not the game: infrastructure.
+                            interrupted = 'harness_failure'
+                            record['error'] = str(exc)
+                            journal_entries += drain_journal_into(mind, journal_log)
+                            break
                         except signals.StreamEnded as exc:
                             # A replay reached the end of what was recorded.
                             # The run it came from was ended by the harness, so
@@ -338,6 +365,19 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                 record['journal'] = {'count': journal_entries,
                                      'sha256': sha(output / JOURNAL_LOG),
                                      'path': JOURNAL_LOG}
+            # What the model cost, and what it was told (R2.1, R2.3).
+            call_log = getattr(mind, 'call_log', None)
+            if call_log is not None and call_log.count:
+                record['model_calls'] = {'count': call_log.count,
+                                         'sha256': call_log.sha256(),
+                                         'path': 'model-calls.jsonl'}
+            budget = getattr(mind, 'budget', None)
+            if budget is not None:
+                record['usage'] = budget.record()
+            if getattr(mind, 'parse_failures', None) is not None:
+                record['parse_failures'] = mind.parse_failures
+            if getattr(mind, 'mind_record', None):
+                record['mind_record'] = mind.mind_record
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             record['error'] = f'{type(exc).__name__}: {exc}'
         finally:

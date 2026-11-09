@@ -113,7 +113,8 @@ Requirements:
    reason, and the tokens and time used.
 2. Retrieve relevant knowledge into each prompt, within the context size the
    active profile gives for that job (`context_k` in `models.yaml`, with a
-   default when it is missing).
+   default when it is missing). A run reports what it spent: calls, tokens and
+   cost (decision D10).
 3. Each run has a budget of model calls and tokens. Hitting it is an outcome,
    `budget_cap`, not a failure.
 4. Models come from the active profile in `models.yaml`, and from nothing
@@ -149,6 +150,10 @@ Probes may set up a scenario with debug commands (a given depth, gear or
 monster). Such runs are marked as interventions and never count in survival
 figures (owner decision D4).
 
+**When mode C arrives is decided**: before the model trial (decision D11).
+PLAN.md T22 builds it and answers the floating-eye question, because a probe
+is the only promoter of a claim that is not another model.
+
 ## R4. Knowledge records
 
 The knowledge base is the product. It follows the claim lifecycle of
@@ -166,7 +171,9 @@ Each **claim** has:
 - its **basis**: `manual`, `observed`, `quantified N of M`, `intervened`,
   `static:game-source`, `static:borg-source`, `static:borg-spec`,
   `static:deaths` or `static:issue` — in any phase (decision D8), since what
-  matters is that the record says which;
+  matters is that the record says which; `static:strategy-manual` and
+  `static:user-manual` joined them when the owner added those two documents
+  (2026-11-09, T19 and T20);
 - its **evidence**: run ids, seeds and turns, each one replayable (R5);
 - a **confidence** line in words: what the claim rests on, and which
   alternative explanations were ruled out;
@@ -255,7 +262,10 @@ class code), it writes a design record:
 - known defects.
 
 **Reconciler** (phase 3): it compares phase 1's game knowledge with phase 2's
-design records:
+design records, and with the remake as it actually stands — the `borg-rs` pin,
+the Rust Borg at its milestone 7, which carries better-borg-c milestone 7
+while the game pin is milestone 8. A recommendation that the remake has
+already taken is worth knowing as such:
 - where the Borg agrees with what the learner found;
 - where the Borg relies on something the learner refuted;
 - what the learner found that the Borg ignores.
@@ -280,5 +290,8 @@ D6 is reserved: it records which model does which job, once the model trial
 
 | # | Decision | Decided |
 |---|---|---|
-| D8 | What the playing agent may read | **Whatever helps it build the knowledge base**: the manual and the in-game help (required, so it knows the keys and commands), its own play, the game source including `lib/gamedata/` and `docs/hacking/`, the Borg source and its documentation, the Borg specification ([neo-angband-tracker `docs/c-borg/BORG_SPEC.md`](https://github.com/diegoami/neo-angband-tracker/blob/master/docs/c-borg/BORG_SPEC.md)), the recorded deaths ([better-borg-c `docs/deaths/`](https://github.com/diegoami/better-borg-c/tree/main/docs/deaths)), the open issues and the zoo's results. This supersedes D2 and the earlier rule in docs/SOURCES.md, which was not the owner's intent. What is asked instead is **provenance**: every claim names its sources and says whether it was read or seen. The purpose of the repository is to play and to grow the knowledge base the Borg reborn is built from. |
+| D8 | What the playing agent may read | **Whatever helps it build the knowledge base**: the manual and the in-game help (required, so it knows the keys and commands), its own play, the game source including `lib/gamedata/` and `docs/hacking/`, the Borg source and its documentation, the Borg specification ([neo-angband-tracker `docs/c-borg/BORG_SPEC.md`](https://github.com/diegoami/neo-angband-tracker/blob/master/docs/c-borg/BORG_SPEC.md)), the recorded deaths ([better-borg-c `docs/deaths/`](https://github.com/diegoami/better-borg-c/tree/main/docs/deaths)), **the Rust remake as it stands** ([borg-rs](https://github.com/diegoami/borg-rs), pinned, added 2026-11-09), the open issues and the zoo's results. This supersedes D2 and the earlier rule in docs/SOURCES.md, which was not the owner's intent. What is asked instead is **provenance**: every claim names its sources and says whether it was read or seen. The purpose of the repository is to play and to grow the knowledge base the Borg reborn is built from. |
+| D9 | The game's seasonal window | **Leave play as the game plays it.** The game admits seasonal monsters on 24-26 December, so a seed plays a different game on those days. Every run records `calendar.seasonal`, and `verify` refuses to compare a run with a replay on the other side of that window. There is **no RULES 9 exception**: the instrumented build never diverges from the unpatched game, not even for three days a year. The price is accepted: a run made inside the window can only be replayed on a day of the same kind. (2026-11-09) |
+| D10 | Real model calls before the trial | **Allowed, in small runs.** Milestone 3 may call a real model on the active profile to prove the `api` mind works — short games, a few hundred calls — and every PR that does reports the calls, tokens and what they cost. Spending at the scale of the model trial (T09) or the pilot (T10) still waits for the owner. (2026-11-09) |
 | D7 | How models are configured | **By profile, in `models.yaml` at the root.** It holds the providers, the models per job and named profiles, and never a key; a provider names the environment variable that holds its key. Switching profile is one line: `BORG_AGENT_PROFILE`, or `profile:` in the git-ignored `models.local.yaml`, else `default_profile`. This replaces the `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` variables and the planned `providers.json`. **The profile is the only model rule in this repository**: the owner's general model rule, which asks their local quota service (quota-tracker) for a recommendation, does not apply here, and this repository does not use that service, locally or in the cloud. |
+| D11 | When mode C arrives | **Before the model trial.** Milestone 4 begins with a probe (PLAN.md T22), not with T09. Nothing leaves `hypothesis` without counted trials or a review by another family (R4.3), so a probe is the only promoter that is not another model — and T09 measures a consolidator by how many of its claims are **false**, which needs exactly that. The probe also needs no model, so it is the one task of milestone 4 that a cloud session can finish on its own. (2026-11-09) |

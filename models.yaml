@@ -11,6 +11,11 @@
 # owner fills those variables from ~/.config/ai-keys.env. A missing variable
 # fails before play, naming the variable and never its value.
 #
+# The reviewer is OpenRouter's free variant (the owner, 2026-11-09): a review
+# is a few calls, and it shares the plan's daily free allowance. A free model
+# may be trained on what it is sent, which is fine here — a claim and the game
+# content behind it are public (R2.4) — but nothing private is ever sent to it.
+#
 # The jobs (PLAN.md T09): `play` chooses the next primitive or command,
 # hundreds of calls per game; `consolidate` writes post-mortems and turns
 # notes into claims; `review` checks claims, and must be a different model
@@ -50,18 +55,18 @@ profiles:
   openrouter:
     play:        {provider: openrouter, model: xiaomi/mimo-v2.6-flash, family: mimo}
     consolidate: {provider: openrouter, model: xiaomi/mimo-v2.6-pro, family: mimo}
-    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b:free, family: nemotron}
   # The GLM Coding Plan has one family, so this profile's reviewer comes from
   # OpenRouter: it needs OPENROUTER_API_KEY as well as ZAI_API_KEY.
   zai:
     play:        {provider: zai, model: glm-5.3-flash, family: glm}
     consolidate: {provider: zai, model: glm-5.3, family: glm}
-    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b:free, family: nemotron}
   # Same there: the Token Plan has one family, and the reviewer is OpenRouter's.
   minimax:
     play:        {provider: minimax, model: MiniMax-M2.7, family: minimax}
     consolidate: {provider: minimax, model: MiniMax-M3, family: minimax}
-    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+    review:      {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b:free, family: nemotron}
 
 # The model trial's candidates per job (PLAN.md T09). The trial measures these
 # on this project's own inputs and outputs; the owner then decides which model
@@ -79,4 +84,4 @@ trial:
     - {provider: minimax, model: MiniMax-M3, family: minimax}
   review:
     - {provider: alibaba, model: glm-5.3, family: glm}
-    - {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b, family: nemotron}
+    - {provider: openrouter, model: nvidia/nemotron-3-ultra-550b-a55b:free, family: nemotron}

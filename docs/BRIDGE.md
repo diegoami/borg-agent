@@ -35,8 +35,8 @@ the Borg's own key queue (`borg_keypress`), so the game sees nothing new.
 `agent_active()` is true only when `BORG_AGENT_OBS` and `BORG_AGENT_ACT` name
 the two pipes. With them unset the branch falls through to `borg_think()`:
 **play is then byte-identical to the stock Borg's** (RULES 9). That is checked
-by rerunning T01's gate on the bridge build; it still gives seed 7's trace
-`2242a3f5…`.
+by rerunning T01's gate on the bridge build; it still gives the pinned build's
+trace for seed 7 (`a6ffbae0…` at milestone 8).
 
 ## The protocol
 

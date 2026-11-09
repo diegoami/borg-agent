@@ -94,8 +94,10 @@ rests when hurt and alone, explores, and goes down when it has seen enough of
 a floor. Its thresholds (half health, 150 decisions of exploring) are the
 mind's own, which is the point.
 
-On seed 1 to 10,000 turns it reached depth 2 and character level 4, fought,
-rested and changed level twice. Its weakness, left as it is: on a floor whose
+On seed 1 to 10,000 turns it reached depth 2 and character level 3, fought,
+rested and changed level twice (876 decisions, action stream `01aeca55…` —
+unchanged by the move to the milestone 8 pin, since a scripted chooser does
+not depend on the Borg's thinking). Its weakness, left as it is: on a floor whose
 staircases it never finds it alternates `explored` and `no_stairs_known` and
 waits out the cap rather than digging or going back up — a dumb fixture, not a
 strategy.

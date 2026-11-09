@@ -3,9 +3,9 @@
   "pins": {
     "better-borg-c": {
       "repository": "diegoami/better-borg-c",
-      "commit": "b3c825c97c8aef18b252a7fb7d9b7dceef83d586",
-      "tag": "4.2.6-impact-v6",
-      "role": "The C game and Borg source the bridge attaches to: better-borg-c milestone 6, the zoo's 4.2.6-bbc-m6."
+      "commit": "017e038e8726a7a423887a366b5d40e89c0550a1",
+      "tag": "4.2.6-impact-v8",
+      "role": "The C game and Borg source the bridge attaches to: better-borg-c milestone 8, which carries 88 fixes (patches/series.json). The zoo's newest bbc specimen is 4.2.6-bbc-m7, so there are no zoo results for this build to pair with yet; see PLAN.md T08. A milestone 8 specimen and run were asked for in borg-zoo#36 (2026-11-09)."
     },
     "original": {
       "repository": "diegoami/better-borg-c",
@@ -25,9 +25,21 @@
     },
     "borg-spec": {
       "repository": "diegoami/neo-angband-tracker",
-      "commit": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
+      "commit": "777eea1d9bd6c4094e87fff23af3984dd23f7edb",
       "path": "docs/c-borg/BORG_SPEC.md",
-      "role": "The Borg specification and the Tunable Borg Plan: what the remake is meant to be. A source for the playing agent (docs/SOURCES.md, decision D8) and for phases 2 and 3."
+      "role": "diegoami/neo-angband-tracker at master. Three documents are read here: the Borg specification (docs/c-borg/BORG_SPEC.md) and the Tunable Borg Plan, which are byte-identical at the previous pin eefc5500, and docs/c-manual/, the strategy manual - 17 chapters, ten appendices generated from lib/gamedata, and a copy of the official user manual. Chapter 15, notes-for-the-borg, is a machine-oriented distillation with rule ids, thresholds, sources and confidence, and says of itself that its rules are a starting policy to be measured, not truths. The pin is still called borg-spec for the sake of what already cites it."
+    },
+    "borg-rs": {
+      "repository": "diegoami/borg-rs",
+      "commit": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
+      "role": "The Rust Borg this repository's knowledge is for - the \"Borg reborn\". Pinned at the commit that carries better-borg-c milestone 7 (impact v7); the owner is building milestone 8 as this is written, so expect to move this pin and say so in the handover. Nothing reads it yet: it is here so a claim can cite a fixed version (decision D8), and because borg-rs/src/borg.rs holds the same inkey_hack connection the bridge attaches to on the C side. A claim says which side of the port it is about, because the two are not always on the same milestone."
+    },
+    "c-borg-reference": {
+      "repository": "diegoami/neo-angband-tracker",
+      "commit": "471e1214cdf457c8035878a13c34cb6b9669b434",
+      "branch": "c-borg-reference",
+      "path": "docs/user-manual.md",
+      "role": "The c-borg-reference branch of neo-angband-tracker: angband/angband e473720 (the original pin) plus three documentation commits, with lib/gamedata byte-identical to the better-borg-c and original pins. Two of its documents are sources for the playing agent, at the owner's request (2026-11-09): docs/strategy/, a strategy manual whose six appendices (monsters, uniques, monster spells, artifacts, ego items, objects) are generated from lib/gamedata by docs/strategy/tools/gen_appendices.py and whose README links to eight chapters that are not in the tree; and docs/user-manual.md, a single-file manual of the whole game (about 3,700 lines) whose tables were extracted from lib/gamedata. Both were written by a model on 2026-11-09. They are not the game's manual: a claim read in them is static:strategy-manual or static:user-manual, never documented. The branch itself moved on 2026-11-09: the owner reset c-borg-reference to pristine angband/angband e473720 and merged the manuals into workbench/c-borg (merge 842dc5d0). This pin is unaffected -- the commit is an ancestor of workbench/c-borg (26 commits behind its head, 0 ahead), so it is still fetchable, and docs/user-manual.md is the same blob (eedd740c) on that branch. The pin keeps its name for the sake of what already cites it. Its docs/strategy is the earlier eight-chapter manual; the finished one is docs/c-manual at the borg-spec pin, which is what sources.strategy_manual reads."
     }
   },
   "manual": {
@@ -100,6 +112,35 @@
     },
     "issues": {
       "unpinned": "The open issues of diegoami/better-borg-c, diegoami/borg-zoo and diegoami/neo-angband-tracker. A claim records the issue number and the date it was read, since a tracker moves."
+    },
+    "rust_remake": {
+      "pin": "borg-rs",
+      "paths": [
+        "borg-rs/src/",
+        "docs/",
+        "harness/"
+      ]
+    },
+    "strategy_manual": {
+      "pin": "borg-spec",
+      "paths": [
+        "docs/c-manual/"
+      ],
+      "note": "The finished strategy manual, at the owner's request (2026-11-09). Until then this source was docs/strategy/ on the c-borg-reference branch: an index, six appendices and eight chapters that did not exist. That directory is gone from master; this is the same work completed. Its prose is still written by a model, so a claim read in it is `static:strategy-manual` and never `documented`."
+    },
+    "user_manual": {
+      "pin": "c-borg-reference",
+      "paths": [
+        "docs/user-manual.md"
+      ]
+    },
+    "manual_online": {
+      "unpinned": "https://angband.readthedocs.io/en/latest/command.html, at the owner's request (2026-11-09). It is the upstream rendering of docs/command.rst from angband/angband's master, which stood at e473720 (the original pin) on 2026-11-09; that file is byte-identical at the better-borg-c pin (blob fb6993d5). 'latest' moves with upstream, so a claim cites docs/command.rst at a pin, not the URL.",
+      "url": "https://angband.readthedocs.io/en/latest/command.html",
+      "pinned_as": {
+        "pin": "better-borg-c",
+        "path": "docs/command.rst"
+      }
     }
   }
 }

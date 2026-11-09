@@ -135,7 +135,9 @@
             "static:borg-source",
             "static:borg-spec",
             "static:deaths",
-            "static:issue"
+            "static:issue",
+            "static:strategy-manual",
+            "static:user-manual"
           ],
           "description": "How the claim was arrived at. A 'static:*' basis means it was read in a source rather than seen in play; any phase may use one (decision D8), and the distinction is what phase 3 needs. 'quantified' means counted trials."
         },
@@ -351,7 +353,9 @@
           "borg-spec",
           "deaths",
           "issue",
-          "zoo-results"
+          "zoo-results",
+          "strategy-manual",
+          "user-manual"
         ]
       }
     },
@@ -473,6 +477,14 @@
           }
         }
       }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "What the store itself had to say when the claim entered: that a model asked for a status it may not have (R4.3), for instance. Not the claim's content, and not a place for argument \u2014 that is `confidence`."
     }
   },
   "allOf": [

@@ -149,7 +149,12 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
     result = agent.play_with_mind(
         build_out=pins_build(original), seed=original['seed'], cap=original['turn_cap'],
         output=output, mind=replay_mind, timeout=timeout, stall_timeout=stall_timeout,
-        decision_cap=max(len(actions) + 1, 2), validate=False, lock=lock, log=lambda *a: None)
+        decision_cap=max(len(actions) + 1, 2),
+        # A post-mortem's recorded actions start at the handover: the Borg
+        # plays the prefix again, which it does the same way every time, and
+        # the stream replays from there (mode B).
+        from_turn=original.get('from_turn'),
+        validate=False, lock=lock, log=lambda *a: None)
     after = record.state_hashes(output / 'observations.jsonl')
     scope = 'full' if original['outcome'] in GAME_ENDED else 'prefix'
     first_difference = next((i for i, (a, b) in enumerate(zip(before, after)) if a != b), None)
@@ -163,6 +168,7 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
         'replay': str(output),
         'scope': scope,
         'actions': len(actions),
+        'from_turn': original.get('from_turn'),
         'decisions': [len(before), len(after)],
         'outcome': [original['outcome'], result['outcome']],
         'final_turn': [original.get('final_turn'), result.get('final_turn')],
@@ -246,7 +252,8 @@ def pins_build(result):
     return out
 
 
-def branch(run_dir, turn, output, new_mind, timeout=900, stall_timeout=120, lock=True, log=print):
+def branch(run_dir, turn, output, new_mind, timeout=900, stall_timeout=120, lock=True,
+           log=print):
     """Replay to `turn`, then play on with another mind (R5, and mode B)."""
     run_dir, output = Path(run_dir), Path(output)
     original = json.loads((run_dir / 'result.json').read_text())

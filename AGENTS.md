@@ -87,8 +87,9 @@ model-choice rule does not apply in this repository.
   a key, a request header or a URL with credentials.
 - Every run record names, per job, the profile, provider, model and family,
   how they were chosen, and the hashes of the model files.
-- The loader and its tests are T06; until then nothing reads this file at
-  run time.
+- The loader is `src/borg_agent/models.py` (T06). It refuses a bad
+  configuration before a run starts, and `docs/MINDS.md` says what it checks
+  and what the record is told.
 
 This is about the models the **agent** uses. Which model writes the code in a
 session, and which reviews a PR, stays with the owner.

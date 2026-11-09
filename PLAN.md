@@ -34,16 +34,16 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 
 | Milestone | What it delivers | Tasks | State |
 |---|---|---|---|
-| **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)); `reviewed` stands there |
-| **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12 | **complete; in review** ([#15](https://github.com/diegoami/borg-agent/pull/15)) |
-| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08 | not started |
-| **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | not started |
-| later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
+| **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
+| **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
+| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **complete; in review** ([#41](https://github.com/diegoami/borg-agent/pull/41)) |
+| **4. Probe, trial and pilot** | a question is answered in counted trials, which model does which job is measured, the pilot runs, and the zoo can import a run | T22 first (D11), then T09, T10, T11 | **next**, once the owner merges milestone 3's review |
+| later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
 **the agent plays the pinned C game through the Borg's connection, every run
-replays exactly without the model, and a pilot produces its first claims with
-evidence.** Phase 2, the Neo adapter and larger runs wait for the owner.
+replays exactly without the model, a probe turns one question into counted
+trials, and a pilot produces its first claims with evidence.** Phase 2, the Neo adapter and larger runs wait for the owner.
 
 ## The tasks
 
@@ -59,17 +59,23 @@ branch), `in review` (with the PR), `done` (merged).
 | T03 | C bridge | 2 | T01, T02 | yes | done (#8) |
 | T04 | Recording and replay | 2 | T03 | yes | done (#11) |
 | T05 | Executor primitives | 2 | T03 | yes | done (#12) |
-| T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
-| T07 | Knowledge store | 3 | T02 | yes | todo |
-| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | todo |
+| T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | done (#33) |
+| T07 | Knowledge store | 3 | T02 | yes | done (#35) |
+| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | done (#39) |
 | T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | 4 | T04 | yes | todo |
-| T12 | Milestone-1 review findings | 2 | T01, T02 | yes | in review (#13) |
+| T12 | Milestone-1 review findings | 2 | T01, T02 | yes | done (#13) |
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
 | T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
+| T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | done (#24) |
+| T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | done (#26) |
+| T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
+| T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
+| T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
+| T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | todo |
 
 ### T01. Build and play the pinned game headless
 
@@ -197,13 +203,115 @@ Play the `better-borg-c` pin's Borg on a zoo seed and birth, record its
 action stream with the bridge watching (the Borg still decides), stop k
 turns before the recorded death, and hand over to the agent with `branch`.
 
-The first cases, from the zoo's `classes-m6` results (cause "a floating
-eye", specimen `4.2.6-bbc-m6`, cap 100,000):
-- seed 1865911738, Half-Troll Mage;
-- seed 1375157069, Dunadan Priest.
+**The cases are deaths this build produces** — decided here, and recorded in
+[docs/POST-MORTEM.md](docs/POST-MORTEM.md). The task originally named two of
+the zoo's `classes-m6` floating-eye deaths, but the game pin is milestone 8
+now and the zoo has no m8 results, so those are deaths of a build we no longer
+play (T17). The pinned tree's own `docs/deaths/` is richer than anything we
+can make — 19 cases with verified replays, assessments and issues — but those
+belong to older builds and to turns in the hundreds of thousands, so they are
+a **source to read** (D8), which is where a post-mortem's questions come from,
+not a case list.
+
+**No save file is involved.** The Borg's play is deterministic (T01), so the
+bridge simply keeps the agent's hand off the wheel until a turn the run names
+(`BORG_AGENT_FROM_TURN`): the Borg plays its own game up to there, the
+handover is written into the trace, and the agent plays on. A post-mortem is
+therefore replayable like any other run — `verify` reads the handover turn
+from the record, plays the prefix again and feeds the recorded actions back
+from there.
+
+The known case at this pin: **seed 3, where the Borg dies to a green naga at
+turn 15,714**. Seeds 1, 2 and 11 survive 30,000 turns, and seed 7 survives
+100,000 — milestone 8's Borg is good, which makes finding a case slower than
+it was. `BORG_AGENT_DEATH_SEED` points the slow gate at a seed; CI skips it,
+because finding a death costs minutes of play.
+
+The floating-eye question itself still stands: it killed 4 of 13 Mandos
+characters in `mandos-classes-18`, and a probe (mode C) is the way to settle
+it.
 
 Done when replaying the Borg's prefix reproduces the zoo's death when left
 to the Borg, and a branch k turns before it hands over to another mind.
+
+### T22. Mode C probes: a question answered in counted trials
+
+The owner, 2026-11-09 (decision **D11**): mode C comes **before** the model
+trial, and milestone 4 begins here.
+
+Why it goes first. Nothing in the knowledge base can leave `hypothesis`
+without counted trials or a review by another model family (R4.3, RULES 13),
+so today every claim the store holds is a hypothesis and the only promoter
+available is a second model. T09 then measures a consolidator by **how many
+of its claims are false**, which needs a way to check a claim that is not
+another model. A probe is that way. It is also the one task of this milestone
+that **needs no model at all**, so it runs in CI and in a cloud session with
+no key set.
+
+What a probe is:
+
+1. **Data, not code.** One file per probe under `probes/`, holding the
+   question in one line, the scope (class, race, character level, depth), the
+   setup, the action under test, the control action, the declared seeds, and
+   the predicate that decides each trial. A new probe is a file, not a patch.
+2. **Two kinds of setup, and the record says which.**
+   - `natural`: the situation is found in deterministic play — play to the
+     first turn that matches a condition, then take over, which is T08's
+     machinery (`BORG_AGENT_FROM_TURN`, `branch`) with a condition instead of
+     a turn. Nothing is tampered with, so such a run counts in survival
+     figures.
+   - `intervened`: the situation is built with the game's **own wizard
+     commands**, pushed as commands rather than typed into the debug menu's
+     prompts — `CMD_WIZ_SUMMON_NAMED` takes the monster as a numeric `index`
+     argument (`src/cmd-wizard.c` at the game pin; a name resolves through
+     `lookup_monster`), and `CMD_WIZ_JUMP_LEVEL`, `CMD_WIZ_CREATE_OBJ`,
+     `CMD_WIZ_CURE_ALL` and `CMD_WIZ_TELEPORT_TO` cover depth, gear, health
+     and position. Decision D4: these runs are marked interventions and never
+     count in survival figures.
+
+     **The game's own marker is the proof.** Entering that path sets
+     `player->noscore |= NOSCORE_WIZARD` (`src/wiz-debug.c`), so the record
+     carries `noscore` from the game and a run that claims to be untouched can
+     be checked rather than believed.
+3. **Off unless the run is a probe.** The bridge's setup actions exist only
+   when the run says so, and with the agent mode off the game and the Borg
+   behave exactly as without the patch: T01's trace is unchanged (RULES 9).
+4. **A trial is an ordinary run**: recorded, replayable with `verify`, in the
+   same outcome vocabulary. A probe result is its trials' records plus the
+   counts; it introduces no new kind of evidence.
+5. **A setup that did not take is not a result.** The game's own summon can
+   fail ("Could not place monster"), and a trial whose setup did not happen
+   must be counted as `setup_failed` and excluded, never as a trial the
+   character survived. A probe whose predicate matches nothing fails loudly
+   instead of reporting 0 of M.
+6. **The harness writes the result, not a model.** The outcome is
+   `quantified N of M`, with the status the harness sets: at most `supported`
+   from one probe, `corroborated` only when a second probe on fresh seeds
+   agrees (R4.3, and the `borg_agent.checks` rule that a quantified basis may
+   not claim more successes than trials). A model may **propose** a probe —
+   mode D already does — and may never score one.
+7. **Seeds are declared before the probe runs**, and the result names them, so
+   a probe cannot be run again until it gives the wanted answer. Editing a
+   probe file after it has a result makes a new probe id.
+
+**The first probe** is the question mode B keeps raising and nothing has
+answered: *can a level-1 Warrior melee a floating eye and live?* It killed 4 of
+13 Mandos characters in `mandos-classes-18` — which is Neo, through Mandos —
+and the C side at this pin has no number for it at all. As an `intervened`
+probe: Human Warrior at character level 1, a floating eye summoned adjacent,
+the action under test `alter` towards it until one of them dies, the control
+walking away, over at least 20 declared seeds. The claim that comes out carries
+`intervened` as well as `quantified N of M`, because what it measures is a
+fight the game was told to arrange.
+
+Also in this task: `docs/PROBE.md` — what a probe file holds, how a trial
+becomes evidence, what the harness may set and what a model may not — and a
+`probe@1` schema if the result needs a shape of its own beyond the claim's.
+
+Done when the floating-eye probe runs end to end: every trial replays with
+`verify`, the result is a claim with `quantified N of M` and `intervened` whose
+status the **harness** set, a `setup_failed` trial is counted apart, and a
+second probe file with a different question needs no new Python.
 
 ### T09. Model trial
 
@@ -239,8 +347,9 @@ the whole trial.
    deaths.
 3. **Post-mortems** (consolidators): both T08 floating-eye cases, the same
    replay windows for every candidate. Count the claims each produces and
-   check each one: by a probe where one can be run, otherwise by a reviewer
-   candidate of another family. The number that matters most is **false
+   check each one: by a probe where one can be run — **T22 comes first in this
+   milestone, so one can** — otherwise by a reviewer candidate of another
+   family. The number that matters most is **false
    claims**, since the knowledge base is the product.
 
 Report in `docs/reports/model-trial.md`: per candidate and part, the scores,
@@ -299,6 +408,136 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T21. The finished strategy manual as a source
+
+The owner, 2026-11-09:
+[`docs/c-manual/README.md`](https://github.com/diegoami/neo-angband-tracker/blob/master/docs/c-manual/README.md).
+
+It turns out to be the **finished version of what T19 added**. T19's source
+was `docs/strategy/` on the `c-borg-reference` branch: an index, six
+appendices and eight chapters that did not exist. That directory is gone from
+master, and `docs/c-manual/` is the same work completed — seventeen chapters
+(00 to 16), ten appendices generated from `lib/gamedata/`, and a copy of the
+official user manual. About 940 KB of chapters.
+
+So this task **repoints** `sources.strategy_manual` rather than adding a
+thirteenth source: one document, at its finished home. The `borg-spec` pin
+moves from `eefc5500` to `777eea1d` to reach it, which is safe because the
+specification and the Tunable Borg Plan are **byte-identical at both
+commits** — a test asserts that, since one pin now serves three documents.
+The pin keeps its name for the sake of what already cites it.
+
+Chapter 15, "notes for the borg", is the part this repository will argue with
+most: a machine-oriented distillation with rule ids, conditions, thresholds,
+sources and confidence. It says of itself that its rules are "a starting
+policy to be measured, not truths" and its constants tunables — which is
+exactly how a claim read in it enters the store: `static:strategy-manual`,
+status `hypothesis`, never `documented`. The manual and the claim lifecycle
+agree about their own standing, which is the most useful thing about it.
+
+Its copy of the official user manual is **not** a separate source: the game's
+own manual at the game pin is the authority.
+
+### T20. The user manual as a source
+
+The owner, 2026-11-09, after T19: add `docs/user-manual.md` from the same
+branch too.
+
+- The pin is renamed **`c-borg-reference`**, after the branch, since it now
+  serves two documents; nothing had read it under its first name. `sources`
+  gains `user_manual` at that pin.
+- `claim@1` gains the source `user-manual` and the basis `static:user-manual`
+  (additive; never `documented`).
+- A test reads the file at the pin and finds its command reference and its Borg
+  chapter. Its tables come from `lib/gamedata/`, which T19's test keeps equal
+  to the game pin's.
+- A spot-check of its key table (original and roguelike) against
+  `docs/command.rst` agreed, including the `autoexplore_commands` key. Nothing
+  else in its 3,700 lines was checked.
+
+### T19. The strategy manual and the online command reference as sources
+
+The owner, 2026-11-09: include
+[docs/strategy on neo-angband-tracker's `c-borg-reference` branch](https://github.com/diegoami/neo-angband-tracker/tree/c-borg-reference/docs/strategy)
+and [the online command reference](https://angband.readthedocs.io/en/latest/command.html)
+in the sources.
+
+- **The strategy manual** is a new pin at `471e1214` (named `strategy-manual`
+  here, renamed `c-borg-reference` in T20)
+  (the branch's head that day), and a `strategy_manual` entry in `pins.json`'s
+  `sources`. The branch is angband/angband `e473720` (our `original` pin) plus
+  three documentation commits, and its `lib/gamedata/` is byte-identical to the
+  game pin — a test keeps that true, since the appendices are generated from
+  it. Its README links to eight chapters that are not in the tree, and its
+  prose was written by a model, so docs/SOURCES.md says how far to trust it.
+- `claim@1` gains the source `strategy-manual` and the basis
+  `static:strategy-manual` (additive; a claim read there is never
+  `documented`), with a valid example.
+- **The online page** is `manual_online`, unpinned, with `pinned_as`
+  `docs/command.rst` at the `better-borg-c` pin: angband/angband's `master` was
+  at `e473720` that day and the file is byte-identical there and at the game
+  pin. The page itself could not be fetched from the cloud session (the
+  network does not allow readthedocs), so it was compared through its source
+  file, not its rendering.
+
+### T18. Pin the Rust remake (borg-rs milestone 7)
+
+The owner, 2026-11-09: borg-rs is at milestone 7. That is the Borg reborn this
+repository's knowledge is for, so it is pinned and readable like any other
+source (decision D8): `ce27f5ed`, "Impact v7: carry better-borg-c milestone 7".
+
+Why it belongs here:
+- **Phase 3 reconciles against it.** A recommendation the remake has already
+  taken is worth knowing as such, and a claim that contradicts it is worth
+  knowing even more. Pinning fixes which version a claim argued with.
+- **It has the same connection.** `borg-rs/src/borg.rs` holds the
+  `inkey_hack` callback the bridge attaches to on the C side, so a claim about
+  the connection carries over rather than being C-specific.
+- 59 Borg modules under `borg-rs/src/`, one per original `src/borg/<x>.c`,
+  with no `unsafe` outside the FFI boundary.
+
+**The pin will move, and often.** When this was written the game pin was
+better-borg-c milestone 8 and borg-rs carried milestone 7, with the owner
+building milestone 8 the same day. So the number is not the point: a claim
+says which side of the port and which milestone it is about, both roles name
+a milestone, and the test checks that they name one rather than which one.
+
+### T17. Pin better-borg-c milestone 8
+
+The owner, 2026-11-09: pin better-borg-c at **milestone 8**
+(`4.2.6-impact-v8`, `017e038e`), which carries 88 fixes where milestone 6
+carried 63.
+
+What it took, and what it changed:
+- the six observer sites and every game and Borg function the bridge calls are
+  still there, so the recipe needed no change;
+- `borg_what_text` gained a buffer-size argument between the two milestones;
+  the bridge passes it;
+- the tree now has its own `measure_activate_borg`, so the runner's "add it if
+  missing" is a no-op there. The test that asserted it was absent now asserts
+  the instrumented tree ends up with exactly one, either way;
+- `tools/measure-native.py` and the observer are **byte-identical** at the
+  runner pin and at milestone 8, so the parity tests are untouched;
+- the manual, the deaths (19 entries, up from 15) and the spec all read at the
+  new pin.
+
+Facts about milestone 8 itself, measured on seed 7 at cap 5,000: the trace is
+`a6ffbae0…` and 542,917 bytes where milestone 6 gave `2242a3f5…` and 53,040,
+and a run takes about 15 seconds where it took 1.9. **It also survives seed 7
+to 100,000 turns, where milestone 6 died to a green naga at 27,808** — which
+is what a better Borg looks like, and what cost the death gate its old shape:
+that gate now takes its death from an agent run, which also gave agent runs
+the runner's `--checkpoint-saves` option that T08 wanted anyway.
+
+**What this costs T08** (and the owner may want to decide): its two
+floating-eye cases — seed 1865911738 Half-Troll Mage, seed 1375157069 Dunadan
+Priest — are deaths of the zoo's `4.2.6-bbc-m6` specimen. The zoo's newest
+bbc specimen is `4.2.6-bbc-m7`; there are **no m8 results at all**. So those
+two deaths are no longer deaths of the build we play. T08 can take its cases
+from `docs/deaths/` at the new pin (19 recorded deaths), from deaths our own
+build produces, or from a zoo run of m8 if the owner wants one; the task says
+which when it starts.
 
 ### T16. Milestone-2 re-review findings
 
@@ -481,8 +720,8 @@ YAML in `tests/test_models_file.py` goes when T06's loader lands.
 ## After milestone 4 (not started)
 
 - Neo Angband adapter (R1.5).
-- Mode C probes at scale, and repeat runs to measure how much the agent
-  varies.
+- Mode C probes **at scale** (the first one is T22, inside milestone 4), and
+  repeat runs to measure how much the agent varies.
 - Phase 2, the Borg archaeologist, and phase 3, the reconciler.
 
 Each of these becomes a milestone of its own, reviewed the same way.

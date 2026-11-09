@@ -6,16 +6,16 @@
   },
   "calendar": {
     "TZ_environment": null,
-    "local": "2026-11-09T02:52:23.995369+01:00",
+    "local": "2026-11-09T10:18:58.144302+01:00",
     "seasonal": false,
     "timezone_name": "CET",
-    "utc": "2026-11-09T01:52:23.995369+00:00"
+    "utc": "2026-11-09T09:18:58.144302+00:00"
   },
-  "created": "2026-11-09T01:52:23.995369+00:00",
+  "created": "2026-11-09T09:18:58.144302+00:00",
   "deterministic": true,
   "engine": {
-    "binary_sha256": "d6fe817636bd08df6accb402857302df20857f198a4f3a71624ccc49afba3706",
-    "build_key": "1f16ba5f949940eb",
+    "binary_sha256": "b5fe5f6507a7a7251a57131866acc88174ee43934d1bae6cba482e16f14dd1f7",
+    "build_key": "d887202f7a196ca5",
     "commit": "0fd4af4000000000000000000000000000000000",
     "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
     "data_sha256": {
@@ -92,15 +92,17 @@
     "dirty": "",
     "name": "c-4.2.6",
     "patch_sha256": {
-      "agent-bridge.c": "76314bb97544ae955a476781b6a4e622c386091be730be19f30dd6f7a21e856f",
+      "agent-bridge.c": "27bfc88afbdbdb8d80003a559896385d0398186878981dd412bb49730d26da14",
       "agent-bridge.h": "f634bf096ed76d2883710f1430cb180cb1022be0198e0452503834674e2994a6",
       "native-observer.c": "9c10fcedd8b2f44e211f63235b38bad7cec351ec45216366689e73cb3f0a9ad7",
       "native-observer.h": "faa6a800ce6fb6e73795b044663ff36d39cc7eae837f9a53aae1ef04f3241730"
     },
     "pins": {
-      "better-borg-c": "b3c825c97c8aef18b252a7fb7d9b7dceef83d586",
+      "better-borg-c": "017e038e8726a7a423887a366b5d40e89c0550a1",
+      "borg-rs": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
       "borg-spec": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
       "borg-zoo": "4c675343fa6aed8aeb9ff265d9d10a22054e0ac5",
+      "c-borg-reference": "471e1214cdf457c8035878a13c34cb6b9669b434",
       "original": "e473720ed88a0f0c7ca66815cef3000eb4a38bc3",
       "runner": "fc9d97cb46aa0aaa27773e5c83a41ec395d515fc"
     },
@@ -109,7 +111,7 @@
   "evidence": {
     "observations_sha256": "89f861fd1f0000252485abd33a3373c218a1b3dab93acb8c09920d8557674877",
     "state_hashes_sha256": "54df3c693301b67e2dc6f89ac005a7110c981068a9aee7f0edbc47f2c67f00b6",
-    "trace_sha256": "06e6c1f42ed5a06c6c4ba1e762175dfb023517f7e6f30283dc3f610826fce95b"
+    "trace_sha256": "ec228ad934c5b8363d7f8e2822e6bb11c34b4e63f3ec8cadb2823f708092f397"
   },
   "game": {
     "birth": {
@@ -148,9 +150,11 @@
       "borg_kills_uniques": 0,
       "borg_lunal_mode": 0,
       "borg_money_scum_amount": 0,
-      "borg_munchkin_depth": 16,
+      "borg_munchkin_by_class": 1,
+      "borg_munchkin_class_depth": 6,
+      "borg_munchkin_depth": 6,
       "borg_munchkin_level": 12,
-      "borg_munchkin_start": 0,
+      "borg_munchkin_start": 1,
       "borg_no_deeper": 127,
       "borg_plays_risky": 0,
       "borg_respawn_class": -1,
@@ -203,6 +207,6 @@
   "usage": {
     "decisions": 101,
     "model_calls": 0,
-    "wall_seconds": 0.352
+    "wall_seconds": 0.492
   }
 }
