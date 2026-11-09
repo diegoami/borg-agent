@@ -160,7 +160,8 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
             'turn_cap': result['turn_cap'],
             'decision_cap': result.get('decision_cap'),
         },
-        'mind': {'kind': kind, 'chosen_by': 'not-applicable'} if mind is None else mind,
+        'mind': (mind or result.get('mind_record')
+                 or {'kind': kind, 'chosen_by': 'not-applicable'}),
         'action_stream': {
             'count': (stream or {}).get('count', 0),
             'sha256': (stream or {}).get('sha256',
@@ -172,6 +173,7 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
             'state_hashes_sha256': hashes_sha,
             'observations_sha256': (result.get('observations') or {}).get('sha256'),
             'journal_sha256': (result.get('journal') or {}).get('sha256'),
+            'model_calls_sha256': (result.get('model_calls') or {}).get('sha256'),
         }.items() if v},
         'outcome': {
             'kind': result['outcome'],
@@ -187,7 +189,12 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
         'usage': {
             'decisions': result.get('decisions', last.get('decisions', 0)),
             'wall_seconds': result.get('wall_seconds', 0),
-            'model_calls': result.get('model_calls', 0),
+            'model_calls': (result.get('model_calls') or {}).get('count', 0),
+            **({'prompt_tokens': (result['usage']['used'].get('prompt_tokens') or 0),
+                'completion_tokens': (result['usage']['used'].get('completion_tokens') or 0)}
+               if isinstance(result.get('usage'), dict) and 'used' in result['usage'] else {}),
+            **({'parse_failures': result['parse_failures']}
+               if result.get('parse_failures') is not None else {}),
         },
     }
     if record['outcome']['cause'] in ('', '(alive and well)'):

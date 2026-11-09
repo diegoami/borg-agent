@@ -19,16 +19,19 @@ level and no PR open.*
   milestone 1's, T15 and T16 for milestone 2's.
 - **Milestone 3 is in progress.** Done: T17 (the game pin to better-borg-c
   milestone 8), T18 (the borg-rs pin), T19 (the strategy manual and the online
-  command reference as sources) and T20 (the user manual). **T06 is next**:
-  the `models.yaml` loader, the prompt pack and the three minds. Then T07 (the
-  knowledge store) and T08 (the post-mortem start).
+  command reference as sources), T20 (the user manual) and **T06** (the
+  `models.yaml` loader, the prompt pack and the three minds — a model has now
+  played). **T07 is next** (the knowledge store), then T08 (the post-mortem
+  start), and milestone 3's review PR after them.
 - **What works end to end:** the pinned game builds; the stock Borg plays it
   reproducibly; an agent plays through the Borg's own connection choosing
   between the eight primitives of R2; a run is recorded, replayed with
   `verify` (which also checks the record against the run), branched at a turn,
   and read with `view`, `dump` and `explain`. 223 fast tests and 13 slow gates,
   both in CI.
-- **No model has played yet.** Nothing in the repository has called a provider.
+- **A model has played** (2026-11-09, T06): `qwen3.8-flash` on the Alibaba
+  Token Plan, seed 1 to 1,000 turns, **5 calls and no parse failures**, and
+  the run **replayed exactly** afterwards. See docs/MINDS.md.
 
 ### Start here
 
@@ -130,6 +133,56 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T06, the mind and the model calls
+
+Branch `task/T06-mind-and-model-calls`, PR
+[#33](https://github.com/diegoami/borg-agent/pull/33).
+
+What exists now: `src/borg_agent/models.py` (the `models.yaml` loader),
+`schemas/models@1.json`, `prompts/play-1/` with
+`src/borg_agent/prompts.py`, and `src/borg_agent/model_mind.py` with the
+`external` and `api` minds, the call log and the budget. `docs/MINDS.md`
+describes all of it. `--mind api|external` on `agent` and `branch`, with
+`--profile`, `--pack`, `--budget-calls` and `--budget-tokens`.
+
+**A model played.** `qwen3.8-flash`, profile `alibaba`, pack `play-1`, seed 1,
+cap 1,000: `turn_cap` after 51 decisions, **5 model calls**, no parse
+failures, 17,966 tokens, 14 s a call, 99 s in all. It explored the town, took
+the stairs down, explored, fought a giant centipede and rested at 15/40 hit
+points — its own reasons are in `model-calls.jsonl`. The record validates,
+`deterministic: false`, and **`verify` replayed the run exactly**: 51
+decisions, every state hash equal. A second run with `--budget-calls 2` ended
+`budget_cap`.
+
+Facts the next sessions will need:
+- **Five calls for a thousand game turns.** That is what the executor buys: a
+  model is asked when a primitive stops, not when the game wants a key. A
+  20,000-turn pilot run is therefore of the order of a hundred calls, not
+  thousands — the figure T09 and T10 should budget for, and worth measuring
+  again with a model that chooses worse and so stops more often.
+- **A prompt is about 2,000 tokens**, of which 1,600 is the system message and
+  identical every time. Prompt caching, if a provider offers it, would pay.
+- **The executor is transparent for run-level concerns.** `ExecutingMind`
+  delegates `call_log`, `budget`, `parse_failures`, `mind_record` and the
+  journal to the chooser inside it. The first real run wrote no call log
+  because the wrapper hid it; if a run-level feature seems missing with the
+  `api` mind, look there first.
+- **A key cannot reach a file.** The loader refuses a key-shaped field before
+  it validates anything (a validator's error message could otherwise quote
+  it), the call log replaces a reply that looks like a credential, and the key
+  lives only in the header of the one method that makes a request.
+- The prompt pack describes the primitives **from the executor's own code**,
+  including the stops each one reports, so a prompt cannot drift from what the
+  executor does.
+- `string.Template`, not `str.format`, for the templates: they show JSON, and
+  braces in an example are not placeholders.
+- A reply is read by finding the first balanced JSON object, so a model that
+  wraps its answer in prose or a fenced block is still answering. Twice
+  unreadable ends the run `agent_stopped`; the agent never guesses an action.
+
+Left for T07: the knowledge in the prompt. `render` takes a `knowledge`
+argument and the system message has a place for it; nothing fills it yet.
 
 ## 2026-11-09: T20, the user manual is a source
 

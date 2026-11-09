@@ -395,6 +395,77 @@
               "minimum": 1
             }
           }
+        },
+        "jobs": {
+          "type": "object",
+          "description": "Every job this run called a model for, keyed by job (R2.4). A run that only plays has one entry; T07's consolidation and T08's reviews add their own. `mind` itself describes the mind that played.",
+          "propertyNames": {
+            "enum": [
+              "play",
+              "consolidate",
+              "review"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "provider",
+              "model",
+              "family",
+              "chosen_by"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "model": {
+                "type": "string"
+              },
+              "family": {
+                "type": "string"
+              },
+              "chosen_by": {
+                "type": "string"
+              },
+              "profile": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "effort": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "context_k": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "endpoint_host": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "calls": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "prompt_tokens": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completion_tokens": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
         }
       },
       "allOf": [
@@ -474,7 +545,8 @@
           "$ref": "#/$defs/sha256"
         },
         "model_calls_sha256": {
-          "$ref": "#/$defs/sha256"
+          "$ref": "#/$defs/sha256",
+          "description": "Every model call: what was asked, what came back, the tokens and the time (R2.1)."
         },
         "notes_sha256": {
           "$ref": "#/$defs/sha256"

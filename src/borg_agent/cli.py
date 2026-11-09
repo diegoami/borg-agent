@@ -15,10 +15,54 @@ from . import play as play_module
 from . import record as record_module
 from . import replay as replay_module
 
+def api_mind(args):
+    """The model of the active profile's `play` job (D7), with its budget."""
+    from . import model_mind, models as models_module, prompts
+
+    configuration = models_module.load(profile=args.profile)
+    choice = configuration['play']
+    missing = configuration.missing_keys(['play'])
+    if missing:
+        raise models_module.ConfigurationError(
+            f'the play job needs ${missing[0]}, which is not set')
+    pack = prompts.load_pack(args.pack)
+    if pack.job != 'play':
+        raise prompts.PromptError(f'the pack {pack.version!r} is for the {pack.job} job')
+    print(f'play: {choice.provider}/{choice.model} ({choice.family}), profile '
+          f'{choice.profile}, chosen by {choice.chosen_by}, pack {pack.version} '
+          f'{pack.sha256[:12]}')
+    return model_mind.ApiMind(
+        choice, pack=pack,
+        budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
+        choice_record=configuration.record('play'))
+
+
+def external_mind(args):
+    from . import model_mind
+
+    directory = Path(args.external_dir or (RUNS / 'external'))
+    print(f'write answers into {directory}')
+    return model_mind.ExternalMind(directory)
+
+
 MINDS = {'scripted': mind_module.ScriptedMind,
          # The primitives of R2, with a scripted chooser in front (T05).
          'scripted-primitives': lambda: executor_module.ExecutingMind(
              mind_module.PrimitiveMind(), name='scripted-primitives')}
+# The minds that need the run's arguments: a model, or a person at a file.
+CONFIGURED_MINDS = {'api': api_mind, 'external': external_mind}
+ALL_MINDS = sorted({*MINDS, *CONFIGURED_MINDS})
+
+
+def build_mind(args):
+    """The mind a run was asked for."""
+    if args.mind in CONFIGURED_MINDS:
+        inner = CONFIGURED_MINDS[args.mind](args)
+        if args.mind == 'api' and not args.no_executor:
+            # A model chooses primitives; the executor runs them (R2).
+            return executor_module.ExecutingMind(inner, name=f'api:{args.mind}')
+        return inner
+    return MINDS[args.mind]()
 
 RUNS = build_module.pins.ROOT / 'runs'
 
@@ -85,7 +129,7 @@ def cmd_agent(args):
     output = Path(args.output) if args.output else run_dir(
         f'agent-{args.mind}-seed{args.seed}-cap{args.cap}-{time.time_ns()}')
     record = agent_module.play_with_mind(
-        out, args.seed, args.cap, output, MINDS[args.mind](),
+        out, args.seed, args.cap, output, build_mind(args),
         timeout=args.timeout, stall_timeout=args.stall_timeout,
         decision_cap=args.decision_cap, validate=not args.no_validate,
         lock=not args.no_lock)
@@ -101,7 +145,7 @@ def cmd_agent_determinism(args):
     records, streams, traces = [], [], []
     for attempt in (1, 2):
         record = agent_module.play_with_mind(
-            out, args.seed, args.cap, base / f'run{attempt}', MINDS[args.mind](),
+            out, args.seed, args.cap, base / f'run{attempt}', build_mind(args),
             timeout=args.timeout, stall_timeout=args.stall_timeout,
             decision_cap=args.decision_cap, validate=not args.no_validate,
             lock=not args.no_lock)
@@ -153,7 +197,7 @@ def cmd_branch(args):
     output = Path(args.output) if args.output else run_dir(
         f'branch-{Path(args.run).name}-turn{args.turn}-{args.mind}')
     result, parent = replay_module.branch(
-        args.run, args.turn, output, MINDS[args.mind](), timeout=args.timeout,
+        args.run, args.turn, output, build_mind(args), timeout=args.timeout,
         stall_timeout=args.stall_timeout, lock=not args.no_lock)
     record_module.write_record(output, mode='post_mortem', parent=parent)
     print(output)
@@ -219,7 +263,17 @@ def main(argv=None):
         p = sub.add_parser(name, help=help_text)
         p.add_argument('--seed', type=int, required=True)
         p.add_argument('--cap', type=int, required=True, help='game-turn cap')
-        p.add_argument('--mind', choices=sorted(MINDS), default='scripted')
+        p.add_argument('--mind', choices=ALL_MINDS, default='scripted')
+        p.add_argument('--profile', help='the models.yaml profile to use (api); '
+                                         'otherwise the active one (D7)')
+        p.add_argument('--pack', default='play-1', help='the prompt pack (api)')
+        p.add_argument('--budget-calls', type=int, default=None,
+                       help='stop after this many model calls; the outcome is budget_cap (R2.3)')
+        p.add_argument('--budget-tokens', type=int, default=None,
+                       help='stop after this many tokens; the outcome is budget_cap')
+        p.add_argument('--external-dir', type=Path, help='where the external mind reads answers')
+        p.add_argument('--no-executor', action='store_true',
+                       help='give the model the game directly, without the primitives')
         p.add_argument('--output', type=Path)
         p.add_argument('--timeout', type=int, default=900)
         p.add_argument('--stall-timeout', type=int, default=120)
@@ -249,7 +303,13 @@ def main(argv=None):
     brancher = sub.add_parser('branch', help='replay to a turn, then play on with another mind')
     brancher.add_argument('--run', type=Path, required=True)
     brancher.add_argument('--turn', type=int, required=True)
-    brancher.add_argument('--mind', choices=sorted(MINDS), default='scripted')
+    brancher.add_argument('--mind', choices=ALL_MINDS, default='scripted')
+    brancher.add_argument('--profile')
+    brancher.add_argument('--pack', default='play-1')
+    brancher.add_argument('--budget-calls', type=int, default=None)
+    brancher.add_argument('--budget-tokens', type=int, default=None)
+    brancher.add_argument('--external-dir', type=Path)
+    brancher.add_argument('--no-executor', action='store_true')
     brancher.add_argument('--output', type=Path)
     brancher.add_argument('--timeout', type=int, default=900)
     brancher.add_argument('--stall-timeout', type=int, default=120)
