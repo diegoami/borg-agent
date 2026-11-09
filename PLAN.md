@@ -37,7 +37,7 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
-| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, T22 (D11), T24, T25, T11, T26, T27, **T29, then T28** (D12), T09, T10 | **in progress** |
+| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, a person can read a run, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, T22 (D11), T24, T25, T11, T26, T27, T29, **then T28** (D12), T30, T09, T10 | **in progress** |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -82,7 +82,8 @@ branch), `in review` (with the PR), `done` (merged).
 | T26 | A real model run as a Mage, and --race/--class on the CLI | 4 | T24 | with a profile whose key variables are set | in progress (task/T26-model-run-as-a-mage) |
 | T27 | Keep the model's reasoning | 4 | T06 | yes | in review |
 | T28 | Ask by state, not by event (D12) | 4 | T06, T27 | yes | todo |
-| T29 | The action surface: magic, items, and a refusal that is not fatal | 4 | T22 | yes | in review |
+| T29 | The action surface: magic, items, and a refusal that is not fatal | 4 | T22 | yes | done (#50) |
+| T30 | A viewer for one run ([#51](https://github.com/diegoami/borg-agent/issues/51)) | 4 | T04, T27 | yes | todo |
 
 ### T01. Build and play the pinned game headless
 
@@ -455,6 +456,43 @@ harness offered", and the notes say why, because a reader would otherwise take
 them for facts about the classes. The obvious next probe is the Mage's question
 asked again **with magic**, which is a new probe id and the first thing T28's
 `fighting` state will have something to choose between.
+
+### T30. A viewer for one run
+
+The owner, 2026-11-09: *"have an issue for a tool where I can see the results
+of runs on a decent gui, if not a player at least some UI where I see in a
+tabellar format logs, events, inventory and so on and a couple screenshots"*.
+
+Filed as [#51](https://github.com/diegoami/borg-agent/issues/51), which holds
+the detail. In short: **one self-contained HTML file per run**,
+`python -m borg_agent report --run runs/<id> --output report.html` — no server,
+no dependencies, attachable to a PR.
+
+- a header from the record: who played, the outcome, the model, the calls,
+  tokens and wall time, and whether `verify` reproduced it;
+- **a timeline table**, one row per decision: turn, depth, hit points, mana,
+  what the mind chose and why, the stop it answered, the monsters in sight, the
+  game's messages. This is the table every session has rebuilt by hand with a
+  throwaway script;
+- the model calls, with the reason, the **reasoning** (T27), the reply, the
+  tokens and the seconds, joined to their decision;
+- inventory, equipment and **spells** at a chosen decision, as tables — the
+  spell table wants mana, fail chance and castable, since that is what a
+  caster's choice turns on;
+- the known map rendered at the turns that matter (first monster, each level
+  change, every model call, the last turn), monospace at minimum;
+- the events worth jumping to: level changes, first sight of a monster kind,
+  hit-point drops, deaths, parse failures, **refusals**, budget and cap stops.
+
+It reads and never writes: a run directory and a record are immutable (R4.1),
+and it must need no model and no key. `view` should also stop printing the
+sparse `borg_what_text` screen and render the observation's own map instead.
+
+Beyond it, and not required: an index over several runs, for a probe's arms or
+a trial's candidates; and `watch --run <id>`, which would replay the recorded
+action stream through the **X11 frontend the build already compiles** so a
+person can watch the game move. That is the only part that deserves the word
+"player".
 
 ### T28. Ask by state, not by event (D12)
 
