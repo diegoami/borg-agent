@@ -9,6 +9,9 @@ work and updates "Current state".
   `flock /tmp/angband-validation.lock pytest -m slow` waited for ever, because
   the suite's own runs took the same lock. An outer `flock` is now detected.
   The review PR's diff moved with it.
+- **Milestone 2 was reviewed twice.** The re-review of T15's fixes found two
+  new issues, both in the new code, and they are closed in **T16** (#20). The
+  reviewer confirmed all four original findings closed in substance.
 - **Milestone 2 has been reviewed** (Kimi K3, a different family, on
   [#15](https://github.com/diegoami/borg-agent/pull/15), 2026-11-09) and its
   four findings are answered in **T15** (#18). The review PR's diff moved with
@@ -43,6 +46,49 @@ work and updates "Current state".
 - Settled: `default_profile: alibaba` stays (the owner, 2026-11-08 — the
   general notes about that provider do not apply here, since D7 makes the
   profile the only model rule).
+
+## 2026-11-09: T16, the milestone-2 re-review findings
+
+Branch `task/T16-rereview-findings`, PR
+[#20](https://github.com/diegoami/borg-agent/pull/20). The re-review is a
+comment on [#15](https://github.com/diegoami/borg-agent/pull/15).
+
+Two new issues, both in the code T15 had just added:
+
+- **A `prefix` verify accepted a run cut short at the end.** Truncate both
+  logs by three decisions, leave the record and the state hashes alone, and
+  `verify` said `verified: true`: the replay reproduces the states that
+  remain, and the tolerance for a stream ending early left room for it. The
+  exact-length comparison it replaced had caught this by accident.
+  `check_record_against_run` now compares every count and hash the record
+  published against the files the replay read, and names the first that
+  disagrees. **The lesson: when a check is loosened, ask what the old strict
+  version was catching by accident.**
+- **A branch lost its journal.** The run drains the journal from the mind it
+  was handed, which for a branch is the `replay` mind, while the mind that
+  took over kept its entries. Mode B *is* "replay, then try something else",
+  so the journal was missing exactly where T15 had added it to help.
+  `ReplayMind.drain_journal` passes through now.
+- Journal entries buffered during a decision were lost when the mind raised,
+  so the stops that led to `agent_stopped` never reached the log. Drained in
+  the handlers now.
+- The **Home** is described the way its own screen describes it: in full,
+  without prices. That was the last fidelity gap the reviewer found in the
+  shop block.
+
+Facts the next sessions will need:
+- `verify`'s `prefix` scope **compares no part of the trace**, by
+  construction: a divergence visible only in the trace's RNG fields after the
+  last recorded decision is out of its scope. A run the game ended is compared
+  on the trace too.
+- A replay that ends on its stream records `agent_stopped`, because the
+  outcome vocabulary has no word for "the recording ended"; `stream_ended`
+  carries the truth. If T11 ever records replays, this needs a word.
+- **Run directories made before T15 cannot be recorded** — no `provenance` in
+  their `result.json`. Deliberate; they were throwaway.
+- `engine.pins` is still read from `pins.json` when a record is written rather
+  than at play time. Harmless, as the reviewer noted: a pins change changes
+  the build key, which is captured at play time.
 
 ## 2026-11-09: T15, the milestone-2 review findings
 

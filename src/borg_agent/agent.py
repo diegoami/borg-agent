@@ -97,6 +97,24 @@ class Validator:
         self.checked += 1
 
 
+def drain_journal_into(mind, journal_log):
+    """Write what the mind has to say beyond the command it produced.
+
+    A mind that chooses primitives records what it chose, why, and why the
+    last primitive stopped (R2). Everything else keeps no journal.
+    """
+    drain = getattr(mind, 'drain_journal', None)
+    if not drain:
+        return 0
+    written = 0
+    for entry in drain():
+        journal_log.write(json.dumps(entry, sort_keys=True) + '\n')
+        written += 1
+    if written:
+        journal_log.flush()
+    return written
+
+
 def open_pipes(obs_path, act_path, process, deadline):
     """The handshake, bounded in time.
 
@@ -257,9 +275,13 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                         try:
                             action = mind.act(observation)
                         except signals.CannotAct as exc:
-                            # The agent gave up; that is an outcome (R5).
+                            # The agent gave up; that is an outcome (R5). The
+                            # stops that led to it are the most interesting
+                            # lines in the journal, so they are written before
+                            # the run ends.
                             interrupted = 'agent_stopped'
                             record['error'] = str(exc)
+                            journal_entries += drain_journal_into(mind, journal_log)
                             break
                         except signals.StreamEnded as exc:
                             # A replay reached the end of what was recorded.
@@ -269,16 +291,11 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                             record['error'] = str(exc)
                             record['stream_ended'] = {'decisions': exc.decisions,
                                                       'turn': exc.turn}
+                            journal_entries += drain_journal_into(mind, journal_log)
                             break
                         validator.check('action', action, f'action {decisions}')
                         action_log.write(json.dumps(action, sort_keys=True) + '\n')
-                        # A mind that chooses primitives has more to say than
-                        # the command it produced: what it chose, why, and why
-                        # the last primitive stopped (R2).
-                        for entry in (mind.drain_journal()
-                                      if hasattr(mind, 'drain_journal') else ()):
-                            journal_log.write(json.dumps(entry, sort_keys=True) + '\n')
-                            journal_entries += 1
+                        journal_entries += drain_journal_into(mind, journal_log)
                         actions.write(wire(action) + '\n')
                         actions.flush()
                         # The stall limit is on the *game's* answer, so the

@@ -330,8 +330,12 @@ static void write_shop(FILE *out)
 
         if (!obj || !obj->kind)
             continue;
+        /* The Home keeps the player's own things: its screen shows them in
+         * full, with no prices, and so does this (ui-store.c). */
+        bool home = store->feat == FEAT_HOME;
         object_desc(description, sizeof(description), obj,
-            ODESC_PREFIX | ODESC_FULL | ODESC_STORE, player);
+            home ? (ODESC_PREFIX | ODESC_FULL)
+                 : (ODESC_PREFIX | ODESC_FULL | ODESC_STORE), player);
         label[0] = (index < (int)letters) ? SHOP_MENU_ITEMS[index] : '?';
         label[1] = '\0';
         if (written++)
@@ -340,8 +344,10 @@ static void write_shop(FILE *out)
         json_field(out, "label", label);
         fputc(',', out);
         json_field(out, "description", description);
-        fprintf(out, ",\"count\":%d,\"price\":%d}",
-            (int)obj->number, price_item(store, obj, false, 1));
+        fprintf(out, ",\"count\":%d", (int)obj->number);
+        if (!home)
+            fprintf(out, ",\"price\":%d", price_item(store, obj, false, 1));
+        fprintf(out, "}");
     }
     mem_free(listed);
     fprintf(out, "]}");

@@ -46,6 +46,17 @@ class ReplayMind:
     def handed_over(self):
         return self.handed_over_at is not None
 
+    def drain_journal(self):
+        """The journal of the mind that took over, if it keeps one.
+
+        A branch's own decisions are the interesting ones — mode B is "replay,
+        then try something else" — and they were being dropped because the run
+        asks the outer mind, which is this one (found by the milestone 2
+        re-review).
+        """
+        drain = getattr(self.then, 'drain_journal', None)
+        return drain() if drain else []
+
     def act(self, observation):
         self.decisions += 1
         if self.until_turn is not None and observation['turn'] >= self.until_turn and self.then:
@@ -68,6 +79,45 @@ class ReplayMind:
 # (R2.3). The two are verified differently, and conflating them was finding 1
 # of the milestone 2 review.
 GAME_ENDED = ('death', 'completion', 'turn_cap', 'saved')
+
+
+def check_record_against_run(recorded, run_dir, actions):
+    """Is the run beside this record still the run the record describes?
+
+    Every count and hash the record published is compared with the file it
+    was taken from. Without the counts, a run could be shortened at the end —
+    the replay would reproduce the states that remained and `prefix` would
+    accept it — while the record still claimed the longer stream.
+
+    Returns (matches, reason). `matches` is None when the record published
+    nothing to compare.
+    """
+    run_dir = Path(run_dir)
+    stream = recorded.get('action_stream') or {}
+    evidence = recorded.get('evidence') or {}
+    checks = [
+        ('the action stream', stream.get('sha256'), run_dir / agent.ACTION_LOG),
+        ('the observations', evidence.get('observations_sha256'),
+         run_dir / agent.OBSERVATION_LOG),
+        ('the state hashes', evidence.get('state_hashes_sha256'),
+         run_dir / record.STATE_HASHES_NAME),
+        ('the journal', evidence.get('journal_sha256'), run_dir / agent.JOURNAL_LOG),
+    ]
+    compared = False
+    for what, published, path in checks:
+        if not published:
+            continue
+        if not path.exists():
+            return False, f'the record names {what}, but {path.name} is not beside the run'
+        compared = True
+        if sha(path) != published:
+            return False, f'{what} is not what the record published ({path.name})'
+    if stream.get('count') is not None:
+        compared = True
+        if stream['count'] != actions:
+            return False, (f"the record says {stream['count']} actions, but "
+                           f'{agent.ACTION_LOG} holds {actions}')
+    return (True if compared else None), None
 
 
 def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print):
@@ -126,13 +176,13 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
     }
     if recorded:
         # The record is checked against the run as well, not only the run
-        # against its replay: the hash the record published must still be the
-        # hash of the state hashes beside it.
-        published = (recorded.get('evidence') or {}).get('state_hashes_sha256')
-        verdict['record_state_hashes_sha256'] = published
-        verdict['record_matches_run'] = (
-            published == sha(run_dir / record.STATE_HASHES_NAME)
-            if published and (run_dir / record.STATE_HASHES_NAME).exists() else None)
+        # against its replay. Every stream the record published a hash or a
+        # count for must still be the file the replay read: a consistent cut
+        # of the end of both logs used to pass `prefix`, with the intact
+        # record making it look endorsed (found by the milestone 2
+        # re-review).
+        verdict['record_matches_run'], verdict['record_mismatch'] = \
+            check_record_against_run(recorded, run_dir, len(actions))
     if verdict['seasonal'][0] != verdict['seasonal'][1]:
         # The game's monster table differs on 24-26 December, so this replay
         # was never going to match and its result says nothing about the run.
@@ -149,8 +199,7 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
     verdict['comparable'] = True
     if verdict.get('record_matches_run') is False:
         verdict['verified'] = False
-        verdict['failed_because'] = ("the record's state_hashes_sha256 is not the hash of the "
-                                     'state hashes beside the run')
+        verdict['failed_because'] = verdict['record_mismatch']
     elif scope == 'full':
         verdict['verified'] = bool(
             states_match and len(after) == len(before)
