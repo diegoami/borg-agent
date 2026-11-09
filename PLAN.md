@@ -37,7 +37,8 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
-| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, a person can read a run, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, T22 (D11), T24, T25, T11, T26, T27, T29, **then T28** (D12), T30, T09, T10 | **in progress** |
+| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, a person can read a run, and **how the agent plays is specified** before more is built on it | T23, T22 (D11), T24, T25, T11, T26, T27, T29, T30, **T31** (the spec, which absorbs T28) | **in progress** |
+| **5. The play redesign** | the agent plays by the specification: the game's own words, the game's own router, and the mind making every choice — then the trial and the pilot on a surface worth measuring | T32 (implement T31), T33 (measure it against the old surface), then T09, T10 | **next**, once the owner settles T31's open questions |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -81,9 +82,9 @@ branch), `in review` (with the PR), `done` (merged).
 | T25 | The consolidation keeps its own call log | 4 | T07, T23 | yes | done (#47) |
 | T26 | A real model run as a Mage, and --race/--class on the CLI | 4 | T24 | with a profile whose key variables are set | in progress (task/T26-model-run-as-a-mage) |
 | T27 | Keep the model's reasoning | 4 | T06 | yes | in review |
-| T28 | Ask by state, not by event (D12) | 4 | T06, T27 | yes | todo |
 | T29 | The action surface: magic, items, and a refusal that is not fatal | 4 | T22 | yes | done (#50) |
 | T30 | A viewer for one run ([#51](https://github.com/diegoami/borg-agent/issues/51)) | 4 | T04, T27 | yes | in review |
+| T31 | The playing specification ([docs/PLAY-SPEC.md](docs/PLAY-SPEC.md)) | 4 | T29 | yes | in review |
 
 ### T01. Build and play the pinned game headless
 
@@ -457,6 +458,57 @@ them for facts about the classes. The obvious next probe is the Mage's question
 asked again **with magic**, which is a new probe id and the first thing T28's
 `fighting` state will have something to choose between.
 
+### T31. The playing specification
+
+The owner, 2026-11-09, after the Mage's prompt turned out to advertise ten
+primitives and no commands at all: *"We need to take a step back and write a
+full spec of how this is supposed to work, and this is the next task. Define
+the prompt that should be sent, the primitives, I do not even think that flee
+is good, the out should be go sw or something."*
+
+[**docs/PLAY-SPEC.md**](docs/PLAY-SPEC.md) is that specification. It replaces
+R2's eight primitives and the prompt built on them, and it absorbs T28 and
+decision D12. **Nothing is implemented in this task**: the spec is the
+deliverable, and T32 implements it.
+
+What it settles:
+
+- **why the first design failed**, in three faults: the prompt named no
+  commands (so a Mage with potions could not say `quaff`), `flee` was a tactic
+  in the plumbing routed by a breadth-first search we wrote while the game has
+  its own router, and "primitive" meant both *batching repetition* — which is
+  what makes a long game affordable — and *making choices*, which is what
+  hides the thing being measured;
+- **directions are compass words**, `n ne e se s sw w nw`, in the observation
+  and in the action alike. The old prompt said "`R` rock lizard at (47, 7), 1
+  away" and expected the model to do the arithmetic; the new one says "`R` rock
+  lizard, 1 sw" and takes `attack sw`. The owner's correction, and the one that
+  matters most;
+- **moves are the game's own acts** — every command the bridge can type, with
+  the list **generated into the prompt** from the same table the bridge reads,
+  so the advertised surface cannot drift from the real one;
+- **two batches only**: `explore`, and `repeat {action} until {condition}`.
+  `repeat` replaces `fight_nearest`, `cast_at_nearest`, `rest_until_healed`,
+  `read_unknown_scroll` and `shop_list`, and **`flee` is deleted** — the mind
+  says `go_to` the stairs or `read` the scroll, because the choice was always
+  the interesting part;
+- **the game routes, not us**: `go_to {x, y}` pushes `CMD_PATHFIND`, which
+  computes the path, walks it and stops when disturbed. Our breadth-first
+  search survives only to pick the exploration frontier, which is a fact about
+  the known map;
+- **what the prompt shows**, part by part, including the three things it was
+  missing: mana, equipment, and the spell table T29 added;
+- **when the model is asked**: by state (D12) — `prompt`, `panic`, `fighting`,
+  `shopping`, `town`, `at_stairs`, `exploring` — with the thresholds that
+  define a state as **data in the versioned pack**, so what counted as panic in
+  a run stays recoverable;
+- **the cost, as an estimate to be measured**: 15–40 calls per 1,000 turns
+  against today's 5–11 — and the comparison that decides whether the spec was
+  right at all: one seed, one model, the old surface against the new, on calls,
+  tokens, depth, level, survival and how many distinct actions the model used.
+
+Five open questions are listed at the end for the owner; T32 waits on them.
+
 ### T30. A viewer for one run
 
 The owner, 2026-11-09: *"have an issue for a tool where I can see the results
@@ -518,11 +570,17 @@ action stream through the **X11 frontend the build already compiles** so a
 person can watch the game move. That is the only part that deserves the word
 "player".
 
-### T28. Ask by state, not by event (D12)
+### T28. Ask by state, not by event (D12) — absorbed into T31
 
 The owner, 2026-11-09: *"I think the surface should be different. Not by event,
 but by state. When fighting, when shopping (and deciding the shop to visit),
 when in panic"*.
+
+**This task has no row of its own any more.** Looking at what the state tables
+would have to choose between showed that the vocabulary was the real fault, so
+the design went back to the drawing board and the states are specified in
+[docs/PLAY-SPEC.md](docs/PLAY-SPEC.md) with everything else (T31). Decision D12
+stands; what follows is the reasoning that produced it.
 
 Today the mind is asked whenever a primitive **stops**, and it is asked the same
 question every time: one system message, the whole primitive menu, whatever

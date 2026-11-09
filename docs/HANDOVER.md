@@ -5,9 +5,10 @@ work and updates "Current state".
 
 ## Current state
 
-*Written on 2026-11-09, with milestone 3 reviewed and merged, its ten findings
-closed in T23, mode C running, the zoo's contract written, and — since T29 —
-**a Mage that can actually cast**.*
+*Written on 2026-11-09. Milestone 3 is reviewed and merged, mode C runs, a run
+can be read as a page — and **how the agent plays has gone back to the drawing
+board**: [docs/PLAY-SPEC.md](PLAY-SPEC.md) is the new specification and the
+next session implements it.*
 
 ### Where the work stands
 
@@ -185,6 +186,47 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T31, the playing specification — read this before touching play
+
+The owner, after seeing that the Mage's prompt advertised ten primitives and
+**no commands at all**: *"We need to take a step back and write a full spec of
+how this is supposed to work... I do not even think that flee is good, the out
+should be go sw or something."* Before that: *"I am starting to think this
+approach is not going to work."*
+
+[docs/PLAY-SPEC.md](PLAY-SPEC.md) is the answer, and **T32 implements it**. Do
+not extend the old primitives: they are what is being replaced.
+
+The three faults it is written against, because they are easy to repeat:
+1. **The prompt named no commands.** 112 in the game, 29 the bridge can type,
+   ten primitives advertised. `quaff` has worked since T05 and no model ever
+   knew the word — which is why a Mage fought at 10 hit points with potions it
+   could not name. A surface that exists but is not advertised does not exist.
+2. **`flee` was a tactic in the plumbing**, and it routed with our own
+   breadth-first search over remembered glyphs while the game has
+   `find_path()` behind `CMD_PATHFIND`. We wrote a worse pathfinder next to a
+   working one and then relied on it in the one situation where being wrong
+   kills the character.
+3. **"Primitive" meant two things**: batching repetition, which is the economy
+   that makes long games affordable, and making choices, which is the thing
+   under observation. Only the first belongs to the executor.
+
+What the spec decides, in one line each: directions are **compass words** both
+ways (`attack sw`, not coordinates); moves are the game's own acts with the
+list **generated into the prompt** from the table the bridge reads; two batches
+only (`explore`, `repeat {action} until {condition}`); **`flee` is deleted**;
+`go_to` uses the **game's** router; the prompt gains mana, equipment and the
+spell table; and the model is asked **by state** with the state thresholds as
+versioned pack data.
+
+And the honest part, which the owner's doubt earned: **all the counted
+knowledge so far came from probes, not from model play.** Eleven claims; the
+two with trials behind them are mode C's. If the product is knowledge, mode A
+may be worth more as a way to *generate situations for probes* than as a source
+of claims itself. The spec's last section is the measurement that settles
+whether the new vocabulary changes that — one seed, one model, old surface
+against new.
 
 ## 2026-11-09: T29, the action surface
 
