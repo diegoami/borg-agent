@@ -9,18 +9,27 @@ PR and propose a fix to whichever is wrong.
 **No task is in progress and none should be started.** The owner froze the
 repository after the pivot, because the analyser it now intends
 ([docs/DEATH-ANALYSIS-SPEC.md](docs/DEATH-ANALYSIS-SPEC.md)) has no honest
-input: every death available is a munchkin Borg's (T34), and with munchkin off
-this Borg reaches depth 2–3 in 30,000 turns and does not die.
+input of **ours**: every run this repository made was a Warrior, and the
+milestone 8 tree gives Warriors a munchkin start by default (T34); with that
+off the same Warrior reached depth 2–3 in 30,000 turns without dying inside the
+cap, which is a descent problem rather than a survival one. The curated corpus
+is **not** uniformly polluted — see condition 2.
 
 It thaws when any of these is true, and [README.md](README.md) says the same:
 
 1. **borg-rs plays and dies** — the Borg reborn is the subject the knowledge is
    for, and its deaths are the input the analyser wants;
-2. **a munchkin-free death corpus exists** — better-borg-c changes its default,
-   the zoo runs a profile with it off, or the thirteen curated cases are
-   re-run. Then `index.json`'s 36 hand-written leads become the validation set;
+2. **a munchkin-free death corpus exists**, and three cases already qualify:
+   the default touches only Warriors, Druids and Rangers, so D0007 (Mage),
+   D0008 (Priest) and D0012 (Paladin) are honest by their own records, while
+   D0009 (Necromancer) is munchkin on purpose and the nine Warrior/Druid/Ranger
+   cases cannot be told apart because the records omit
+   `borg_munchkin_by_class`. `index.json`'s 36 hand-written leads are the
+   validation set either way;
 3. **deaths are found in ordinary play** — nothing here has looked past 30,000
-   turns or below depth 3.
+   turns, below depth 3, or at a class other than Warrior;
+4. **a player that descends** — an agent reading the manual plays, descends and
+   dies, which makes the corpus the analyser wants.
 
 Milestones 1–4 are built and merged. Milestone 5 holds the pivot: T34 (the
 munchkin finding) and T35 (the specification). T36 to T38 — the extractor, the

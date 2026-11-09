@@ -7,9 +7,12 @@
 > reborn; the way to produce it is now a **death replay analyser** — a Borg
 > death in, *leads* out, with no playing and no model keys
 > ([docs/DEATH-ANALYSIS-SPEC.md](docs/DEATH-ANALYSIS-SPEC.md)) — and its input
-> does not exist yet, because every death available is of a Borg that cheats
-> by default (`borg_munchkin_by_class`, T34) and with that off this Borg barely
-> descends.
+> was thought not to exist, because every run *this repository* made was a
+> Warrior and the milestone 8 tree gives Warriors, Druids and Rangers a
+> munchkin start by default (`borg_munchkin_by_class`, T34), while with that
+> off the same Warrior reached only depth 2–3 in 30,000 turns. That premise is
+> narrower than it looked: the default ignores every other class, and three of
+> the thirteen curated deaths are confirmed honest.
 >
 > [README.md](README.md) says what unfreezes it. If you were sent here to
 > **build** something, the answer is almost certainly "not yet, and here is

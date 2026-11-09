@@ -33,20 +33,21 @@ The third is the pivot, in the owner's words:
 
 ## Why it is frozen
 
-**The deaths available to analyse are of a Borg that cheats.** The milestone 8
-tree defaults `borg_munchkin_by_class = TRUE`, which — by the Borg's own source
-comment — gives Warriors, Druids and Rangers a munchkin start whatever
-`borg_munchkin_start` says: stair-scumming, conjured items, "Power Diving".
-Every Borg run this repository made before the freeze was one of those, and the
-curated death corpus and the zoo's cohort are run on the same defaults
-(T34 in [PLAN.md](PLAN.md)).
+**Our own deaths are of a Borg that cheats, and we have no others of our own.**
+The milestone 8 tree defaults `borg_munchkin_by_class = TRUE`, which — by the
+Borg's own source comment — gives **Warriors, Druids and Rangers** a munchkin
+start whatever `borg_munchkin_start` says: stair-scumming, conjured items,
+"Power Diving". Every run this repository made was a Human Warrior, so every
+one of them was a munchkin run (T34 in [PLAN.md](PLAN.md)).
 
-Analysing those deaths would produce leads about a mode nobody wants to keep.
-And with munchkin off, this Borg barely descends: twelve seeds reached **depth
-2–3 in 30,000 turns** and none of them died, so there is nothing to analyse
-either.
+With munchkin off, that Warrior stops going anywhere: twelve seeds reached
+**depth 2–3 in 30,000 turns** and none of them died inside the cap. The honest
+reading of that is a **descent** problem, not a survival one — the character
+was never in danger because it never went deep enough to be. Nothing here has
+looked past 30,000 turns, below depth 3, or at any other class.
 
-So the tool is specified and not built, because its input does not exist yet.
+So the repository was frozen for want of input. **That premise is narrower than
+it first looked** — see below — and the freeze is the owner's to lift.
 
 ## When it becomes useful again
 
@@ -55,12 +56,25 @@ Any one of these makes the analyser worth building:
 1. **A Borg reborn worth analysing.** borg-rs is the subject this knowledge is
    for. When it plays and dies, its deaths are the input, and the leads go
    straight to the thing being improved.
-2. **A munchkin-free death corpus.** Either better-borg-c changes the default,
-   or the zoo runs a profile with it off, or the thirteen curated cases are
-   re-run without it. Then the existing corpus becomes usable and the 36
-   hand-written leads in its `index.json` become the tool's validation set.
-3. **A deeper cohort.** Deaths exist in the mode we care about at higher caps
-   or at depth; nothing here has looked past 30,000 turns in normal mode.
+2. **A munchkin-free death corpus — and part of one already exists.** The
+   default only touches Warriors, Druids and Rangers; the Borg's own comment
+   says "every other class plays as borg.txt says". Of the thirteen curated
+   cases, **three are confirmed honest** from their own records — D0007 (Mage,
+   killed by a soldier), D0008 (Priest, a grey mold), D0012 (Paladin, poison),
+   all with `borg_munchkin_start: 0` and a class the default ignores. D0009
+   (Necromancer, starvation) records `borg_munchkin_start: 1`, so it is a
+   munchkin run on purpose. The remaining nine are Warrior, Druid or Ranger
+   and their status **cannot be read from the corpus**, because the records
+   store `borg_munchkin_start` but not `borg_munchkin_by_class` — a provenance
+   gap worth reporting upstream. Three honest deaths are enough to build the
+   extractor on and to measure it against those cases' hand-written actions.
+3. **A deeper cohort.** Deaths in the mode we care about at higher caps or at
+   depth, or from a class the default never touched; nothing here has looked
+   past 30,000 turns, below depth 3, or at anything but a Warrior.
+4. **A player that actually descends.** An agent that reads the manual and
+   plays does go down and does die, which manufactures the corpus the analyser
+   wants — and each place it would choose differently from the Borg at the same
+   position is a lead with its test attached.
 
 ## What is already built, and stays useful
 

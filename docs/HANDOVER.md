@@ -23,21 +23,30 @@ when it does.
   into every trace — 1,563 note lines in one death, with its own danger
   estimate, its intent and why, its flow costs, the target's hit points, the
   weapon's dice and every blow. That is a better input than a model's game.
-- **Why it is frozen** (D14): the deaths available are a **munchkin Borg's**.
-  The milestone 8 tree defaults `borg_munchkin_by_class = TRUE`, which by the
-  Borg's own comment gives Warriors, Druids and Rangers a munchkin start
-  whatever the munchkin-start setting says. Ours, the curated corpus's and the
-  zoo's cohort all run on those defaults. Leads from them would be about a mode
-  nobody wants. And with munchkin off, **twelve seeds survived 30,000 turns at
-  depth 2–3**, so there is nothing to analyse either.
-- **It thaws** when borg-rs plays and dies, or a munchkin-free corpus exists,
-  or deaths are found in ordinary play.
+- **Why it is frozen** (D14): **our own** deaths are a munchkin Borg's. The
+  milestone 8 tree defaults `borg_munchkin_by_class = TRUE`, which by the
+  Borg's own comment gives **Warriors, Druids and Rangers** a munchkin start
+  whatever the munchkin-start setting says — and every run this repository made
+  was a Human Warrior. With munchkin off, **twelve seeds survived 30,000 turns
+  at depth 2–3**: a descent problem, not a survival one, and Warrior-only.
+- **The premise is narrower than it was written.** The default ignores every
+  other class. Of the thirteen curated deaths, **D0007** (Mage, a soldier),
+  **D0008** (Priest, a grey mold) and **D0012** (Paladin, poison) record
+  `borg_munchkin_start: 0` with a class the default never touches, so they are
+  honest; **D0009** (Necromancer, starvation) records `1`, so it is munchkin on
+  purpose; the nine Warrior/Druid/Ranger cases cannot be told apart, because
+  the records store `borg_munchkin_start` but **not**
+  `borg_munchkin_by_class`. That omission is worth reporting upstream.
+- **It thaws** when borg-rs plays and dies, when a munchkin-free corpus exists
+  (three cases already do), when deaths are found in ordinary play, or when an
+  agent that reads the manual descends and dies.
 
 ### What a thaw starts with
 
-1. Check whether the curated corpus is munchkin-polluted — one grep of each
-   case's settings line. If it is not, `index.json`'s **36 hand-written action
-   keys** are the validation set and T36 can start immediately.
+1. The extractor can be built now against **D0007, D0008 and D0012**, whose
+   honesty is established above, and measured against those cases'
+   hand-written actions in `index.json`. The nine Warrior/Druid/Ranger cases
+   need `borg_munchkin_by_class` from upstream before they can be used.
 2. T36, the extractor: the features are listed in the spec, and the note
    grammar is already known (`# Loc:… Danger:p=`, `# Fleeing… (scaryguy)`,
    `# Flowing toward stairs at cost 51`, `# Facing … who has 14 Hit Points`,
