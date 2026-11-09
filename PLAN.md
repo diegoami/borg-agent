@@ -70,6 +70,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
 | T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
+| T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | in progress (task/T17-repin-milestone-8) |
 
 ### T01. Build and play the pinned game headless
 
@@ -197,10 +198,15 @@ Play the `better-borg-c` pin's Borg on a zoo seed and birth, record its
 action stream with the bridge watching (the Borg still decides), stop k
 turns before the recorded death, and hand over to the agent with `branch`.
 
-The first cases, from the zoo's `classes-m6` results (cause "a floating
-eye", specimen `4.2.6-bbc-m6`, cap 100,000):
-- seed 1865911738, Half-Troll Mage;
-- seed 1375157069, Dunadan Priest.
+The first cases were the zoo's `classes-m6` results (cause "a floating eye",
+specimen `4.2.6-bbc-m6`, cap 100,000): seed 1865911738, Half-Troll Mage, and
+seed 1375157069, Dunadan Priest. **They are deaths of a build we no longer
+play**: T17 moved the pin to milestone 8, and the zoo has no m8 results (its
+newest bbc specimen is m7). So this task first says where its cases come
+from — `docs/deaths/` at the pin (19 recorded deaths), deaths our own build
+produces, or a zoo run of m8 the owner commissions — and records the choice.
+The floating-eye question itself still stands: it killed 4 of 13 Mandos
+characters in `mandos-classes-18`.
 
 Done when replaying the Borg's prefix reproduces the zoo's death when left
 to the Borg, and a branch k turns before it hands over to another mind.
@@ -299,6 +305,42 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T17. Pin better-borg-c milestone 8
+
+The owner, 2026-11-09: pin better-borg-c at **milestone 8**
+(`4.2.6-impact-v8`, `017e038e`), which carries 88 fixes where milestone 6
+carried 63.
+
+What it took, and what it changed:
+- the six observer sites and every game and Borg function the bridge calls are
+  still there, so the recipe needed no change;
+- `borg_what_text` gained a buffer-size argument between the two milestones;
+  the bridge passes it;
+- the tree now has its own `measure_activate_borg`, so the runner's "add it if
+  missing" is a no-op there. The test that asserted it was absent now asserts
+  the instrumented tree ends up with exactly one, either way;
+- `tools/measure-native.py` and the observer are **byte-identical** at the
+  runner pin and at milestone 8, so the parity tests are untouched;
+- the manual, the deaths (19 entries, up from 15) and the spec all read at the
+  new pin.
+
+Facts about milestone 8 itself, measured on seed 7 at cap 5,000: the trace is
+`a6ffbae0…` and 542,917 bytes where milestone 6 gave `2242a3f5…` and 53,040,
+and a run takes about 15 seconds where it took 1.9. **It also survives seed 7
+to 100,000 turns, where milestone 6 died to a green naga at 27,808** — which
+is what a better Borg looks like, and what cost the death gate its old shape:
+that gate now takes its death from an agent run, which also gave agent runs
+the runner's `--checkpoint-saves` option that T08 wanted anyway.
+
+**What this costs T08** (and the owner may want to decide): its two
+floating-eye cases — seed 1865911738 Half-Troll Mage, seed 1375157069 Dunadan
+Priest — are deaths of the zoo's `4.2.6-bbc-m6` specimen. The zoo's newest
+bbc specimen is `4.2.6-bbc-m7`; there are **no m8 results at all**. So those
+two deaths are no longer deaths of the build we play. T08 can take its cases
+from `docs/deaths/` at the new pin (19 recorded deaths), from deaths our own
+build produces, or from a zoo run of m8 if the owner wants one; the task says
+which when it starts.
 
 ### T16. Milestone-2 re-review findings
 

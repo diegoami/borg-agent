@@ -174,7 +174,7 @@ DEFAULT_TURN_STALL_DECISIONS = 500
 
 def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeout=120,
                    decision_cap=100000, turn_stall_decisions=DEFAULT_TURN_STALL_DECISIONS,
-                   validate=True, lock=True, log=print):
+                   checkpoint_saves=False, validate=True, lock=True, log=print):
     """Play one game with `mind` deciding, and record everything it decided."""
     build_out, output = Path(build_out).resolve(), Path(output).resolve()
     manifest = json.loads((build_out / 'build.json').read_text())
@@ -198,8 +198,9 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                 for key, directory in (('gamedata', 'gamedata'), ('pref', 'customize'))]
     env = play.game_environment(
         BORG_MEASURE_SEED=seed, BORG_MEASURE_CAP=cap, BORG_MEASURE_DIR=output,
-        BORG_MEASURE_NO_SAVES=1, BORG_AGENT_OBS=obs_path, BORG_AGENT_ACT=act_path,
-        BORG_AGENT_RUN_ID=run_id)
+        BORG_AGENT_OBS=obs_path, BORG_AGENT_ACT=act_path, BORG_AGENT_RUN_ID=run_id)
+    if not checkpoint_saves:
+        env['BORG_MEASURE_NO_SAVES'] = '1'
     validator = Validator(validate)
     record = {
         'schema': 'borg-agent/play@1',
@@ -208,7 +209,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
         'run_id': run_id,
         'seed': seed, 'turn_cap': cap, 'decision_cap': decision_cap,
         'birth': play.BIRTH_DESCRIPTION,
-        'checkpoint_saves': False,
+        'checkpoint_saves': checkpoint_saves,
         'wall_limit_seconds': timeout, 'stall_limit_seconds': stall_timeout,
         'turn_stall_decisions': turn_stall_decisions,
         'build_key': manifest['build_key'],

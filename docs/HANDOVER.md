@@ -11,6 +11,10 @@ work and updates "Current state".
   reviewed **twice** by a model of another family (Kimi K3): the first round's
   four findings are T15, the re-review's two are T16, and both rounds are
   comments on #15.
+- **The game pin is better-borg-c milestone 8** since 2026-11-09 (T17, #24).
+  The golden trace for seed 7 at cap 5,000 is now
+  `a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844`; anything
+  quoting `2242a3f5…` is talking about milestone 6.
 - **Milestone 3 is next**: **T06** (the model-backed mind, the `models.yaml`
   loader and the prompt pack), **T07** (the knowledge store) and **T08** (the
   post-mortem start). All three have what they need; nothing blocks them but
@@ -40,6 +44,45 @@ work and updates "Current state".
   - Which models do which job is still not a question: T09 measures the
     `trial:` candidates and the answer becomes decision D6.
 - Settled: `default_profile: alibaba` stays (the owner, 2026-11-08).
+
+## 2026-11-09: T17, the game pin moves to better-borg-c milestone 8
+
+Branch `task/T17-repin-milestone-8`, PR
+[#24](https://github.com/diegoami/borg-agent/pull/24).
+
+The owner asked for milestone 8 (`4.2.6-impact-v8`, `017e038e`, 88 carried
+fixes where milestone 6 had 63). It went through with two small changes and
+one casualty.
+
+Facts the next sessions will need:
+- **`borg_what_text` takes a buffer size at milestone 8** and did not at
+  milestone 6. That was the only API the bridge uses that moved. If a future
+  pin moves again, the build fails loudly at that call, which is the right
+  place to find out.
+- **The tree has its own `measure_activate_borg` now**, so the runner's "add
+  it if missing" is a no-op. The test asserts the instrumented tree ends with
+  exactly one, whichever way the pin behaves.
+- **The runner and the observer are byte-identical at the runner pin and at
+  milestone 8**, so the parity tests needed nothing.
+- **The new golden trace**: seed 7, cap 5,000, `a6ffbae0…`, 542,917 bytes,
+  about 15 seconds. Milestone 6: `2242a3f5…`, 53,040 bytes, 1.9 seconds. Ten
+  times the trace, eight times the time, 25 more fixes.
+- **Milestone 8's Borg survives seed 7 to 100,000 turns**, where milestone 6
+  died to a green naga at 27,808. The death-and-checkpoints gate used that
+  death, so it now takes its death from an agent run instead — and agent runs
+  gained the runner's `checkpoint_saves` option in the process, which T08
+  wanted anyway.
+- **The agent-side figures did not move at all**: the scripted mind still
+  makes 101 decisions on seed 1 at cap 1,000, still dies to a rock lizard at
+  turn 311 on seed 7, and the primitive chooser's action stream is still
+  `01aeca55…`. A scripted chooser does not depend on the Borg's thinking, so
+  only the stock-Borg numbers changed. That is a useful property: agent gates
+  survive a pin move, stock-Borg gates do not.
+- **T08's evidence is the casualty.** Its two floating-eye cases are deaths of
+  the zoo's `4.2.6-bbc-m6`; the zoo's newest bbc specimen is `4.2.6-bbc-m7`
+  and there are no m8 results. T08 must now take its cases from
+  `docs/deaths/` at the pin (19 entries), from deaths our own build produces,
+  or from an m8 zoo run the owner commissions. PLAN.md's T08 says so.
 
 ## 2026-11-09: T16, the milestone-2 re-review findings
 

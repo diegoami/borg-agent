@@ -3,9 +3,9 @@
   "pins": {
     "better-borg-c": {
       "repository": "diegoami/better-borg-c",
-      "commit": "b3c825c97c8aef18b252a7fb7d9b7dceef83d586",
-      "tag": "4.2.6-impact-v6",
-      "role": "The C game and Borg source the bridge attaches to: better-borg-c milestone 6, the zoo's 4.2.6-bbc-m6."
+      "commit": "017e038e8726a7a423887a366b5d40e89c0550a1",
+      "tag": "4.2.6-impact-v8",
+      "role": "The C game and Borg source the bridge attaches to: better-borg-c milestone 8, which carries 88 fixes (patches/series.json). The zoo's newest bbc specimen is 4.2.6-bbc-m7, so there are no zoo results for this build to pair with yet; see PLAN.md T08."
     },
     "original": {
       "repository": "diegoami/better-borg-c",
