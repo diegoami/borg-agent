@@ -97,6 +97,15 @@ beyond the one line the model writes into its action — which is what T09 has t
 judge a consolidator on, and what a post-mortem is supposed to explain itself
 with.
 
+Measured on this provider the same day (`qwen3.8-flash`, two calls): replies of
+**170 and 191 characters**, thinking of **2,927 and 1,889**. So roughly ten to
+fifteen times as much text is kept now as before, which is the size cost: a few
+kilobytes a call, a few megabytes for a 20,000-turn run, outside git by R5. The
+first words of that thinking were *"In town need maybe buy supplies? But
+primitives ava…"* — a model arguing with the shape of the question it was
+asked, which is the evidence behind decision D12 (ask by state, not by
+event).
+
 **Every field of an entry is scanned, not only the reply**, and anything that
 looks like a credential is replaced where it stands; a field named like a key
 goes too. The rest of the entry stays, because the call has already happened
