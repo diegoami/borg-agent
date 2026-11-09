@@ -31,10 +31,18 @@ def api_mind(args):
     print(f'play: {choice.provider}/{choice.model} ({choice.family}), profile '
           f'{choice.profile}, chosen by {choice.chosen_by}, pack {pack.version} '
           f'{pack.sha256[:12]}')
+    from . import knowledge as knowledge_module
+
+    store = knowledge_module.Store()
+    learned = None if args.no_knowledge else (store.for_prompt() or None)
+    if learned:
+        print(f'carrying {len(learned.splitlines())} claims into the prompt '
+              f'(knowledge {store.sha256()[:12]})')
     return model_mind.ApiMind(
         choice, pack=pack,
         budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
-        choice_record=configuration.record('play'))
+        choice_record=configuration.record('play'),
+        knowledge=learned, knowledge_sha256=store.sha256() if learned else None)
 
 
 def external_mind(args):
@@ -233,6 +241,48 @@ def cmd_explain(args):
     return 0
 
 
+def cmd_knowledge(args):
+    """Read the knowledge base, or regenerate its views (R4.2)."""
+    from . import knowledge as knowledge_module
+
+    store = knowledge_module.Store()
+    if args.what == 'views':
+        written = store.render_views()
+        for area, path in sorted(written.items()):
+            print(f'{area:12} {path}')
+        return 0
+    claims = store.all()
+    if args.area:
+        claims = [claim for claim in claims if claim['area'] == args.area]
+    for claim in claims:
+        print(f"[{claim['area']} {claim['status']}] {claim['id']}: {claim['statement']}")
+    print(f'{len(claims)} claims, knowledge {store.sha256() or "(empty)"}')
+    return 0
+
+
+def cmd_consolidate(args):
+    """Turn a run into claims with the consolidate model (mode D)."""
+    from . import consolidate as consolidate_module
+    from . import knowledge as knowledge_module
+    from . import model_mind, models as models_module, prompts
+
+    configuration = models_module.load(profile=args.profile)
+    choice = configuration['consolidate']
+    missing = configuration.missing_keys(['consolidate'])
+    if missing:
+        raise models_module.ConfigurationError(
+            f'the consolidate job needs ${missing[0]}, which is not set')
+    print(f'consolidate: {choice.provider}/{choice.model} ({choice.family}), profile '
+          f'{choice.profile}')
+    result = consolidate_module.consolidate(
+        args.run, choice, store=knowledge_module.Store(),
+        pack=prompts.load_pack(args.pack),
+        budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
+        call_log=model_mind.CallLog(Path(args.run) / 'model-calls.jsonl'),
+        timeout=args.timeout)
+    return 0 if result['added'] or not result['refused'] else 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='borg-agent', description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -274,6 +324,8 @@ def main(argv=None):
         p.add_argument('--external-dir', type=Path, help='where the external mind reads answers')
         p.add_argument('--no-executor', action='store_true',
                        help='give the model the game directly, without the primitives')
+        p.add_argument('--no-knowledge', action='store_true',
+                       help='do not put the knowledge base in the prompt')
         p.add_argument('--output', type=Path)
         p.add_argument('--timeout', type=int, default=900)
         p.add_argument('--stall-timeout', type=int, default=120)
@@ -310,6 +362,7 @@ def main(argv=None):
     brancher.add_argument('--budget-tokens', type=int, default=None)
     brancher.add_argument('--external-dir', type=Path)
     brancher.add_argument('--no-executor', action='store_true')
+    brancher.add_argument('--no-knowledge', action='store_true')
     brancher.add_argument('--output', type=Path)
     brancher.add_argument('--timeout', type=int, default=900)
     brancher.add_argument('--stall-timeout', type=int, default=120)
@@ -328,6 +381,22 @@ def main(argv=None):
             reader.add_argument('--window', type=int, default=3,
                                 help='how many decisions either side to show')
         reader.set_defaults(func=handler)
+
+    reader = sub.add_parser('knowledge', help='read the knowledge base or rebuild its views')
+    reader.add_argument('what', choices=['list', 'views'], nargs='?', default='list')
+    reader.add_argument('--area', help='only this area')
+    reader.set_defaults(func=cmd_knowledge)
+
+    consolidator = sub.add_parser('consolidate', help='turn a run into claims (mode D)')
+    consolidator.add_argument('--run', type=Path, required=True)
+    consolidator.add_argument('--profile')
+    consolidator.add_argument('--pack', default='consolidate-1')
+    consolidator.add_argument('--budget-calls', type=int, default=2)
+    consolidator.add_argument('--budget-tokens', type=int, default=None)
+    consolidator.add_argument('--timeout', type=int, default=420,
+                              help='a consolidator reads a whole run; the first real call '
+                                   'needed five minutes')
+    consolidator.set_defaults(func=cmd_consolidate)
 
     args = parser.parse_args(argv)
     if args.command in ('play', 'determinism', 'agent', 'agent-determinism') and (

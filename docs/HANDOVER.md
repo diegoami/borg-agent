@@ -21,8 +21,9 @@ level and no PR open.*
   milestone 8), T18 (the borg-rs pin), T19 (the strategy manual and the online
   command reference as sources), T20 (the user manual) and **T06** (the
   `models.yaml` loader, the prompt pack and the three minds — a model has now
-  played). **T07 is next** (the knowledge store), then T08 (the post-mortem
-  start), and milestone 3's review PR after them.
+  played) and **T07** (the knowledge store — the first real claims are in
+  `knowledge/`). **T08 is next** (the post-mortem start), and then milestone
+  3's review PR.
 - **What works end to end:** the pinned game builds; the stock Borg plays it
   reproducibly; an agent plays through the Borg's own connection choosing
   between the eight primitives of R2; a run is recorded, replayed with
@@ -133,6 +134,52 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T07, the knowledge store and mode D
+
+Branch `task/T07-knowledge-store`, PR
+[#35](https://github.com/diegoami/borg-agent/pull/35).
+`src/borg_agent/knowledge.py` (the store and the views),
+`src/borg_agent/consolidate.py` with `prompts/consolidate-1/`,
+`python -m borg_agent knowledge list|views` and `consolidate --run`, and
+`docs/KNOWLEDGE.md`.
+
+**The repository has its first knowledge.** `qwen3.8-max` consolidated the
+model-played run of T06 and offered seven claims; all seven were accepted,
+each anchored to the run, the seed and a turn. They are in
+`knowledge/claims.jsonl` and the generated views beside it.
+
+Facts the next sessions will need:
+- **The first claims are thin, and that is a finding about the prompt.** Two
+  are real game knowledge (*a Human Warrior can kill a giant yellow centipede
+  in melee on depth 1*); the rest restate the run (*the run ended because it
+  reached the cap*) — true, checkable, and worth nothing. `consolidate-1` never
+  says that a claim should be about **the game** rather than about this run's
+  narrative. Say it in the next version of the pack, and expect T09's trial to
+  measure it: its first number is false claims, its second is whether a claim
+  was worth having.
+- **Consolidation costs about ten play decisions**: one call, 13,373 tokens,
+  **284 seconds**. The first attempt timed out at the play mind's 120 s, so the
+  consolidator's default is 420 s. Budget T09 and T10 accordingly.
+- **The harness decides three things, not the model**: the status
+  (`hypothesis`, always — R4.3), `produced_by` (a model asserting its own
+  identity is worth nothing), and the seed and run id in every piece of
+  evidence. A claim that points at no turn of the run is refused, with the
+  reason recorded in `consolidation.json`.
+- **A model asked for `corroborated` on its very first try.** The store lowered
+  it and wrote why into the claim's `notes`. That rule earns its keep.
+- `claim@1` gained a `notes` array for exactly that: what the store had to say
+  when a claim entered, which is not the claim's content.
+- The views are generated and a test fails if one in git is stale. Run
+  `python -m borg_agent knowledge views` after anything that adds a claim.
+- Retrieval is mechanical: a claim scoped to another class, race or depth is
+  left out of a prompt, and a superseded claim never appears. Whether a claim
+  is *useful* is the mind's business.
+
+Left open: no probe (mode C), so nothing can move a claim past `hypothesis` by
+counting; no review job is called, though the rule is enforced; and
+consolidation finds no contradictions and asks no mode C questions, which R3
+also wants from mode D.
 
 ## 2026-11-09: T06, the mind and the model calls
 

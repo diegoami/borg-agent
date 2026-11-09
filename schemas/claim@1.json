@@ -477,6 +477,14 @@
           }
         }
       }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "What the store itself had to say when the claim entered: that a model asked for a status it may not have (R4.3), for instance. Not the claim's content, and not a place for argument \u2014 that is `confidence`."
     }
   },
   "allOf": [
