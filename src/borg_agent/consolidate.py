@@ -14,6 +14,12 @@ from . import agent, knowledge, model_mind, prompts, record
 
 PACK = 'consolidate-1'
 RECORD_NAME = 'consolidation.json'
+# Mode D's own call log. It is **not** the play's `model-calls.jsonl`: the run
+# record publishes that file's hash and count, so appending the consolidation's
+# calls to it makes the record disagree with the run beside it -- which is
+# exactly what `verify` reported for the first real model run once it started
+# comparing that stream (T25, after T23's finding 2).
+CALL_LOG = 'consolidate-calls.jsonl'
 
 
 def facts(run_dir):
@@ -204,6 +210,11 @@ def consolidate(run_dir, choice, store=None, pack=None, budget=None, call_log=No
         'knowledge_sha256': store.sha256(),
         'seconds': elapsed,
     }
+    if call_log is not None:
+        # Mode D's own evidence, hashed like any other stream (R2.1).
+        consolidation['model_calls'] = {'count': call_log.count,
+                                        'sha256': call_log.sha256(),
+                                        'path': Path(call_log.path).name}
     (run_dir / RECORD_NAME).write_text(
         json.dumps(consolidation, indent=2, sort_keys=True) + '\n')
     log(json.dumps({k: consolidation[k] for k in
