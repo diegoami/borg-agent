@@ -11,6 +11,10 @@ work and updates "Current state".
   reviewed **twice** by a model of another family (Kimi K3): the first round's
   four findings are T15, the re-review's two are T16, and both rounds are
   comments on #15.
+- **The Rust remake is pinned** since 2026-11-09 (T18, #26): borg-rs at its
+  milestone 7 (`ce27f5ed`), which carries better-borg-c milestone 7. The game
+  pin is milestone **8**, so the two sides are one C milestone apart and a
+  claim must say which it is about.
 - **The game pin is better-borg-c milestone 8** since 2026-11-09 (T17, #24).
   The golden trace for seed 7 at cap 5,000 is now
   `a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844`; anything
@@ -44,6 +48,34 @@ work and updates "Current state".
   - Which models do which job is still not a question: T09 measures the
     `trial:` candidates and the answer becomes decision D6.
 - Settled: `default_profile: alibaba` stays (the owner, 2026-11-08).
+
+## 2026-11-09: T18, the Rust remake is a pinned source
+
+Branch `task/T18-pin-borg-rs`, PR
+[#26](https://github.com/diegoami/borg-agent/pull/26).
+
+The owner: borg-rs is at milestone 7. It is pinned at `ce27f5ed` ("Impact v7:
+carry better-borg-c milestone 7") and listed in `pins.json`'s `sources`, so
+the agent and the later phases may read it (decision D8) and a claim can cite
+a fixed version of the remake.
+
+Facts the next sessions will need:
+- **The two sides are one C milestone apart.** The game pin is better-borg-c
+  milestone 8; borg-rs carries milestone 7. A claim, a design record and
+  anything phase 3 writes must say which side it is about. Both pins' roles
+  say so, and a test keeps them saying it.
+- **borg-rs has the same connection**: `borg-rs/src/borg.rs` holds the
+  `inkey_hack` callback, with `generate_keypress` beside it, exactly where the
+  C bridge attaches. A claim about the connection is not C-specific, which is
+  the most useful thing about pinning it.
+- Shape: 66 files under `borg-rs/src/`, 59 of them the converted Borg modules
+  (one per `src/borg/<x>.c`), no `unsafe` outside the FFI boundary;
+  `docs/PROGRESS.md` is 157 KB of conversion notes and is the place to start.
+- `scripts/setup.sh` clones it without any change, because it reads
+  `pins.json`. A fresh session now clones four repositories.
+- Nothing reads it yet. It is material for T07's claims (a claim may cite
+  `static:borg-source` on either side), for phase 2's design records and for
+  phase 3.
 
 ## 2026-11-09: T17, the game pin moves to better-borg-c milestone 8
 
