@@ -96,6 +96,32 @@ sign of progress. For the stock Borg that sign is the trace's turn; for an
 agent run it is the arrival of an observation, because the game waits while
 the mind thinks (R1.3).
 
+## Choosing the birth (T24)
+
+Every run is born the zoo cohort's **Human Warrior** unless it says otherwise.
+`play.birth_input(race, class_)` writes the key script for another character,
+and `play`, `play_with_mind`, `branch`, `verify`, a post-mortem and a probe all
+take `race` and `class_`; with neither, the script is the runner's own, byte for
+byte, which is what keeps our games the zoo's games.
+
+Two facts worth knowing before touching it:
+
+- **The birth menus select on a double tap.** Pressing an item's letter moves
+  the cursor to it; pressing it again selects it. Only the first item's letter
+  selects at once. A single `key b` in the class menu therefore births a
+  **Warrior** while looking like it asked for a Mage, which is exactly what the
+  harness did before T24. This is the zoo's own rule (`zoo/harness.py`).
+- **The tags skip h, j, k and l**, because those are the roguelike movement
+  keys: the game's `all_letters_nohjkl` is `abcdefgimnop…`. So Half-Troll, the
+  eighth race, is tagged `i`. Both the tags and the race and class order are
+  read from the game at the pin (`src/ui-menu.c`, `lib/gamedata/p_race.txt`,
+  `lib/gamedata/class.txt`), never written down here, because getting one wrong
+  silently births someone else.
+
+A run that chose its birth records `game.birth.rule` as **`assigned`** rather
+than `fixed`, with the race and class the observer saw, and `result.json` keeps
+the choice so a replay is born the same character.
+
 ## Determinism
 
 `trace.txt` holds game facts only — turn, energy, decision count, depth,

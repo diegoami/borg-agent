@@ -45,6 +45,63 @@ def test_the_birth_input_is_the_zoo_runners():
     assert play.BORG_CONFIG == 'borg_cheat_death = FALSE\nborg_respawn_winners = FALSE\n'
 
 
+# --- choosing the birth (T24) -----------------------------------------------
+
+def test_the_races_and_classes_come_from_the_games_own_data():
+    races, classes = play.choices('race'), play.choices('class')
+    # The first of each is what the runner's own "a a a" births, which is what
+    # makes the default birth the cohort's.
+    assert races[0] == 'Human' and classes[0] == 'Warrior'
+    assert 'Mage' in classes and 'Blackguard' in classes
+    assert 'Half-Troll' in races and 'Kobold' in races
+    with pytest.raises(ValueError, match='no class'):
+        play.birth_input('Human', 'Bard')
+    with pytest.raises(ValueError, match='no race'):
+        play.birth_input('Ent', 'Mage')
+
+
+def test_the_menu_tags_are_read_from_the_game_not_written_down():
+    """h, j, k and l are the roguelike movement keys, so the menus skip them.
+
+    Guessing this silently births someone else: `key h` in the race menu moves
+    the cursor to Hobbit, not Half-Troll.
+    """
+    tags = play.menu_tags()
+    assert tags.startswith('abcdefgim')
+    assert 'h' not in tags.split('A')[0] and 'j' not in tags.split('A')[0]
+    # Half-Troll is the eighth race, so its tag is the eighth letter of that
+    # alphabet -- 'i', not 'h'.
+    assert tags[play.choices('race').index('Half-Troll')] == 'i'
+
+
+def test_a_birth_nobody_chose_is_the_runners_own_byte_for_byte():
+    assert play.birth_input() == play.BIRTH_INPUT
+    assert play.birth_input('Human', 'Warrior') == play.BIRTH_INPUT
+    assert play.birth_description() == play.BIRTH_DESCRIPTION
+
+
+def test_a_chosen_birth_taps_the_menu_letter_twice():
+    """The birth menus select on a double tap: the letter moves the cursor and
+    the letter again selects, while the first item's letter selects at once.
+    This is the zoo's own rule (`zoo/harness.py`), and a single tap births a
+    Warrior while looking like it asked for a Mage."""
+    mage = play.birth_input('Human', 'Mage')
+    assert mage.splitlines()[:6] == ['key space', 'key a', 'key b', 'key b', 'key a',
+                                     'key enter']
+    # Everything after the three birth keys is the runner's, untouched.
+    assert mage.endswith(play.BIRTH_INPUT.split('key a\nkey a\nkey a\n')[1])
+    troll = play.birth_input('Half-Troll', 'Priest')
+    assert troll.splitlines()[:7] == ['key space', 'key i', 'key i', 'key d', 'key d',
+                                      'key a', 'key enter']
+    assert play.birth_description('half-troll', 'priest') == (
+        'Half-Troll Priest; default point buy; normal UI birth')
+
+
+def test_both_the_race_and_the_class_or_neither():
+    with pytest.raises(ValueError, match='both the race and the class'):
+        play.birth_input('Human', None)
+
+
 def test_cli_rejects_an_impossible_seed_or_cap():
     for argv in (['play', '--seed', '-1', '--cap', '5000'],
                  ['play', '--seed', '7', '--cap', '1'],

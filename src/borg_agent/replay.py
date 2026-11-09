@@ -172,6 +172,9 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
         # plays the prefix again, which it does the same way every time, and
         # the stream replays from there (mode B).
         from_turn=original.get('from_turn'),
+        # A replay of a Mage's run has to be a Mage: the birth is part of the
+        # game the actions were recorded in (T24).
+        **_birth_of(original),
         validate=False, lock=lock, log=lambda *a: None)
     after = record.state_hashes(output / 'observations.jsonl')
     scope = 'full' if original['outcome'] in GAME_ENDED else 'prefix'
@@ -270,6 +273,12 @@ def pins_build(result):
     return out
 
 
+def _birth_of(original):
+    """The birth a run asked for, as keywords for `play_with_mind`."""
+    chosen = original.get('birth_choice') or {}
+    return {'race': chosen.get('race'), 'class_': chosen.get('class')}
+
+
 def branch(run_dir, turn, output, new_mind, timeout=900, stall_timeout=120, lock=True,
            log=print):
     """Replay to `turn`, then play on with another mind (R5, and mode B)."""
@@ -290,7 +299,7 @@ def branch(run_dir, turn, output, new_mind, timeout=900, stall_timeout=120, lock
     result = agent.play_with_mind(
         build_out=pins_build(original), seed=original['seed'], cap=original['turn_cap'],
         output=output, mind=branching, timeout=timeout, stall_timeout=stall_timeout,
-        from_turn=from_turn, lock=lock, log=lambda *a: None)
+        from_turn=from_turn, **_birth_of(original), lock=lock, log=lambda *a: None)
     parent = {'run_id': original.get('run_id') or run_dir.name,
               'turn': branching.handed_over_at if branching.handed_over else turn}
     result['parent'] = parent

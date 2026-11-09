@@ -155,7 +155,9 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
                 'race': (result.get('character') or ' ').split(' ')[-2:-1][0] if result.get('character') else 'unknown',
                 'class': (result.get('character') or ' ').split(' ')[-1],
                 'name': (result.get('character') or '').split(' ')[0] or None,
-                'rule': 'fixed',
+                # The zoo's own vocabulary: 'fixed' is the cohort's Human
+                # Warrior, 'assigned' a race and class the run asked for (T24).
+                'rule': 'assigned' if result.get('birth_choice') else 'fixed',
                 'options': required(birth_options(trace), 'birth options'),
             },
             'settings': required(parse_settings(trace, 'BORG_OPTIONS'), 'Borg settings'),

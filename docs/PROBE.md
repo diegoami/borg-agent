@@ -23,8 +23,16 @@ One file per probe under [`probes/`](../probes), validated against
 | `area`, `scope` | the claim's own vocabulary: what the answer is about, and for whom |
 | `setup` | how the situation comes about: `natural` or `intervened`, the turn the agent takes over at, the steps, and what the game must **show** before the action is tried |
 | `action`, `control` | the two things to try, each an executor primitive or a single command |
+| `birth` | the race and class every trial is born as (T24). Absent means the harness's own Human Warrior, the zoo cohort's birth. The `scope` has to agree with it |
 | `trials` | the seeds, **declared before the probe runs**, and the game-turn cap per trial |
 | `success` | the predicate: `survived`, or `killed_it_and_lived` |
+
+**The claim's statement is the counts, not a prediction.** A probe file may
+phrase its own claim with `statement:`, but anything a count could contradict
+belongs in the `question` instead: the Mage probe below came back 5 of 10 under
+a file that predicted "usually lives", and a claim whose words argue with its
+own numbers is worse than no claim. Without `statement:` the harness writes the
+question followed by what was counted.
 
 The seeds are in the file and in the result, so a probe cannot be run again
 until it gives the answer someone wanted. **A probe file edited after it has a
@@ -130,6 +138,28 @@ Three things worth knowing, and the claim says all three:
 3. **Every trial is this harness's assigned birth** — a Human Warrior (R1.6).
    A probe about another class waits for a birth the probe can choose, which is
    why the scope says `class: Warrior` and means it.
+
+## The same question, asked of a Mage
+
+[`probes/floating-eye-melee-mage.yaml`](../probes/floating-eye-melee-mage.yaml)
+is the Warrior probe with `birth: {race: Human, class: Mage}` and the same ten
+seeds, so the two read side by side. T24 made that one line possible; before
+it, every run in this repository was born a Human Warrior.
+
+| Arm | Survived | Died to the eye |
+|---|---|---|
+| Warrior, melee it | 10 of 10 | 0 |
+| **Mage, melee it** | **5 of 10** | **4** (one more to a wild cat) |
+
+So the floating eye **is** the danger the zoo's figure suggested — for a
+character that cannot kill it quickly. The Warrior ends the fight in one or two
+blows; the Mage stands there, and in four trials of ten the eye killed it.
+
+The telling part is in the control arm: on seeds 16, 17, 19 and 20 the control
+died **at the same turn, of the same cause** as the action. Walking away was not
+available, because the eye's gaze paralyses first: the choice the probe meant to
+test had already been taken away. That is why both arms read 5 of 10, and the
+claim says the control did not isolate the action.
 
 ## What a probe may not do
 

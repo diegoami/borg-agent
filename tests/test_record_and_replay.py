@@ -204,6 +204,40 @@ def test_play_then_verify_reproduces_the_run(tmp_path):
 
 
 @pytest.mark.slow
+def test_a_chosen_birth_is_recorded_and_replayed_as_itself(tmp_path):
+    """T24's gate: a run born a Mage replays as a Mage.
+
+    The birth is part of the game the actions were recorded in, so a replay
+    that births the cohort's Warrior would be replaying a different game --
+    and would still have "verified" if the states happened to line up.
+    """
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    played = agent.play_with_mind(out, seed=1, cap=600, output=tmp_path / 'mage',
+                                  mind=mind.ScriptedMind(), race='Human', class_='Mage',
+                                  timeout=300, stall_timeout=60, lock=lock)
+    assert played['outcome'] in play.GOOD_OUTCOMES
+    assert played['birth_choice'] == {'race': 'Human', 'class': 'Mage'}
+    assert played['character'] == 'Measure Human Mage'
+
+    written = record.write_record(tmp_path / 'mage')
+    recorded = json.loads(written.read_text())
+    record.validate(recorded)
+    # The record's own birth block comes from the observer's CHARACTER line,
+    # so it says what was really born, and the rule says it was asked for.
+    assert recorded['game']['birth']['class'] == 'Mage'
+    assert recorded['game']['birth']['race'] == 'Human'
+    assert recorded['game']['birth']['rule'] == 'assigned'
+
+    verdict = replay.verify(tmp_path / 'mage', tmp_path / 'verify', lock=lock,
+                            log=lambda *a: None)
+    assert verdict['verified'], verdict
+    assert verdict['state_hashes_match']
+    replayed = json.loads((tmp_path / 'verify/result.json').read_text())
+    assert replayed['character'] == 'Measure Human Mage'
+
+
+@pytest.mark.slow
 def test_branch_continues_with_another_mind_and_names_its_parent(tmp_path):
     """T04's second gate."""
     out = build.prepare(log=lambda *a: None)

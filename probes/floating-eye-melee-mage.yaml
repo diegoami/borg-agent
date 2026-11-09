@@ -1,0 +1,38 @@
+# The same question as floating-eye-melee, asked of the class it should matter
+# for. A Warrior kills a floating eye in one or two blows, so the paralysis the
+# eye is feared for never gets a chance; a Mage hits for far less and has to
+# stand there longer. This is what T24's choosable birth was for.
+schema: borg-agent/probe@1
+id: floating-eye-melee-mage
+question: Can a level-1 Human Mage melee an adjacent floating eye and live?
+area: monster
+scope:
+  class: Mage
+  race: Human
+  character_level: {min: 1, max: 1}
+  depth: {min: 1, max: 1}
+  version: 4.2.6
+birth:
+  race: Human
+  class: Mage
+setup:
+  kind: intervened
+  take_over_at: 100
+  steps:
+    - {step: depth, depth: 1}
+    - {step: summon, monster: Floating eye}
+  expect:
+    monster_adjacent: floating eye
+action:
+  primitive: {name: fight_nearest}
+control:
+  primitive: {name: explore_floor}
+trials:
+  seeds: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  cap: 1200
+success: survived
+notes:
+  - The same seeds as the Warrior probe, so the two can be read side by side.
+  - A Mage's hit points are 10 rather than 20 at level 1, and its melee is
+    feeble, so the fight lasts long enough for paralysis to matter. That is the
+    point of asking again.

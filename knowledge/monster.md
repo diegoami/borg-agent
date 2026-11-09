@@ -2,6 +2,27 @@
 
 *Generated from `claims.jsonl` by `python -m borg_agent knowledge views`. Do not edit: a claim changes by being superseded, never by being rewritten.*
 
+## Can a level-1 Human Mage melee an adjacent floating eye and live? Counted: lived in 5 of 10 trials, died in 5.
+
+- **id** `floating-eye-melee-mage-probe` · **status** supported
+- **basis** quantified, 5 of 10 — probe floating-eye-melee-mage, Human Mage, seeds [11, 12, 13, 14, 15, 16, 17, 18, 19, 20], cap 1200, an intervention (D4)
+- **scope** class Mage, race Human, version 4.2.6, character level 1–1, depth 1–1
+- **engine** c-4.2.6 · **phase** 1 · **sources** own-play
+- **rests on** 5 of 10 counted trials of probe floating-eye-melee-mage, the control arm 5 of 10
+- **ruled out**: A different situation: every trial checked that the situation the probe asked for was there before the action was tried.; NOT ruled out: the control arm ended the situation too (the monster died in 4 of its 10 trials), so these counts do not separate the action from simply being there.
+- **evidence**
+  - run `action-seed11`, seed 11, turn 171 — agent_stopped
+  - run `action-seed12`, seed 12, turn 251 — agent_stopped
+  - run `action-seed13`, seed 13, turn 161 — agent_stopped
+  - run `action-seed14`, seed 14, turn 191 — death: a floating eye
+  - run `action-seed15`, seed 15, turn 201 — agent_stopped
+  - run `action-seed16`, seed 16, turn 241 — death: a floating eye
+  - run `action-seed17`, seed 17, turn 161 — death: a floating eye
+  - run `action-seed18`, seed 18, turn 161 — agent_stopped
+  - run `action-seed19`, seed 19, turn 193 — death: a floating eye
+  - run `action-seed20`, seed 20, turn 231 — death: a wild cat
+- **review** by action-seed11 (a probe): agree — counted by the probe itself: 5 of 10
+
 ## A level-1 Human Warrior who melees an adjacent floating eye at depth 1 usually lives.
 
 - **id** `floating-eye-melee-probe` · **status** supported
