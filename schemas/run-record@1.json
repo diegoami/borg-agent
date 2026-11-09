@@ -785,6 +785,14 @@
           "description": "Whether the run happened on 24-26 December, when the game admits seasonal monsters and the same seed plays a different game. A replay must match this."
         }
       }
+    },
+    "from_turn": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Mode B: the game turn the agent took over at, with the Borg playing the prefix (BORG_AGENT_FROM_TURN). Null for a run the agent played from birth. A replay has to play the same prefix, so the record names it rather than leaving it to the run directory's result.json."
     }
   },
   "$defs": {

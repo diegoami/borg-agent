@@ -5,9 +5,8 @@ work and updates "Current state".
 
 ## Current state
 
-*Written on 2026-11-09, with milestone 3 complete, its review PR
-[#41](https://github.com/diegoami/borg-agent/pull/41) open, and milestone 4
-decided but not started.*
+*Written on 2026-11-09, with milestone 3 reviewed and merged, its ten findings
+closed in T23, and T22 (mode C) the next task.*
 
 ### Where the work stands
 
@@ -24,10 +23,10 @@ decided but not started.*
   `models.yaml` loader, the prompt pack and the three minds — a model has now
   played), **T07** (the knowledge store — the first real claims are in
   `knowledge/`), T21 (the finished strategy manual) and **T08** (mode B).
-  **Milestone 3 is complete**, and its review PR
-  [#41](https://github.com/diegoami/borg-agent/pull/41) is open (42 commits,
-  eight tasks, the reviewer prompt in its first comment). **No session starts
-  milestone 4 until the owner merges it** (RULES 7).
+  **Milestone 3 is reviewed and merged** ([#41](https://github.com/diegoami/borg-agent/pull/41),
+  44 commits, eight tasks): a model of another family found **ten findings**
+  and six smaller notes, and **T23 closes all of them**. `reviewed` stands at
+  that merge.
 - **Milestone 4 begins with a probe, not with the trial** — decision **D11**,
   2026-11-09: T22 (mode C) comes before T09, T10 and T11. It is also the only
   milestone-4 task that needs no model, so a cloud session with no key can
@@ -36,8 +35,12 @@ decided but not started.*
   reproducibly; an agent plays through the Borg's own connection choosing
   between the eight primitives of R2; a run is recorded, replayed with
   `verify` (which also checks the record against the run), branched at a turn,
-  and read with `view`, `dump` and `explain`. 223 fast tests and 13 slow gates,
+  and read with `view`, `dump` and `explain`. 347 fast tests and 15 slow gates,
   both in CI.
+- **The records of the two real runs are in git**, under
+  [records/](../records/): the first model play and the first post-mortem. The
+  review could not check either, because `runs/` is git-ignored and R5's own
+  rule — run summaries and hashes go into git — was unmet.
 - **A model has played** (2026-11-09, T06): `qwen3.8-flash` on the Alibaba
   Token Plan, seed 1 to 1,000 turns, **5 calls and no parse failures**, and
   the run **replayed exactly** afterwards. See docs/MINDS.md.
@@ -171,6 +174,42 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T23, the milestone 3 review findings
+
+Branch `task/T23-milestone-3-findings`. The review is the first comment-thread
+entry on [#41](https://github.com/diegoami/borg-agent/pull/41): ten findings,
+six smaller notes, from a fresh clone with every test passing. **Eight of the
+ten were confirmed in the code before anything was touched**, which is the
+habit worth keeping: the reviewer was right about all eight and honest about
+the two it had not executed.
+
+Facts the next sessions will need:
+- **The worst finding was a missing argument.** `branch` did not pass
+  `from_turn` where `verify` did — one line, in the same file, with verify's
+  own comment explaining why it was needed. It turned a branch of a
+  post-mortem into a recording of a different game that still verified. The
+  lesson is the one the last two rounds taught in other words: **when two
+  functions do the same replay, the difference between them is where the bug
+  is.**
+- **The pattern of this round was "the unit works, the wiring does not."**
+  Findings 1, 2, 3 and 5 all had passing unit tests beside them: the store
+  filtered correctly but was never asked with an observation; the secret
+  scanner read the whole entry but only replaced one field; `verify` compared
+  every stream it was given and was not given the new one. **Test the wiring,
+  not only the piece.**
+- **R5's own rule was unmet and nobody had noticed**: run summaries and hashes
+  belong in git, `runs/` is git-ignored, so the milestone's headline numbers
+  could not be checked by the reviewer at all. They are in
+  [records/](../records/) now. A number in a PR body is not evidence; a record
+  in git is.
+- **Mode C's guard is in place before mode C is.** A review with no family is
+  a probe, and nothing checked that the probe existed, so an invented probe
+  review promoted a claim. T22 now has that rule to rest on, and a test.
+- Still as the reviewer left it: the trace is outside `prefix`'s comparison by
+  construction; `survived_past_the_death` rests on sampled turns and understates
+  both sides; a mode B prefix that outlives the wall limit reads `crash` rather
+  than `harness_failure`.
 
 ## 2026-11-09: mode C before the trial (D11), and the zoo asked for milestone 8
 

@@ -95,7 +95,8 @@ its end" and says so in `verified_as`. Before this, such a run reported
 
 `verify` also checks **the record against the run**: every count and hash the
 record published — the action stream's count and hash, the observations, the
-state hashes, the journal — must still be the file the replay read
+state hashes, the journal, **and the model call log, with its own count** —
+must still be the file the replay read
 (`record_matches_run`, with `record_mismatch` naming the first that does not).
 All of them, not just one: with only the state hashes compared, a run could be
 cut short at the end — the replay reproduces what remains, and `prefix`

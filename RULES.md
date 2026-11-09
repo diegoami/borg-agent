@@ -35,9 +35,19 @@ These hold for every session working on this repository, local or cloud.
    The `reviewed` branch stands at the last reviewed state of `main`, so that
    PR's diff is exactly the milestone's work. Its body lists the tasks, what
    each verified, what was not checked and the open questions, and carries the
-   prompt a reviewer needs. The reviewer posts findings on it; the **owner**
-   merges it, which advances `reviewed`. The findings then become a task of
-   their own (T12 is milestone 1's).
+   prompt a reviewer needs.
+
+   **That prompt tells the reviewer to post its findings as a comment on the
+   review PR**, and to change nothing else: no edits, no pushes, no issues,
+   nothing posted anywhere else. Milestone 3's prompt said "hand the report
+   back as text", so the review existed only in the reviewer's own session and
+   the owner had to carry it over by hand (2026-11-09). The ban is on editing
+   and on posting elsewhere, never on the report itself.
+
+   The **owner** merges the review PR, which advances `reviewed`, or tells a
+   session to merge it — the owner has done that for every milestone so far.
+   The findings then become a task of their own (T12 is milestone 1's, T23 is
+   milestone 3's).
 8. No posts to angband/angband or any other upstream project or forum.
    Nothing is filed in another repository **unless the owner asks for it**,
    and then only in one of their own: the needed change is otherwise

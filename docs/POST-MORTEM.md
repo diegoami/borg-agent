@@ -27,9 +27,26 @@ does not fully carry — is never in question, because the Borg built it by
 playing.
 
 That also makes a post-mortem **replayable like any other run**: `verify`
-reads the handover turn from the record, replays the Borg's prefix by playing
-it, and feeds the recorded actions back from the handover. The prefix comes
-back by itself; the agent's part comes back from the stream.
+reads the handover turn (`from_turn` in the run directory's `result.json`),
+replays the Borg's prefix by playing it, and feeds the recorded actions back
+from the handover. The prefix comes back by itself; the agent's part comes back
+from the stream. The **run record** carries `from_turn` as well, so a record
+alone says where the agent's own play began — it did not until the milestone 3
+review pointed out that the document and the code disagreed about which
+artifact was authoritative.
+
+**A branch of a post-mortem plays the same prefix.** `branch` left `from_turn`
+out, so the actions recorded from the handover were fed to a newborn character
+in the town: a self-consistent recording of a different game under the parent's
+name, which even verified. Branching before the parent's handover is refused,
+because the recording does not reach there.
+
+**What is refused, and what is flagged.** The handover must be before the death
+and the cap after it, and `--before` cannot be negative: otherwise the Borg
+dies before the agent has a decision and the post-mortem block reads as if the
+agent had tried and failed. A run where the agent never got a decision carries
+`agent_played: false` and a warning saying the other fields describe the Borg's
+own play.
 
 The cost is time rather than storage: taking over at turn 20,000 means playing
 20,000 turns of Borg first, about a minute at the milestone 8 pin.

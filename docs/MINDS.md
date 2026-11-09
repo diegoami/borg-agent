@@ -82,14 +82,22 @@ message is 1,600 and the same every time.
 
 Every call is written to `model-calls.jsonl` (R2.1): the observation's state
 hash, the pack's version and hash, the job, provider, model, family and effort,
-the endpoint's host, the reply, the reason, the tokens and the seconds. A
-reply that looks like a credential is replaced rather than logged. The key
+the endpoint's host, the reply, the reason, the tokens and the seconds. The key
 never appears — it is a header, built in the one method that makes the request.
 
-A run's budget is `--budget-calls` and `--budget-tokens` (R2.3). The rule is
-*spend up to the limit, then stop*, since a call's cost is only known
-afterwards. Reaching it ends the run with the outcome **`budget_cap`** and the
-reason — an outcome, not a failure.
+**Every field of an entry is scanned, not only the reply**, and anything that
+looks like a credential is replaced where it stands; a field named like a key
+goes too. The rest of the entry stays, because the call has already happened
+and the entry is the evidence R2.1 asks for — which is why a log is redacted
+where a record is refused. (Until the milestone 3 review only `reply` was
+replaced, so a key the model put in its `reason` was logged intact.)
+
+A run's budget is `--budget-calls` and `--budget-tokens` (R2.3), and an `api`
+run **must name one**: with neither flag the only ceilings were the decision
+cap and the wall clock, which in tokens is enormous. `--no-budget` runs without
+one, deliberately and on the record. The rule is *spend up to the limit, then
+stop*, since a call's cost is only known afterwards. Reaching it ends the run
+with the outcome **`budget_cap`** and the reason — an outcome, not a failure.
 
 A reply that cannot be read as an action is counted, and the model is asked
 again once with its own words and a correction. Twice over and the run ends
