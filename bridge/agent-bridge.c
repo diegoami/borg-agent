@@ -43,6 +43,11 @@
 static FILE *observations;   /* we write one line per decision */
 static FILE *actions;        /* we read one line per decision */
 static bool  tried;
+/* Mode B (R3): with BORG_AGENT_FROM_TURN set, the Borg plays the game until
+ * that turn and the agent takes over from there. The prefix is the Borg's own
+ * play, which is deterministic, so a post-mortem can be replayed and branched
+ * without a save. Zero, or unset, means the agent decides from the start. */
+static int32_t from_turn = -1;
 static long  decisions;
 static int   last_messages = -1;
 static const char *run_id;
@@ -80,8 +85,17 @@ bool agent_active(void)
 
     if (!obs_path || !act_path)
         return false;
+    if (from_turn < 0) {
+        const char *when = getenv("BORG_AGENT_FROM_TURN");
+        from_turn = when ? (int32_t)strtol(when, NULL, 10) : 0;
+    }
+    if (turn < from_turn)
+        return false;            /* the Borg is still playing its own game */
     if (tried)
         return observations && actions;
+    if (from_turn > 0)
+        borg_note(format("# AGENT taking over at turn %ld (asked for %ld)",
+            (long)turn, (long)from_turn));
     tried = true;
     run_id = getenv("BORG_AGENT_RUN_ID");
     if (!run_id)

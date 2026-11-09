@@ -27,6 +27,8 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
   call costs.
 - [The knowledge base](docs/KNOWLEDGE.md): the claims, the views, and how a
   run becomes knowledge.
+- [Mode B](docs/POST-MORTEM.md): taking over shortly before a death the Borg
+  is known to come to.
 
 ## Status
 

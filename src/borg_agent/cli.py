@@ -42,7 +42,8 @@ def api_mind(args):
         choice, pack=pack,
         budget=model_mind.Budget(model_calls=args.budget_calls, tokens=args.budget_tokens),
         choice_record=configuration.record('play'),
-        knowledge=learned, knowledge_sha256=store.sha256() if learned else None)
+        knowledge=learned, knowledge_sha256=store.sha256() if learned else None,
+        timeout=args.model_timeout)
 
 
 def external_mind(args):
@@ -283,6 +284,39 @@ def cmd_consolidate(args):
     return 0 if result['added'] or not result['refused'] else 1
 
 
+def cmd_post_mortem(args):
+    """Mode B: hand over to a mind shortly before a recorded death (R3)."""
+    from . import postmortem
+
+    out = build_module.prepare()
+    if args.run:
+        death = postmortem.death_of(args.run)
+        if death is None:
+            print(f'{args.run} did not end in a death; mode B needs one')
+            return 1
+    else:
+        found = run_dir(f'death-seed{args.seed}-cap{args.cap}')
+        print(f'playing the Borg on seed {args.seed} to find its death...')
+        result = postmortem.find_death(out, args.seed, args.cap, found,
+                                       timeout=args.timeout,
+                                       stall_timeout=args.stall_timeout,
+                                       lock=not args.no_lock)
+        death = postmortem.death_of(found)
+        if death is None:
+            print(f'the Borg did not die on seed {args.seed} within {args.cap} turns '
+                  f'({result["outcome"]}); try another seed or a higher cap')
+            return 1
+    print(f'death: {death["cause"]} at turn {death["turn"]} (seed {death["seed"]})')
+    output = Path(args.output) if args.output else run_dir(
+        f'post-mortem-seed{death["seed"]}-turn{death["turn"]}-{args.mind}')
+    result, parent = postmortem.post_mortem(
+        out, death, build_mind(args), output, before=args.before, cap=args.cap,
+        timeout=args.timeout, stall_timeout=args.stall_timeout, lock=not args.no_lock)
+    postmortem.write_record(output, parent)
+    print(output)
+    return 0 if result['outcome'] in play_module.GOOD_OUTCOMES else 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog='borg-agent', description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
@@ -326,6 +360,9 @@ def main(argv=None):
                        help='give the model the game directly, without the primitives')
         p.add_argument('--no-knowledge', action='store_true',
                        help='do not put the knowledge base in the prompt')
+        p.add_argument('--model-timeout', type=int, default=240,
+                       help='how long to wait for one model call; a provider that goes over '
+                            'this ends the run as a harness failure, not as play')
         p.add_argument('--output', type=Path)
         p.add_argument('--timeout', type=int, default=900)
         p.add_argument('--stall-timeout', type=int, default=120)
@@ -363,6 +400,7 @@ def main(argv=None):
     brancher.add_argument('--external-dir', type=Path)
     brancher.add_argument('--no-executor', action='store_true')
     brancher.add_argument('--no-knowledge', action='store_true')
+    brancher.add_argument('--model-timeout', type=int, default=240)
     brancher.add_argument('--output', type=Path)
     brancher.add_argument('--timeout', type=int, default=900)
     brancher.add_argument('--stall-timeout', type=int, default=120)
@@ -381,6 +419,30 @@ def main(argv=None):
             reader.add_argument('--window', type=int, default=3,
                                 help='how many decisions either side to show')
         reader.set_defaults(func=handler)
+
+    mortem = sub.add_parser('post-mortem',
+                            help="take over shortly before the Borg's death (mode B)")
+    mortem.add_argument('--seed', type=int, default=7,
+                        help='the seed whose Borg death to work from')
+    mortem.add_argument('--run', type=Path,
+                        help='a recorded Borg death to use instead of playing one')
+    mortem.add_argument('--cap', type=int, default=100000)
+    mortem.add_argument('--before', type=int, default=200,
+                        help='how many game turns before the death to take over')
+    mortem.add_argument('--mind', choices=ALL_MINDS, default='scripted-primitives')
+    mortem.add_argument('--profile')
+    mortem.add_argument('--pack', default='play-1')
+    mortem.add_argument('--budget-calls', type=int, default=None)
+    mortem.add_argument('--budget-tokens', type=int, default=None)
+    mortem.add_argument('--external-dir', type=Path)
+    mortem.add_argument('--no-executor', action='store_true')
+    mortem.add_argument('--no-knowledge', action='store_true')
+    mortem.add_argument('--model-timeout', type=int, default=240)
+    mortem.add_argument('--output', type=Path)
+    mortem.add_argument('--timeout', type=int, default=1800)
+    mortem.add_argument('--stall-timeout', type=int, default=120)
+    mortem.add_argument('--no-lock', action='store_true')
+    mortem.set_defaults(func=cmd_post_mortem)
 
     reader = sub.add_parser('knowledge', help='read the knowledge base or rebuild its views')
     reader.add_argument('what', choices=['list', 'views'], nargs='?', default='list')
