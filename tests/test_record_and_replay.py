@@ -138,11 +138,15 @@ def test_the_replay_mind_gives_back_exactly_what_was_recorded():
     assert replaying.replayed == 3
 
 
-def test_a_replay_that_runs_out_of_actions_says_so():
+def test_a_replay_that_runs_out_of_actions_says_where():
+    # Not a failure: the run it came from was ended by the harness, so the
+    # recording stops here and `verify` reads that as the stream's end (R2.3).
     replaying = replay.ReplayMind([mind.action('command', 'one', command={'name': 'stay'})])
     replaying.act(observation())
-    with pytest.raises(ValueError, match='ended at decision'):
+    with pytest.raises(replay.StreamEnded) as raised:
         replaying.act(observation(decision=1, turn=20))
+    assert raised.value.decisions == 1 and raised.value.turn == 20
+    assert 'asked again at turn 20' in str(raised.value)
 
 
 def test_a_branching_mind_replays_then_hands_over():
@@ -262,3 +266,114 @@ def test_the_seasonal_window_makes_a_replay_incomparable():
     # than report a difference as a failure to reproduce.
     assert 'seasonal' in EXAMPLE['calendar']
     assert isinstance(EXAMPLE['calendar']['seasonal'], bool)
+
+
+# --- verifying a run the harness ended (milestone 2 review, finding 1) ------
+
+@pytest.mark.slow
+def test_a_capped_run_verifies_as_far_as_it_was_recorded(tmp_path):
+    """The shape of every model run: stopped by a cap, not by the game.
+
+    The reviewer found that such a run could never verify — the replay ran out
+    of actions, which was recorded as a harness failure, and the one extra
+    observation made the state hashes look different while naming no
+    difference at all.
+    """
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    played = agent.play_with_mind(out, seed=1, cap=10000, output=tmp_path / 'capped',
+                                  mind=mind.ScriptedMind(), decision_cap=20, timeout=300,
+                                  stall_timeout=60, lock=lock, log=lambda *a: None)
+    assert played['outcome'] == 'decision_cap' and played['decisions'] == 20
+    record.write_record(tmp_path / 'capped')
+    verdict = replay.verify(tmp_path / 'capped', tmp_path / 'verified', lock=lock,
+                            log=lambda *a: None)
+    assert verdict['verified'], verdict
+    assert verdict['scope'] == 'prefix'
+    assert verdict['state_hashes_match'] and verdict['first_differing_decision'] is None
+    # The replay ends where the recording does, and says so.
+    assert verdict['stream_ended'] == {'decisions': 20, 'turn': played['final_turn']}
+    assert '20 recorded states reproduced' in verdict['verified_as']
+    # And the record is checked against the run, not only the run against itself.
+    assert verdict['record_matches_run'] is True
+
+
+@pytest.mark.slow
+def test_a_real_divergence_in_a_capped_run_is_still_caught(tmp_path):
+    """The prefix rule must not become a way of passing anything.
+
+    A recorded action is changed, so the replay plays a different game from the
+    second decision on. `verify` must refuse it and name where.
+    """
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    agent.play_with_mind(out, seed=1, cap=10000, output=tmp_path / 'capped',
+                         mind=mind.ScriptedMind(), decision_cap=20, timeout=300,
+                         stall_timeout=60, lock=lock, log=lambda *a: None)
+    actions = (tmp_path / 'capped' / agent.ACTION_LOG).read_text().splitlines()
+    tampered = json.loads(actions[1])
+    tampered['command'] = {'name': 'stay'}
+    actions[1] = json.dumps(tampered, sort_keys=True)
+    (tmp_path / 'capped' / agent.ACTION_LOG).write_text('\n'.join(actions) + '\n')
+    verdict = replay.verify(tmp_path / 'capped', tmp_path / 'verified', lock=lock,
+                            log=lambda *a: None)
+    assert verdict['verified'] is False
+    assert verdict['state_hashes_match'] is False
+    assert verdict['first_differing_decision'] == 2
+    assert verdict['failed_because'] == 'the replay diverged from the run'
+
+
+@pytest.mark.slow
+def test_branching_a_death_before_it_happens(tmp_path):
+    """T08's own shape: take a recorded death and try something else.
+
+    Replay starts from birth, so this needs no save of the dying game — which
+    is worth knowing before T08 is written. The review listed it as untested.
+    """
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    died = agent.play_with_mind(out, seed=7, cap=2000, output=tmp_path / 'death',
+                                mind=mind.ScriptedMind(), timeout=300, stall_timeout=60,
+                                lock=lock, log=lambda *a: None)
+    assert died['outcome'] == 'death', died
+    assert died['cause'] and died['final_turn'] < 2000
+    record.write_record(tmp_path / 'death')
+    # The death itself reproduces: the game ended this run, so the whole of it.
+    verdict = replay.verify(tmp_path / 'death', tmp_path / 'verified', lock=lock,
+                            log=lambda *a: None)
+    assert verdict['verified'] and verdict['scope'] == 'full', verdict
+    assert verdict['cause'][0] == verdict['cause'][1] == died['cause']
+    # Now go back and try something else before the end: a mind that waits
+    # where the first one walked. "What if it had stood still?" is the kind of
+    # question mode B exists to ask.
+    class Waiting:
+        name = 'waiting'
+        kind = 'scripted'
+
+        def act(self, observation):
+            prompt = (observation.get('prompt') or {'kind': 'none'})['kind']
+            if prompt == 'more':
+                return mind.action('command', 'Clear the prompt.',
+                                   command={'name': 'answer', 'answer': '\r'})
+            if prompt != 'none':
+                return mind.action('command', 'Leave the prompt.',
+                                   command={'name': 'escape'})
+            return mind.action('command', 'Wait and see.', command={'name': 'stay'})
+
+    before_the_end = max(10, died['final_turn'] - 100)
+    result, parent = replay.branch(tmp_path / 'death', turn=before_the_end,
+                                   output=tmp_path / 'branch',
+                                   new_mind=Waiting(), lock=lock,
+                                   log=lambda *a: None)
+    assert parent == {'run_id': 'death', 'turn': result['branch']['handed_over_at']}
+    assert parent['turn'] >= before_the_end
+    branch_record = json.loads(record.write_record(
+        tmp_path / 'branch', mode='post_mortem', parent=parent).read_text())
+    assert branch_record['mode'] == 'post_mortem'
+    assert branch_record['parent']['run_id'] == 'death'
+    # The branch is the same game up to the handover and its own after it.
+    before = record.state_hashes(tmp_path / 'death/observations.jsonl')
+    after = record.state_hashes(tmp_path / 'branch/observations.jsonl')
+    assert before[:result['branch']['replayed_actions']] == \
+        after[:result['branch']['replayed_actions']]
+    assert after != before

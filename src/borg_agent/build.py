@@ -66,6 +66,32 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def git_state():
+    """This repository's commit, and whether the tree was dirty.
+
+    Sampled when a run starts, not when it is recorded: a run played on a
+    dirty tree and committed before being recorded must not claim the new
+    commit (finding 3 of the milestone 2 review).
+    """
+    def git(*args):
+        return subprocess.run(['git', '-C', str(pins.ROOT), *args],
+                              check=True, capture_output=True, text=True).stdout.strip()
+    return git('rev-parse', 'HEAD'), git('status', '--porcelain', '--untracked-files=no')
+
+
+def provenance(build_out):
+    """What a run must remember about where it came from, taken at play time."""
+    manifest = json.loads((Path(build_out) / 'build.json').read_text())
+    commit, dirty = git_state()
+    return {
+        'commit': commit,
+        'dirty': dirty,
+        'compiler': manifest['compiler'],
+        'platform': manifest['platform'],
+        'data_sha256': manifest['data_sha256'],
+    }
+
+
 def observer_sources():
     """The observer files' bytes at the runner pin."""
     return {name: pins.show(RUNNER_PIN, 'tools/' + name) for name in OBSERVER_FILES}

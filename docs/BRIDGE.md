@@ -91,11 +91,12 @@ Everything comes from what the player could know:
 
 | Part | Source |
 |---|---|
-| map | `player->cave`, the player's own remembered grid, drawn with the game's glyphs; a square never seen is blank. A window of 41×21 around the player, with its `origin` |
+| map | `player->cave`, the player's own remembered grid, drawn with the game's glyphs; a square never seen is blank. The whole of what the player knows, trimmed to its bounding box, with its `origin` (T05 replaced an earlier 41×21 window, which made exploration blind) |
 | monsters | the monsters the player can see (`monster_is_visible`), with the glyph the player sees and the name the game would give. `asleep` and `health` are null: the player cannot tell |
 | objects | the objects the player remembers on the floor, described as the game describes them |
-| character | the character sheet: level, hit points, depth, gold, armour, speed, stats as printed, and the status line's conditions |
+| character | the character sheet: level, hit points, depth, gold, armour, speed, the stats as `cnv_stat` prints them (` 18/09`, `18/***`), and the status line's conditions |
 | messages | the game's message log since the last observation, in reading order |
+| shop | while in a store: its name, and its stock **in the store menu's own order** (`store_stock_list`), described as the store describes it (`ODESC_STORE`), with the menu's own letters and `price_item`'s price |
 | prompt, screen | the screen as the player sees it, through the Borg's own `borg_what_text` |
 
 No field is read from a monster's or a grid's hidden state, so **no
@@ -143,9 +144,11 @@ its budget (R2.3), whose outcome is `budget_cap` — an outcome, not a failure.
 
 ## What is not here yet
 
-- the executor primitives (T05) and the model-backed mind (T06);
-- shops: `shop` is always null and the scripted mind escapes a store screen,
-  so nothing buys anything yet;
-- the run record of R5 and replay (T04). `result.json` holds the action
-  stream's hash, the calendar, the build key and the outcome, which is what
-  T04 will build on.
+- the model-backed mind (T06), and with it the model call in a run's journal;
+- spells, wands, throwing and targeting: there is no key translation for
+  them, so `fight_nearest` is melee only;
+- selling in a live store. Buying is checked live (see docs/EXECUTOR.md), and
+  with the default birth options stores do not buy.
+
+The executor's primitives arrived in T05 (docs/EXECUTOR.md), shops with them,
+and the run record and replay in T04 (docs/RECORDS.md).

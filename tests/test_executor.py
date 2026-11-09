@@ -349,9 +349,19 @@ def test_a_primitive_driven_run_is_reproducible_and_verifies(tmp_path):
                                       mind=driver, timeout=300, stall_timeout=60, lock=lock,
                                       log=lambda *a: None)
         assert result['outcome'] in play.GOOD_OUTCOMES, result
-        # The fixture descends, fights and rests, so the gate is not only walking.
+        # The fixture descends, fights and rests, so the gate is not only
+        # walking — the review pointed out that it only checked two of them.
         kinds = {stop['primitive'] for stop in driver.stops}
-        assert {'explore_floor', 'take_stairs'} <= kinds, kinds
+        assert {'explore_floor', 'take_stairs', 'fight_nearest',
+                'rest_until_healed'} <= kinds, kinds
+        reasons = {stop['stop'] for stop in driver.stops}
+        assert {'changed_level', 'no_target', 'healed'} <= reasons, reasons
+        # And what it chose, and why, is written down (R2).
+        journal = [json.loads(line) for line in
+                   (tmp_path / f'run{attempt}' / agent.JOURNAL_LOG).read_text().splitlines()]
+        assert {entry['kind'] for entry in journal} == {'choice', 'stop'}
+        assert any(entry.get('chose') == 'fight_nearest' for entry in journal)
+        assert all(entry['answer']['reason'] for entry in journal if entry['kind'] == 'choice')
         streams.append((tmp_path / f'run{attempt}' / agent.ACTION_LOG).read_bytes())
         records.append(result)
     assert streams[0] and streams[0] == streams[1]
@@ -360,3 +370,79 @@ def test_a_primitive_driven_run_is_reproducible_and_verifies(tmp_path):
     verdict = replay.verify(tmp_path / 'run1', tmp_path / 'verified', lock=lock,
                             log=lambda *a: None)
     assert verdict['verified'], verdict
+
+
+class Shopper:
+    """Walks to the General Store and buys one item by its label."""
+
+    name = 'shopper'
+    kind = 'scripted'
+
+    def __init__(self, index=1):
+        self.index = index
+        self.bought = None
+        self.walker = mind.ScriptedMind()
+
+    def act(self, observation):
+        prompt = (observation.get('prompt') or {'kind': 'none'})['kind']
+        if prompt == 'more':
+            return mind.action('command', 'Clear the prompt.',
+                               command={'name': 'answer', 'answer': '\r'})
+        if prompt != 'none':
+            return mind.action('command', 'Leave the prompt.', command={'name': 'escape'})
+        shop = observation.get('shop')
+        if shop and self.bought is None:
+            item = shop['stock'][self.index]
+            self.bought = item
+            return mind.action('primitive', f"Buy {item['label']}.",
+                               primitive={'name': 'shop_list',
+                                          'list': [{'label': item['label'], 'count': 1,
+                                                    'side': 'buy'}]})
+        if shop:
+            return mind.action('command', 'Leave the shop.', command={'name': 'escape'})
+        rows = observation['map']['rows']
+        origin = observation['map'].get('origin', {'x': 0, 'y': 0})
+        doors = [(x + origin['x'], y + origin['y'])
+                 for y, row in enumerate(rows) for x, glyph in enumerate(row) if glyph == '1']
+        if doors:
+            x, y = doors[0]
+            return mind.action('primitive', 'Walk to the General Store.',
+                               primitive={'name': 'walk_to', 'target': {'x': x, 'y': y}})
+        return self.walker.act(observation)
+
+
+@pytest.mark.slow
+def test_buying_an_item_whose_label_is_not_the_first(tmp_path):
+    """The store's labels skip the letters its commands use.
+
+    Buying index 0 proves nothing — every labelling scheme agrees on 'a'. This
+    buys index 1, which the store calls 'c' (the review's point (c)).
+    """
+    import os
+
+    from borg_agent import build, play
+
+    out = build.prepare(log=lambda *a: None)
+    shopper = Shopper(index=1)
+    driver = executor.ExecutingMind(shopper, name='shopper')
+    result = agent.play_with_mind(out, seed=1, cap=6000, output=tmp_path / 'shop',
+                                  mind=driver, timeout=300, stall_timeout=60,
+                                  decision_cap=400,
+                                  lock=not os.environ.get('BORG_AGENT_NO_LOCK'),
+                                  log=lambda *a: None)
+    assert result['outcome'] in play.GOOD_OUTCOMES, result
+    assert shopper.bought, 'the shopper never reached the General Store'
+    assert shopper.bought['label'] == 'c', shopper.bought
+    observed = [json.loads(line) for line in
+                (tmp_path / 'shop' / agent.OBSERVATION_LOG).read_text().splitlines()]
+    in_shop = [o for o in observed if o.get('shop')]
+    assert in_shop, 'no observation carried a shop'
+    assert in_shop[0]['shop']['kind'] == 'General Store'
+    before = in_shop[0]['character']['gold']
+    after = observed[-1]['character']['gold']
+    assert after == before - shopper.bought['price'], (before, after, shopper.bought)
+    # The item the store named is the item that arrived.
+    description = shopper.bought['description'].split(' {')[0]
+    base = description.split(' of ')[-1].split(' (')[0]
+    assert any(base.rstrip('s') in item['description']
+               for item in observed[-1]['inventory']), observed[-1]['inventory']

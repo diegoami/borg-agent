@@ -15,7 +15,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from .build import binary, sha
+from .build import binary, provenance, sha
 
 # The zoo runner's birth input: splash, first race (Human), first class
 # (Warrior), default point buy, then the Borg's activation keys.
@@ -269,6 +269,7 @@ def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
         'build_key': manifest['build_key'],
         'binary_sha256': manifest['binary_sha256'],
         'recipe': manifest['recipe'],
+        'provenance': provenance(build_out),
         'input_sha256': sha(output / 'input.txt'),
         'configuration_sha256': sha(output / 'user/borg.txt'),
         'command': command, 'cwd': str(source),

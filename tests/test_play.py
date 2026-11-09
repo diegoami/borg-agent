@@ -129,3 +129,23 @@ def test_a_death_and_the_checkpoint_saves(tmp_path):
     assert (tmp_path / 'death/start.save').exists()
     assert (tmp_path / 'death/recent.save').exists()
     assert any(state['kind'] == 'checkpoint' for state in record['states'])
+
+
+def test_the_seasonal_days_are_the_games_own():
+    """Not a copied constant: the game's own condition, read at the pin.
+
+    `get_mon_num` admits RF_SEASONAL monsters only when the local date matches,
+    and play.SEASONAL_DAYS has to be that date set (the review's point (e)).
+    """
+    import re
+
+    from borg_agent import pins
+
+    source = pins.show('better-borg-c', 'src/mon-make.c').decode()
+    seasonal = source[source.index('RF_SEASONAL'):]
+    window = seasonal[:seasonal.index('}', seasonal.index('tm_mday'))]
+    month = int(re.search(r'tm_mon\s*==\s*(\d+)', window).group(1))
+    days = sorted(int(day) for day in re.findall(r'tm_mday\s*[=<>!]*\s*(\d+)', window))
+    # The game counts months from zero, so 11 is December.
+    assert {(month + 1, day) for day in range(min(days), max(days) + 1)} \
+        == set(play.SEASONAL_DAYS), (month, days, play.SEASONAL_DAYS)

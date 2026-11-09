@@ -153,7 +153,7 @@ class PrimitiveMind:
             self.dead_ends = 0
             return action('primitive', 'Seen enough of this floor; go down.',
                           primitive={'name': 'take_stairs', 'direction': 'down'})
-        if last in ('explored', 'no_stairs_known', 'no_path'):
+        if last in ('explored', 'no_stairs_known', 'no_path', 'unreachable'):
             self.dead_ends += 1
             if self.dead_ends >= 2:
                 self.dead_ends = 0

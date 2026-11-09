@@ -68,6 +68,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T12 | Milestone-1 review findings | 2 | T01, T02 | yes | in review (#13) |
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
+| T15 | Milestone-2 review findings | 2 | T04, T05 | yes | in progress (task/T15-milestone-2-review) |
 
 ### T01. Build and play the pinned game headless
 
@@ -297,6 +298,64 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T15. Milestone-2 review findings
+
+A review of milestone 2 by a model of another family (Kimi K3) on
+[#15](https://github.com/diegoami/borg-agent/pull/15), 2026-11-09. Four
+findings, with notes and doc drift. All four are done here, and two of the
+notes turned out to matter more than they looked.
+
+- **(1) `verify` could not confirm any run the harness ended**, and said "the
+  states differ" while naming no difference. Reproduced exactly as reported: a
+  run capped at 20 decisions verified `false` although all 20 states
+  reproduced. `verify` now has a **scope**: `full` for a run the game ended
+  (every state, the outcome, the cause, the turn and the trace must match) and
+  `prefix` for one the harness ended (every recorded state must match, and the
+  stream must run out where the recording stops). A replay that runs out of
+  actions raises `StreamEnded`, which the run records as `agent_stopped` with
+  the decision and turn, and `verify` reads it as the stream's end. A test
+  verifies a capped run, and another alters one recorded action to prove the
+  prefix rule still catches a real divergence (it names decision 2).
+- **(2) The chooser's decisions and the stop reasons were in memory only.** A
+  run with a chooser now writes `decisions.jsonl`: one line per choice (the
+  primitive, the chooser's own reason, the stop it answered) and one per stop.
+  `explain` reads it, its hash joins the record's evidence as
+  `journal_sha256`, and the T05 gate asserts it.
+- **(3) Provenance was sampled when a record was written**, so a run played on
+  a dirty tree and committed before recording claimed the new commit. The
+  commit, dirty state, compiler, platform and content hashes are now captured
+  into `result.json` at play time (`build.provenance`), and the recorder uses
+  them.
+- **(4) The recorder invented settings and birth options** when the observer's
+  lines were missing. It now refuses to write a record at all, and says to
+  look at the trace.
+- **The notes, acted on:** `explore_floor` distinguishes `unreachable` from
+  `explored`; the stat strings are `cnv_stat`'s exactly (` 18/09`, `18/***`);
+  `verify` checks the record's published `state_hashes_sha256` against the run;
+  `WalkTo`'s unreachable `blocked` is marked as the defensive branch it is; and
+  the three stale passages in docs/BRIDGE.md and docs/RECORDS.md are corrected.
+- **The tests the review said would pass over a broken thing:** the T05 gate
+  now asserts fighting, resting and the stop reasons; the seasonal days are
+  read out of `mon-make.c` at the pin rather than copied; a **death is branched
+  before it happens** (T08's own shape, and it needs no save because replay
+  starts from birth); and a **live shop purchase of a label that is not the
+  first** was added.
+
+  That last test earned the whole exercise: buying label `c` bought a **Ration
+  of Food when the agent asked for wine**. The observation listed the stock in
+  `store->stock` order, while the store's menu uses `store_stock_list`'s
+  order, so the labels pointed at the wrong items. The bridge now reads the
+  stock exactly as `ui-store.c` does. Buying label `a` had worked by luck,
+  which is why the first live check passed.
+
+**Left where the reviewer suggested:** the `mind` block is still one model per
+run (T06, when a run may call several); the secret guard does not scan the
+observation and action logs, which only matters once a model's replies land
+there (T06); the build subprocess still inherits the full environment; and the
+`seasonal` flag is sampled at run start, so a run spanning midnight into 24
+December is described by neither value — a footnote while runs last minutes,
+and another argument for the owner's open question.
 
 ### T14. The heavy-run lock under an outer flock
 

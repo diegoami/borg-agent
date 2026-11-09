@@ -6,16 +6,16 @@
   },
   "calendar": {
     "TZ_environment": null,
-    "local": "2026-11-08T22:07:45.055832+01:00",
+    "local": "2026-11-09T01:24:20.051838+01:00",
     "seasonal": false,
     "timezone_name": "CET",
-    "utc": "2026-11-08T21:07:45.055832+00:00"
+    "utc": "2026-11-09T00:24:20.051838+00:00"
   },
-  "created": "2026-11-08T21:07:45.055832+00:00",
+  "created": "2026-11-09T00:24:20.051838+00:00",
   "deterministic": true,
   "engine": {
-    "binary_sha256": "98fa8c75353534dde3dcebb03647348eb06231b357d7a40e35715284339bf1eb",
-    "build_key": "3c360dcf01941ef0",
+    "binary_sha256": "b65bbbb0673430439fbd1f8f9690065a12e0141fe7d05183cc4f2af6e9633e2a",
+    "build_key": "5cdeddbaf1f1331c",
     "commit": "0fd4af4000000000000000000000000000000000",
     "compiler": "cc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
     "data_sha256": {
@@ -92,7 +92,7 @@
     "dirty": "",
     "name": "c-4.2.6",
     "patch_sha256": {
-      "agent-bridge.c": "89c96d7d94f3a279faf1e5f2a4a012ff0ab1aae588839c00886feae9dc1da839",
+      "agent-bridge.c": "dd48504ef860124dbed40983151b9b7e3926f40ce387c3d3af74d5cf261f5b72",
       "agent-bridge.h": "f634bf096ed76d2883710f1430cb180cb1022be0198e0452503834674e2994a6",
       "native-observer.c": "9c10fcedd8b2f44e211f63235b38bad7cec351ec45216366689e73cb3f0a9ad7",
       "native-observer.h": "faa6a800ce6fb6e73795b044663ff36d39cc7eae837f9a53aae1ef04f3241730"
@@ -107,8 +107,8 @@
     "platform": "Linux x86_64"
   },
   "evidence": {
-    "observations_sha256": "7fbc01f92f914d35e2b57d799e7ddcd4b6b1d8c254457a10bfcf421399c32e1a",
-    "state_hashes_sha256": "0c69d6f4b188d3e02e8911438c4f06b7ec518f1274128b7a17ff38fbd1802e3c",
+    "observations_sha256": "89f861fd1f0000252485abd33a3373c218a1b3dab93acb8c09920d8557674877",
+    "state_hashes_sha256": "54df3c693301b67e2dc6f89ac005a7110c981068a9aee7f0edbc47f2c67f00b6",
     "trace_sha256": "06e6c1f42ed5a06c6c4ba1e762175dfb023517f7e6f30283dc3f610826fce95b"
   },
   "game": {
@@ -204,6 +204,6 @@
   "usage": {
     "decisions": 101,
     "model_calls": 0,
-    "wall_seconds": 1.067
+    "wall_seconds": 0.38
   }
 }

@@ -23,6 +23,7 @@ python -m borg_agent explain --run runs/<name> --turn 500
 | `actions.jsonl` | every action it answered, one per line, valid against `action@1` |
 | `trace.txt` | the observer's trace: turn, RNG state, options, the Borg's notes |
 | `state-hashes.txt` | one hash per observation, written by `record` |
+| `decisions.jsonl` | the chooser's decisions and the executor's stop reasons, when a chooser was used |
 | `run-record.json` | the record itself, valid against [`run-record@1`](../schemas/run-record@1.json) |
 | `terminal.log`, `input.txt`, `user/borg.txt` | what the game was given |
 
@@ -70,20 +71,39 @@ produce the same hashes, and what `verify` compares decision by decision.
 ## verify
 
 `verify` replays the recorded action stream with the `replay` mind — no model,
-no scripted rules, just the recorded answers — and compares:
+no scripted rules, just the recorded answers — and compares the state hash at
+**every** observation, reporting the first decision that differs, then the
+decisions, the outcome, the cause, the final turn and the trace's hash. It
+writes `verify.json` with both sides of each comparison.
 
-1. the state hash at **every** observation, reporting the first decision that
-   differs;
-2. the number of decisions, the outcome, the cause, the final turn;
-3. the trace's hash.
+**How far it can compare depends on how the run ended**, and conflating the
+two was the main finding of the milestone 2 review:
 
-It writes `verify.json` with both sides of each comparison, and
-`verified: true` only when all of them agree. Checked on 2026-11-08: a
-101-decision scripted run on seed 1 at cap 1,000 verified, with identical
-state hashes at all 101 observations and the same trace.
+| The run ended because | `scope` | What must match |
+|---|---|---|
+| the **game** ended it: a death, the turn cap, a win | `full` | every state hash, the decisions, the outcome, the cause, the final turn, the trace |
+| the **harness** ended it: a decision or budget cap, a stall, a wall limit, the agent giving up | `prefix` | every **recorded** state hash, and the stream must run out exactly where the recording stops |
 
-If the recorded stream runs out before the game stops asking, the replay says
-so and names the decision — it never invents an action.
+A capped run is the expected shape of a model run (R2.3), and it can never
+replay to the same end: the game would have played on, and the recording
+stops. The replay therefore sees one observation more than there are recorded
+actions — the game asks again, and there is nothing to answer with — and the
+`replay` mind raises `StreamEnded`, which the run records as `agent_stopped`
+with the decision and turn. `verify` reads that as "the stream was replayed to
+its end" and says so in `verified_as`. Before this, such a run reported
+`verified: false` with "the states differ" while naming no difference at all.
+
+`verify` also checks **the record against the run**: the
+`evidence.state_hashes_sha256` the record published must still be the hash of
+the state hashes beside the run (`record_matches_run`).
+
+Checked on 2026-11-09: a 101-decision run verified `full`; a run stopped at a
+decision cap of 20 verified `prefix` with all 20 states reproduced; and a run
+with one recorded action altered was refused, naming decision 2.
+
+A record's immutability is a convention — `record` refuses to overwrite one —
+and nothing anchors its hash outside the run directory yet. The zoo's import
+contract (T11) is where that gets settled.
 
 ## branch
 
@@ -107,17 +127,34 @@ build. Each takes the last observation at or before the turn asked for.
 - `view` prints the screen as the player saw it;
 - `dump` prints or writes the observation;
 - `explain` prints the decisions around that turn with their actions, reasons,
-  hit points, depth and messages. When a model is deciding (T06) the model
-  call joins that line.
+  hit points, depth and messages — and, when a chooser was picking primitives,
+  what it chose, why, and why the primitive before it stopped. When a model is
+  deciding (T06) the model call joins that line.
+
+### The journal
+
+A run whose mind chooses primitives writes `decisions.jsonl` beside the
+actions: one line per choice (which primitive, the chooser's own reason, and
+the stop it was answering) and one per stop (which primitive, why, at which
+turn, after how many decisions). The commands in `actions.jsonl` carry only
+the executor's mechanical reasons, so without the journal a record could not
+say why the agent stopped exploring at a turn — which is what R2 has
+primitives report stops for. Its hash goes into the record's evidence as
+`journal_sha256`.
 
 ## The date
 
 Play is **not** independent of the calendar date: the game admits seasonal
 monsters on 24-26 December, so the same seed plays a different game on those
 days. Every record therefore carries a `calendar` block, and `verify` records
-both sides' dates in its verdict. A replay that must match a record made in
-that window has to run on the same day until the build neutralizes that clock
-read — which is T12.
+both sides' `seasonal` flags in its verdict and **refuses to compare across
+the window**. A replay that must match a record made inside it has to run on a
+day of the same kind.
+
+Whether to neutralize that clock read in the instrumented build is the owner's
+open question: it would make replay date-independent at the price of play
+differing from the unpatched game on three days a year, which RULES 9 leaves
+to them.
 
 ## What is not here yet
 
