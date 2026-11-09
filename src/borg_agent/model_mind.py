@@ -343,6 +343,13 @@ class ApiMind:
             'prompt_pack': self.pack.version,
             'prompt_pack_sha256': self.pack.sha256,
             'prompt_chars': sum(len(message['content']) for message in messages),
+            # The prompt itself, not only its size and the pack's hash. It was
+            # reconstructible -- render() is deterministic -- but only until
+            # the pack or the knowledge base moved, and a person reading a run
+            # wants to see what the model was actually asked (T30, the owner:
+            # "I need to see prompt and out as well").
+            'prompt': [{'role': message['role'], 'content': message['content']}
+                       for message in messages],
             'job': self.choice.job,
             'provider': self.choice.provider,
             'model': self.choice.model,

@@ -112,12 +112,61 @@ def test_the_timeline_has_a_row_per_decision_with_what_was_chosen(tmp_path):
     assert rows[2]['acted'] == 'cast (book=a, spell=a)'
 
 
+def test_a_decision_without_a_choice_says_what_was_still_running(tmp_path):
+    """A blank row reads as a gap; it is the executor mid-primitive."""
+    run = a_run(tmp_path)
+    rows = report.timeline(report.read(run))
+    assert rows[0]['chose'] == 'take_stairs' and rows[0]['running'] is None
+    assert rows[1]['chose'] is None and rows[1]['running'] == 'take_stairs'
+    assert 'still running' in report.write(run).read_text()
+
+
 def test_the_events_are_the_turns_worth_jumping_to(tmp_path):
     found = [what for _row, what in report.events(report.read(a_run(tmp_path)))]
     assert any('depth 1' in what for what in found)
     assert any('first sight of rock lizard' in what for what in found)
     assert any('hit points 10 → 6' in what for what in found)
     assert any('could not be read' in what for what in found)
+
+
+def test_a_stored_prompt_is_shown_as_it_was_sent(tmp_path):
+    run = a_run(tmp_path)
+    calls = [json.loads(line) for line
+             in (run / agent.MODEL_CALL_LOG).read_text().splitlines() if line.strip()]
+    calls[0]['prompt'] = [{'role': 'system', 'content': 'You are playing Angband.'},
+                          {'role': 'user', 'content': 'Decision 0, turn 1. What now?'}]
+    (run / agent.MODEL_CALL_LOG).write_text(''.join(json.dumps(c) + '\n' for c in calls))
+    text = report.write(run).read_text()
+    assert 'as it was sent' in text
+    assert 'You are playing Angband.' in text
+    assert 'Decision 0, turn 1. What now?' in text
+
+
+def test_a_prompt_that_was_not_stored_is_rebuilt_and_said_to_be(tmp_path):
+    """Runs made before T30 kept only the pack's hash and the size, and
+    `render` is deterministic, so the page rebuilds the prompt -- and says so,
+    because the knowledge block of the day cannot be rebuilt."""
+    run = a_run(tmp_path)
+    calls = [json.loads(line) for line
+             in (run / agent.MODEL_CALL_LOG).read_text().splitlines() if line.strip()]
+    calls[0]['prompt_pack'] = 'play-1'
+    calls[0]['prompt_pack_sha256'] = 'x' * 64
+    (run / agent.MODEL_CALL_LOG).write_text(''.join(json.dumps(c) + '\n' for c in calls))
+    text = report.write(run).read_text()
+    assert 'rebuilt from the play-1 pack' in text
+    # The pack moved, so the page refuses to pretend it is the same prompt.
+    assert 'CHANGED since this run' in text
+    assert 'knowledge block of the day is not rebuildable' in text
+
+
+def test_a_call_with_neither_says_so(tmp_path):
+    run = a_run(tmp_path)
+    calls = [json.loads(line) for line
+             in (run / agent.MODEL_CALL_LOG).read_text().splitlines() if line.strip()]
+    for call in calls:
+        call.pop('prompt_pack', None)
+    (run / agent.MODEL_CALL_LOG).write_text(''.join(json.dumps(c) + '\n' for c in calls))
+    assert 'not rebuildable' in report.write(run).read_text()
 
 
 def test_the_thinking_and_the_failures_are_on_the_page(tmp_path):

@@ -489,11 +489,24 @@ and it must need no model and no key.
 
 **Built**, 2026-11-09: `src/borg_agent/report.py` and
 `python -m borg_agent report --run <dir> [--output …] [--verdict verify.json]`.
-One file, 30 KB for an 83-decision run, with **nothing fetched** — a test
-refuses `src=`, `href=`, `http` and `<script` in the output, which is what
-"self-contained" has to mean. The page escapes everything it prints (a test
-puts a `<script>` in a game message). Without a verdict it says the run was
-**not verified here** rather than implying it was.
+One file, with **nothing fetched** — a test refuses `src=`, `href=`, `http` and
+`<script` in the output, which is what "self-contained" has to mean. The page
+escapes everything it prints (a test puts a `<script>` in a game message).
+Without a verdict it says the run was **not verified here** rather than
+implying it was.
+
+**Every call shows what was asked and what came back** (the owner, on reading
+the first page: *"I need to see prompt and out as well"*). The reply and the
+thinking were already there; the prompt was not stored at all, only its pack
+hash and its size. So the call log keeps it now, and for a run made before
+that the page **rebuilds** it from the pack the call names and the observation
+it was asked about, saying which it did — and refusing to pretend when the
+pack has moved since, as it has (T29 changed the generated primitive list, so
+the hash differs). The knowledge block of the day is not rebuildable, and the
+page says that too. A page is about 110 KB with the prompts in it.
+
+A decision the mind was not asked about says **which primitive was still
+running** rather than leaving the row blank: 75 of the Mage run's 83 rows.
 
 Left undone on purpose: `view` still prints the sparse `borg_what_text` screen
 rather than the observation's own map; an index page over several runs, for a

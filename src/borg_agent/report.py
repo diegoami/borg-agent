@@ -63,7 +63,12 @@ def timeline(parts):
     """One row per decision: what was seen, what was chosen, what stopped."""
     chosen = {}
     stopped = {}
+    # The journal's order inside one decision matters: the executor may stop a
+    # primitive and be given another in the same breath (its PATIENCE loop), so
+    # what is still running afterwards is whichever came last.
+    sequence = {}
     for entry in parts['journal']:
+        sequence.setdefault(entry['decision'], []).append(entry)
         if entry.get('kind') == 'choice':
             chosen[entry['decision']] = entry
         elif entry.get('kind') == 'stop':
@@ -72,11 +77,15 @@ def timeline(parts):
     for call in parts['calls']:
         calls.setdefault(call.get('decision'), []).append(call)
     rows = []
+    running = None
     for index, observation in enumerate(parts['observations']):
         action = parts['actions'][index] if index < len(parts['actions']) else None
         character = observation.get('character') or {}
         choice = chosen.get(observation['decision'])
         rows.append({
+            # A decision the mind was not asked about is not a gap: a primitive
+            # was still running, and saying which is what makes the table read.
+            'running': running if not choice else None,
             'decision': observation['decision'],
             'turn': observation['turn'],
             'depth': character.get('depth'),
@@ -97,6 +106,11 @@ def timeline(parts):
             'calls': len(calls.get(observation['decision'], ())),
             'observation': observation,
         })
+        # What carries into the next row: the entries of this decision, in the
+        # order they happened. A primitive that stopped here was running during
+        # this decision, so the row above keeps it.
+        for entry in sequence.get(observation['decision'], ()):
+            running = entry.get('chose') if entry.get('kind') == 'choice' else None
     return rows
 
 
@@ -168,6 +182,36 @@ def map_moments(parts):
             wanted.setdefault(row['decision'], 'a model call')
     chosen = [row for row in rows if row['decision'] in wanted][:MAPS]
     return [(row, wanted[row['decision']]) for row in chosen]
+
+
+def prompt_of(call, observations):
+    """The prompt for a call, and how the page came by it.
+
+    A run made since T30 has it in the call log. An older one does not, and
+    `render` is deterministic, so the page rebuilds it from the pack the call
+    names and the observation it was asked about — and says that is what it
+    did, because the knowledge block of the day cannot be rebuilt: the store
+    has moved on.
+    """
+    stored = call.get('prompt')
+    if stored:
+        return stored, 'as it was sent'
+    version = call.get('prompt_pack')
+    observation = observations.get(call.get('decision'))
+    if not version or not observation:
+        return None, 'not stored with this run, and not rebuildable'
+    try:
+        from . import prompts
+
+        pack = prompts.load_pack(version)
+        messages = prompts.render(pack, observation)
+    except Exception as problem:                       # a pack that is gone, a pin away
+        return None, f'not stored with this run; rebuilding it failed ({problem})'
+    note = (f'rebuilt from the {version} pack and this observation'
+            if pack.sha256 == call.get('prompt_pack_sha256')
+            else f'rebuilt from the {version} pack, which has CHANGED since this run '
+                 f'({call.get("prompt_pack_sha256", "")[:12]} then, {pack.sha256[:12]} now)')
+    return messages, note + '; the knowledge block of the day is not rebuildable'
 
 
 # --- the page ---------------------------------------------------------------
@@ -277,7 +321,7 @@ def render(parts):
     name = result.get('run_id') or parts['run'].name
     out = [f'<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
            f'<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-           f'<title>{e(name)} — borg-agent run</title>\n<style>{STYLE}</style>\n</head>\n'
+           f'<title>{e(name)} run report</title>\n<style>{STYLE}</style>\n</head>\n'
            f'<body>\n<h1>{e(name)}</h1>']
     out.append(f'<p class="sub">{e(result.get("character") or "")} · '
                f'{e(result.get("outcome"))} · {len(rows)} decisions · '
@@ -318,7 +362,12 @@ def render(parts):
                '<th class="n">hp</th><th class="n">sp</th><th>chose</th><th>acted</th>'
                '<th>stopped</th><th>in sight</th><th>messages</th></tr>')
     for row in rows:
-        chose = (f'<span class="chose">{e(row["chose"])}</span>' if row['chose'] else '')
+        if row['chose']:
+            chose = f'<span class="chose">{e(row["chose"])}</span>'
+        elif row['running']:
+            chose = f'<span class="msg">{e(row["running"])}, still running</span>'
+        else:
+            chose = ''
         if row['reason']:
             chose += f'<br><span class="msg">{e(row["reason"])}</span>'
         messages = '<br>'.join(e(m) for m in row['messages'][:4])
@@ -334,18 +383,33 @@ def render(parts):
     out.append('</table>')
 
     if parts['calls']:
-        out.append('<h2>Model calls</h2>\n<table>')
+        observations = {o['decision']: o for o in parts['observations']}
+        out.append('<h2>Model calls</h2>')
+        out.append('<p class="msg">Every call carries what was asked and what came back: '
+                   'the prompt, the model\'s own thinking, and the reply it was parsed '
+                   'from.</p>\n<table>')
         out.append('<tr><th class="n">dec</th><th class="n">turn</th><th class="n">s</th>'
-                   '<th class="n">prompt</th><th class="n">out</th><th>reason, and what it '
-                   'was thinking</th></tr>')
+                   '<th class="n">prompt<br>tokens</th><th class="n">out<br>tokens</th>'
+                   '<th>asked, thought, answered</th></tr>')
         for call in parts['calls']:
-            inner = []
+            inner = [f'<p>{e(call.get("reason"))}</p>']
+            prompt, how = prompt_of(call, observations)
+            if prompt:
+                inner.append(f'<details><summary>prompt — {e(how)}</summary>'
+                             + ''.join(f'<p class="msg">{e(message["role"])}</p>'
+                                       f'<pre>{e(message["content"])}</pre>'
+                                       for message in prompt)
+                             + '</details>')
+            else:
+                inner.append(f'<p class="msg">prompt: {e(how)}</p>')
             if call.get('reasoning'):
-                inner.append(f'<details><summary>thinking '
-                             f'({e(call.get("reasoning_chars"))} characters)</summary>'
+                inner.append(f'<details><summary>thinking — '
+                             f'{e(call.get("reasoning_chars"))} characters</summary>'
                              f'<pre>{e(call["reasoning"])}</pre></details>')
-            inner.append(f'<details><summary>reply</summary><pre>{e(call.get("reply"))}'
-                         f'</pre></details>')
+            else:
+                inner.append('<p class="msg">thinking: none sent by this provider</p>')
+            inner.append(f'<details><summary>reply — {e(len(call.get("reply") or ""))} '
+                         f'characters</summary><pre>{e(call.get("reply"))}</pre></details>')
             if call.get('parse_problem'):
                 inner.append(f'<p class="bad">{e(call["parse_problem"])}</p>')
             out.append(
@@ -354,7 +418,7 @@ def render(parts):
                 f'<td class="n">{e(round(call.get("seconds") or 0, 1))}</td>'
                 f'<td class="n">{e(call.get("prompt_tokens"))}</td>'
                 f'<td class="n">{e(call.get("completion_tokens"))}</td>'
-                f'<td>{e(call.get("reason"))}{"".join(inner)}</td></tr>')
+                f'<td>{"".join(inner)}</td></tr>')
         out.append('</table>')
 
     out.append('<h2>The map, at a few moments</h2>\n<div class="maps">')

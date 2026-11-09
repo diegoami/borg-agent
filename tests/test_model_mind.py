@@ -314,6 +314,17 @@ def test_a_model_that_sends_no_thinking_logs_none(tmp_path):
     assert entry['reasoning'] is None and entry['reasoning_chars'] == 0
 
 
+def test_the_prompt_is_logged_with_the_call(tmp_path):
+    """T30: a person reading a run wants to see what the model was asked."""
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    mind = api(answered(json.dumps(ACTION)), log=log)
+    mind.act(observation())
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert [message['role'] for message in entry['prompt']] == ['system', 'user']
+    assert 'primitive' in entry['prompt'][0]['content']
+    assert entry['prompt_chars'] == sum(len(m['content']) for m in entry['prompt'])
+
+
 def test_a_credential_in_the_thinking_is_not_logged(tmp_path):
     log = model_mind.CallLog(tmp_path / 'calls.jsonl')
     mind = api(answered(json.dumps(ACTION),
