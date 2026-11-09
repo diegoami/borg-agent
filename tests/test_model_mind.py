@@ -431,6 +431,28 @@ def test_the_external_mind_asks_in_a_file_and_reads_the_answer(tmp_path):
     assert asked['answer_to'] == str(answer)
 
 
+def test_the_external_mind_asks_again_rather_than_rereading_one_answer(tmp_path):
+    """Two asks at the same decision are two questions and two answers.
+
+    The executor asks again, at the same observation, whenever a primitive
+    stops without acting. Numbering the files by `observation['decision']`
+    left the first answer in place, so the same primitive came back until the
+    run gave up with "no primitive could act" - which is what the first run
+    driven from outside did.
+    """
+    first, second = dict(ACTION, reason='one'), dict(ACTION, reason='two')
+    for number, action in ((0, first), (1, second)):
+        (tmp_path / model_mind.ANSWER_PATTERN.format(decision=number)).write_text(
+            json.dumps(action))
+    mind = model_mind.ExternalMind(tmp_path, pack=prompts.load_pack('play-1'),
+                                   timeout=1, poll=0.01, log=lambda *a: None)
+    same = observation()
+    assert mind.act(same) == first
+    assert mind.act(same) == second
+    assert json.loads((tmp_path / model_mind.QUESTION_PATTERN.format(
+        decision=1)).read_text())['ask'] == 1
+
+
 def test_the_external_mind_gives_up_rather_than_waiting_for_ever(tmp_path):
     mind = model_mind.ExternalMind(tmp_path, pack=prompts.load_pack('play-1'),
                                    timeout=0.05, poll=0.01, log=lambda *a: None)

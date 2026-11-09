@@ -63,7 +63,9 @@ def external_mind(args):
 
     directory = Path(args.external_dir or (RUNS / 'external'))
     print(f'write answers into {directory}')
-    return model_mind.ExternalMind(directory)
+    # Whatever answers from outside gets the same patience a model does: the
+    # mind's latency must never become an outcome (R1.3).
+    return model_mind.ExternalMind(directory, timeout=args.model_timeout)
 
 
 MINDS = {'scripted': mind_module.ScriptedMind,
@@ -79,9 +81,12 @@ def build_mind(args):
     """The mind a run was asked for."""
     if args.mind in CONFIGURED_MINDS:
         inner = CONFIGURED_MINDS[args.mind](args)
-        if args.mind == 'api' and not args.no_executor:
-            # A model chooses primitives; the executor runs them (R2).
-            return executor_module.ExecutingMind(inner, name=f'api:{args.mind}')
+        if not args.no_executor:
+            # Whoever answers - a model, or a session at the question files -
+            # chooses primitives; the executor runs them (R2). Both minds are
+            # given the same prompt, and that prompt describes primitives, so
+            # both need the executor in front of the bridge.
+            return executor_module.ExecutingMind(inner, name=f'{args.mind}:primitives')
         return inner
     return MINDS[args.mind]()
 

@@ -212,10 +212,15 @@ def reasoning_of(message):
 class ExternalMind:
     """A person, or another session, answering from a file.
 
-    Each decision is written to `question-<n>.json` with the prompt the model
-    would have been given, and the answer is read from `answer-<n>.json`. For
+    Each ask is written to `question-<n>.json` with the prompt the model would
+    have been given, and the answer is read from `answer-<n>.json`. For
     debugging a few decisions by hand (R2), and for driving the agent from
     somewhere this repository cannot call.
+
+    `n` counts the **asks**, not the game's decisions: the executor asks again
+    at the same decision whenever a primitive stops without acting, and
+    numbering by the observation left the stale answer in place, so the same
+    primitive was handed back until the run gave up.
     """
 
     name = 'external'
@@ -229,12 +234,15 @@ class ExternalMind:
         self.poll = poll
         self.log = log
         self.decisions = 0
+        self.asked = 0
 
     def act(self, observation):
-        decision = observation['decision']
-        question = self.directory / QUESTION_PATTERN.format(decision=decision)
-        answer = self.directory / ANSWER_PATTERN.format(decision=decision)
+        number = self.asked
+        self.asked += 1
+        question = self.directory / QUESTION_PATTERN.format(decision=number)
+        answer = self.directory / ANSWER_PATTERN.format(decision=number)
         question.write_text(json.dumps({
+            'ask': number,
             'observation': observation,
             'prompt': prompts.render(self.pack, observation),
             'answer_to': str(answer),
