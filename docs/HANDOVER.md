@@ -6,8 +6,9 @@ work and updates "Current state".
 ## Current state
 
 *Written on 2026-11-09, with milestone 3 reviewed and merged, its ten findings
-closed in T23, and **mode C running for any character**: two probes, two
-answers, and they disagree in the way that matters.*
+closed in T23, **mode C running for any character** — two probes, two answers,
+and they disagree in the way that matters — and the zoo's import contract
+written.*
 
 ### Where the work stands
 
@@ -185,6 +186,36 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T25 and T11, the call log and the zoo's contract
+
+Branches `task/T25-consolidation-call-log` and `task/T11-zoo-import`.
+
+**T25 is the one worth remembering.** Running `verify` on the first real model
+run, to measure the replay cost for T11, gave `verified: false` — and it was
+right: mode D had written its own model calls into the play's
+`model-calls.jsonl`, after the record published that file's hash and count. Any
+consolidated run could never verify again. The defect was always there; T23's
+finding 2 is what made it visible, which is the argument for that finding in
+one line. Mode D writes `consolidate-calls.jsonl` now.
+
+The run directory keeps its polluted log. **Editing a run directory to make a
+check pass is the one thing that must never be done** — the mismatch is the
+truth about what happened, and a fresh model run replaces it as the example.
+
+**T11** is `docs/ZOO-IMPORT.md`, written in the shape the zoo already uses for
+Mandos. Facts in it the next session should not re-derive:
+- an agent run **pairs with C runs by seed** (same engine, same pin, same
+  recipe), unlike Mandos, where a Neo seed is a different game;
+- the import bundle is **three files** — the record, `actions.jsonl`,
+  `state-hashes.txt`. Everything else stays here, addressed by hash;
+- a replay costs **0.3 s** for a 1,000-turn, 51-decision run, and needs no
+  model and no key;
+- a test keeps the mapping table honest against the zoo's own `summarise()` at
+  the pin, because drift in someone else's repository is invisible from here;
+- **what we owe**: `verify` reads a run *directory*, so a bundle-only mode is
+  ours to add before the zoo's PR. The document says so rather than letting
+  the zoo work around it.
 
 ## 2026-11-09: T24, birth by race and class
 

@@ -85,6 +85,34 @@ def test_mode_c_comes_before_the_trial():
     assert 'D11' in (ROOT / 'docs/REQUIREMENTS.md').read_text()
 
 
+def test_the_zoo_contract_maps_onto_the_zoos_own_cell():
+    """T11: every cell field docs/ZOO-IMPORT.md promises to fill is a field the
+    zoo's own `summarise` writes, at the pin we read it at.
+
+    The contract is for someone else's repository, so drift there is invisible
+    from here unless something checks it.
+    """
+    import re
+
+    from borg_agent import pins
+
+    harness = pins.show('borg-zoo', 'zoo/harness.py').decode()
+    cell = harness[harness.index("'schema': 'borg-zoo/cell@1'"):]
+    cell = cell[:cell.index('\n    }')]
+    theirs = set(re.findall(r"'([a-z_0-9]+)':", cell))
+    # The zoo spreads the cell's own keys in with `**cell`, which names the
+    # specimen, the seed and the profile; those are the suite's, not summarise's.
+    theirs |= {'seed', 'specimen', 'profile', 'play_sha256', 'trace_sha256',
+               'binary_sha256', 'config_sha256', 'profile_sha256', 'runner_sha256'}
+
+    contract = (ROOT / 'docs/ZOO-IMPORT.md').read_text()
+    table = contract[contract.index('## Mapping a record onto'):]
+    table = table[:table.index('\n## ')]
+    promised = set(re.findall(r'^\| `([a-z_0-9]+)`', table, re.M))
+    assert promised, 'the mapping table has no cell fields'
+    assert promised <= theirs, sorted(promised - theirs)
+
+
 def test_local_links_resolve():
     for doc in [ROOT / 'README.md', ROOT / 'AGENTS.md', ROOT / 'RULES.md', ROOT / 'PLAN.md',
                 *sorted((ROOT / 'docs').glob('*.md'))]:
