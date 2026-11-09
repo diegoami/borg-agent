@@ -26,9 +26,13 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 
 ## Status
 
-Initialized on 2026-11-08. T01 builds the pinned game headless and plays it
-with the stock Borg; see [building and playing](docs/BUILD-AND-PLAY.md). The
-bridge that gives the game's input to an agent (T03) is not written yet.
+Milestones 1 and 2 are done and reviewed (2026-11-09). An agent plays the
+pinned C game through the Borg's own connection, choosing between the eight
+executor primitives; every run is recorded, replays exactly without the mind,
+and can be branched at a turn. **No model has played yet** — that is milestone
+3 (T06), with T07's knowledge store and T08's post-mortems behind it.
+[PLAN.md](PLAN.md) has the milestones and [the handover](docs/HANDOVER.md)
+what the next session needs.
 
 ## Related repositories
 
