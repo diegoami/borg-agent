@@ -25,6 +25,14 @@ def api_mind(args):
     if missing:
         raise models_module.ConfigurationError(
             f'the play job needs ${missing[0]}, which is not set')
+    # R2.3: every run has a budget. With both flags unset the only ceilings
+    # were the decision cap and the wall clock, which in tokens is enormous --
+    # so the ceiling is said out loud, one way or the other (review finding 9).
+    if args.budget_calls is None and args.budget_tokens is None \
+            and not getattr(args, 'no_budget', False):
+        raise models_module.ConfigurationError(
+            'an api run needs a budget (R2.3): pass --budget-calls, --budget-tokens, or '
+            '--no-budget to run without a ceiling on purpose')
     pack = prompts.load_pack(args.pack)
     if pack.job != 'play':
         raise prompts.PromptError(f'the pack {pack.version!r} is for the {pack.job} job')
@@ -365,6 +373,8 @@ def main(argv=None):
                        help='stop after this many model calls; the outcome is budget_cap (R2.3)')
         p.add_argument('--budget-tokens', type=int, default=None,
                        help='stop after this many tokens; the outcome is budget_cap')
+        p.add_argument('--no-budget', action='store_true',
+                       help='run an api mind with no ceiling at all; say it deliberately')
         p.add_argument('--external-dir', type=Path, help='where the external mind reads answers')
         p.add_argument('--no-executor', action='store_true',
                        help='give the model the game directly, without the primitives')
@@ -406,6 +416,7 @@ def main(argv=None):
     brancher.add_argument('--profile')
     brancher.add_argument('--pack', default='play-1')
     brancher.add_argument('--budget-calls', type=int, default=None)
+    brancher.add_argument('--no-budget', action='store_true')
     brancher.add_argument('--budget-tokens', type=int, default=None)
     brancher.add_argument('--external-dir', type=Path)
     brancher.add_argument('--no-executor', action='store_true')
@@ -443,6 +454,7 @@ def main(argv=None):
     mortem.add_argument('--profile')
     mortem.add_argument('--pack', default='play-1')
     mortem.add_argument('--budget-calls', type=int, default=None)
+    mortem.add_argument('--no-budget', action='store_true')
     mortem.add_argument('--budget-tokens', type=int, default=None)
     mortem.add_argument('--external-dir', type=Path)
     mortem.add_argument('--no-executor', action='store_true')

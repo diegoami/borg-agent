@@ -45,6 +45,25 @@ def test_the_packs_hash_covers_its_templates_and_extracts():
     assert pack.record() == {'version': 'play-1', 'sha256': pack.sha256}
 
 
+def test_the_packs_hash_covers_the_generated_primitives(monkeypatch):
+    """Milestone 3 review, finding 8.
+
+    `primitive_help()` is generated from the executor and goes into every
+    system message, but it was generated at render time and left out of the
+    hash -- so two runs with the same pack sha could have been told different
+    things about the primitives.
+    """
+    pack = prompts.load_pack('play-1')
+    assert pack.primitives and 'walk_to' in pack.primitives
+    assert pack.primitives in prompts.render(pack, observation())[0]['content']
+
+    monkeypatch.setattr(prompts, 'primitive_help',
+                        lambda: 'one primitive: wave_hands (no arguments)')
+    changed = prompts.load_pack('play-1')
+    assert changed.sha256 != pack.sha256
+    assert 'wave_hands' in prompts.render(changed, observation())[0]['content']
+
+
 def test_the_provenance_names_every_extract():
     provenance = prompts.load_pack('play-1').provenance()
     assert provenance and all(

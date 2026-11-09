@@ -165,6 +165,34 @@ def test_a_missing_key_variable_fails_naming_the_variable_not_its_value(tmp_path
     assert loaded.missing_keys(['play'], environ={'HOUSE_KEY': 'x'}) == []
 
 
+def test_a_key_pasted_as_a_value_is_not_quoted_back(tmp_path):
+    """The review's smaller notes.
+
+    `key_fields` refuses a field *named* like a key before any validator runs,
+    but a key pasted into `model:` reaches the validator, whose message quotes
+    what it saw. Nothing about a misconfiguration is worth printing a
+    credential for.
+    """
+    secret = 'sk-abcdefghijklmnopqrstuvwxyz012345'
+
+    def paste_a_key(data):
+        data['profiles']['house']['play']['model'] = {'oops': secret}
+
+    with pytest.raises(models.ConfigurationError) as raised:
+        models.load(configured(tmp_path, change=paste_a_key), environ={})
+    assert secret not in str(raised.value)
+    assert '[removed]' in str(raised.value)
+
+
+def test_a_file_that_is_not_yaml_says_so_without_quoting_the_line(tmp_path):
+    (tmp_path / models.MODELS_FILE).write_text(
+        'default_profile: house\nproviders: [unclosed\n  key: sk-abcdefghijklmnopqrst012345\n')
+    with pytest.raises(models.ConfigurationError) as raised:
+        models.load(tmp_path, environ={})
+    assert 'not valid YAML' in str(raised.value)
+    assert 'sk-abcdefghijklmnopqrst012345' not in str(raised.value)
+
+
 def test_the_key_is_read_from_the_environment_when_it_is_needed(tmp_path):
     loaded = models.load(configured(tmp_path), environ={})
     assert loaded['play'].key(environ={'HOUSE_KEY': 'secret'}) == 'secret'

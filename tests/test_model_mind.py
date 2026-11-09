@@ -211,10 +211,28 @@ def test_the_cli_hands_the_mind_a_retriever_not_a_snapshot(tmp_path, monkeypatch
 
     monkeypatch.setattr(model_mind, 'ApiMind', Caught)
     arguments = argparse.Namespace(
-        profile='alibaba', pack='play-1', no_knowledge=False, budget_calls=None,
-        budget_tokens=None, model_timeout=240)
+        profile='alibaba', pack='play-1', no_knowledge=False, budget_calls=50,
+        budget_tokens=None, model_timeout=240, no_budget=False)
     cli.api_mind(arguments)
     assert callable(captured['knowledge']), 'the mind was given a snapshot, not a retriever'
+
+
+def test_an_api_run_without_a_budget_is_refused(monkeypatch):
+    """Milestone 3 review, finding 9: R2.3 says every run has a budget."""
+    from borg_agent import cli, models as models_module
+
+    monkeypatch.setenv('ALIBABA_TOKEN_PLAN_API_KEY', 'sk-not-real')
+    monkeypatch.delenv('BORG_AGENT_PROFILE', raising=False)
+    arguments = argparse.Namespace(
+        profile='alibaba', pack='play-1', no_knowledge=True, budget_calls=None,
+        budget_tokens=None, model_timeout=240, no_budget=False)
+    with pytest.raises(models_module.ConfigurationError, match='needs a budget'):
+        cli.api_mind(arguments)
+    # And it can be said deliberately.
+    captured = {}
+    monkeypatch.setattr(model_mind, 'ApiMind', lambda *a, **k: captured.update(k))
+    cli.api_mind(argparse.Namespace(**{**vars(arguments), 'no_budget': True}))
+    assert captured['budget'].allowed == {'model_calls': None, 'tokens': None}
 
 
 # --- the call log (R2.1) ----------------------------------------------------

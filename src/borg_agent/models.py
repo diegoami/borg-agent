@@ -137,7 +137,22 @@ def _validate(document, schema, where):
     errors = sorted(Draft202012Validator(schema).iter_errors(document), key=str)
     if errors:
         raise ConfigurationError(f'{where}: ' + '; '.join(
-            f'{list(e.absolute_path)}: {e.message}' for e in errors[:4]))
+            f'{list(e.absolute_path)}: {without_credentials(e.message)}' for e in errors[:4]))
+
+
+def without_credentials(message):
+    """A message that quotes a value, with anything key-shaped taken out.
+
+    `key_fields` refuses a field *named* like a key before any validator runs,
+    but a key pasted as a value (into `model:`, say) reaches the validator,
+    whose message quotes what it saw. Nothing about a misconfiguration is worth
+    printing a credential for (review's smaller notes).
+    """
+    import re
+
+    from .record import SECRET_VALUE
+
+    return re.sub(SECRET_VALUE, '[removed]', str(message))
 
 
 def key_fields(document, path=''):
@@ -163,7 +178,13 @@ def _read(path):
     import yaml
 
     text = Path(path).read_text()
-    data = yaml.safe_load(text)
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as problem:
+        # The parser quotes the line it choked on, which may be the line a key
+        # was pasted into (review's smaller notes).
+        raise ConfigurationError(f'{Path(path).name} is not valid YAML: '
+                                 f'{without_credentials(problem)[:300]}') from None
     if not isinstance(data, dict):
         raise ConfigurationError(f'{Path(path).name}: expected a mapping at the top level')
     return data, hashlib.sha256(text.encode()).hexdigest()

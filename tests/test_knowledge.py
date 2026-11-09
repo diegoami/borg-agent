@@ -326,6 +326,21 @@ def test_a_claim_the_store_refuses_is_recorded_not_hidden(tmp_path):
     assert 'statement' in result['refused'][0]['why']
 
 
+def test_a_reply_of_the_wrong_shape_is_refused_not_a_crash(tmp_path):
+    """The review's smaller notes: `["a claim"]` is valid JSON and not a claim.
+
+    It raised AttributeError inside `anchor`, which ended the consolidation
+    run instead of refusing the line.
+    """
+    run = a_run(tmp_path)
+    kept = store(tmp_path)
+    result = consolidate.consolidate(
+        run, CHOICE, store=kept, pack=prompts.load_pack('consolidate-1'),
+        transport=replying(json.dumps(['a claim', 42])), log=lambda *a: None)
+    assert result['added'] == []
+    assert len(result['refused']) == 2 and all(r['why'] for r in result['refused'])
+
+
 def test_a_model_that_has_nothing_to_say_is_not_a_failure(tmp_path):
     run = a_run(tmp_path)
     kept = store(tmp_path)
