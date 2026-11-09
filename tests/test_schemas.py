@@ -116,10 +116,11 @@ def test_the_claim_follows_the_lifecycle_of_r4():
     # and a 'static:' basis must name its reference.
     assert set(claim['properties']['basis']['properties']['kind']['enum']) == {
         'manual', 'observed', 'quantified', 'intervened', 'static:game-source',
-        'static:borg-source', 'static:borg-spec', 'static:deaths', 'static:issue'}
+        'static:borg-source', 'static:borg-spec', 'static:deaths', 'static:issue',
+        'static:strategy-manual'}
     assert set(claim['properties']['sources']['items']['enum']) == {
         'manual', 'in-game', 'own-play', 'knowledge-base', 'game-source',
-        'borg-source', 'borg-spec', 'deaths', 'issue', 'zoo-results'}
+        'borg-source', 'borg-spec', 'deaths', 'issue', 'zoo-results', 'strategy-manual'}
     for required in ('evidence', 'confidence', 'phase', 'sources', 'engine'):
         assert required in claim['required']
     assert claim['properties']['evidence']['minItems'] == 1
