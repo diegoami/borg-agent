@@ -31,7 +31,7 @@ def observation(decision=0, turn=1):
     }
 
 
-def answered(*replies, usage=None):
+def answered(*replies, usage=None, reasoning=None, reasoning_field='reasoning_content'):
     """A transport that gives these replies in order."""
     queue = list(replies)
     calls = []
@@ -39,7 +39,10 @@ def answered(*replies, usage=None):
     def transport(messages):
         calls.append(messages)
         reply = queue.pop(0) if queue else ''
-        return {'choices': [{'message': {'content': reply}}],
+        message = {'content': reply}
+        if reasoning is not None:
+            message[reasoning_field] = reasoning
+        return {'choices': [{'message': message}],
                 'usage': usage or {'prompt_tokens': 100, 'completion_tokens': 20}}
 
     transport.calls = calls
@@ -269,6 +272,56 @@ def test_a_reply_that_looks_like_a_credential_is_not_logged(tmp_path):
     text = (tmp_path / 'calls.jsonl').read_text()
     assert 'sk-abcdefghijklmnop' not in text
     assert 'looked like a credential' in text
+
+
+def test_the_models_thinking_is_kept(tmp_path):
+    """T27. A thinking model puts its thinking beside the answer, not in it: the
+    first Mage run billed 3,781 completion tokens for a 270-character reply and
+    kept none of the rest.
+    """
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    thinking = 'The lizard is adjacent and weak. A level-1 Mage has 10 hit points, so ...'
+    mind = api(answered(json.dumps(ACTION), reasoning=thinking), log=log)
+    mind.act(observation())
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert entry['reasoning'] == thinking
+    assert entry['reasoning_chars'] == len(thinking)
+
+
+@pytest.mark.parametrize('field', model_mind.REASONING_FIELDS)
+def test_whichever_field_the_provider_uses(tmp_path, field):
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    mind = api(answered(json.dumps(ACTION), reasoning='because', reasoning_field=field),
+               log=log)
+    mind.act(observation())
+    assert json.loads((tmp_path / 'calls.jsonl').read_text())['reasoning'] == 'because'
+
+
+def test_thinking_in_parts_is_kept_as_it_came(tmp_path):
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    mind = api(answered(json.dumps(ACTION), reasoning=[{'text': 'first'}, {'text': 'then'}]),
+               log=log)
+    mind.act(observation())
+    kept = json.loads((tmp_path / 'calls.jsonl').read_text())['reasoning']
+    assert 'first' in kept and 'then' in kept
+
+
+def test_a_model_that_sends_no_thinking_logs_none(tmp_path):
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    mind = api(answered(json.dumps(ACTION)), log=log)
+    mind.act(observation())
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert entry['reasoning'] is None and entry['reasoning_chars'] == 0
+
+
+def test_a_credential_in_the_thinking_is_not_logged(tmp_path):
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    mind = api(answered(json.dumps(ACTION),
+                        reasoning='I will use sk-abcdefghijklmnop1234 to be sure'), log=log)
+    mind.act(observation())
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert 'sk-abcdefghijklmnop1234' not in json.dumps(entry)
+    assert entry['reasoning'] == model_mind.REMOVED
 
 
 def test_a_credential_in_the_reason_is_not_logged_either(tmp_path):

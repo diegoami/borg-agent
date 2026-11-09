@@ -79,6 +79,9 @@ branch), `in review` (with the PR), `done` (merged).
 | T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | done (#43) |
 | T24 | Birth by race and class | 4 | T22 | yes, and it needs no model | done (#45) |
 | T25 | The consolidation keeps its own call log | 4 | T07, T23 | yes | done (#47) |
+| T26 | A real model run as a Mage, and --race/--class on the CLI | 4 | T24 | with a profile whose key variables are set | in progress (task/T26-model-run-as-a-mage) |
+| T27 | Keep the model's reasoning | 4 | T06 | yes | in review |
+| T28 | Ask by state, not by event (D12) | 4 | T06, T27 | yes | todo |
 
 ### T01. Build and play the pinned game headless
 
@@ -324,6 +327,39 @@ understates both sides; and a mode B prefix that outlives the wall limit is
 still classified `crash` rather than `harness_failure` — bounded, non-good, and
 left where the reviewer found it.
 
+### T26. A real model run as a Mage, and --race/--class on the CLI
+
+The owner, 2026-11-09: *"then let us try a model run"*.
+
+T24 gave the Python API a birth; this gives it to the command line
+(`--race`, `--class` on `play`, `determinism`, `agent`, `agent-determinism` and
+`post-mortem`), and then plays one.
+
+**The run** (`runs/mage-run`, record in [records/](records/)): `qwen3.8-flash`
+on the Alibaba Token Plan, a **Human Mage**, seed 2, cap 800, budget 20 calls:
+
+| | |
+|---|---|
+| outcome | `turn_cap` at turn 800, 83 decisions, **alive**, 9/10 hit points, 512 gold |
+| model calls | **9**, median 14.3 s, slowest 95 s, no parse failures |
+| tokens | 18,588 prompt, 15,192 completion |
+| wall | 314 s, nearly all of it the model |
+| afterwards | `verify` reproduced it: `scope: full`, all 83 state hashes equal, byte-identical trace, and the record still matched the run |
+
+What it chose: explore the town, take the stairs, explore, descend, explore,
+take the only known stairs back up, explore, **fight an adjacent rock lizard
+"but stop if HP drops below 8 or after a few attacks"**, explore. That fight is
+the first time a model used the executor's threshold arguments rather than just
+naming a primitive, **and it chose the numbers itself** — which is where
+thresholds belong (RULES 12).
+
+**The attempt before it failed**, and is worth keeping: 8 calls, up to ~5,000
+completion tokens each, then one call went past 240 s and the run ended
+`harness_failure` at turn 571. Same model, same day, same provider: 6 s to
+102 s per call. Latency is a thing T09 must measure rather than assume, and it
+is the argument for a per-call token ceiling, since the slow calls were the
+long-thinking ones.
+
 ### T25. The consolidation keeps its own call log
 
 Found while preparing T11, by running `verify` on the **first real model run**:
@@ -346,6 +382,76 @@ The first model run's own directory keeps its polluted log: it is evidence of
 what happened, and editing it to make a check pass is the one thing a run
 directory must never have done to it. A fresh model run replaces it as the
 example (see [records/](records/)).
+
+### T27. Keep the model's reasoning
+
+The owner, 2026-11-09, on being shown what a call log holds: *"of course add
+it"*.
+
+A thinking model does not put its thinking in the reply. The first Mage run
+billed **3,781 completion tokens for a 270-character answer** — the action and
+one line of reason — and the rest went into a field `ApiMind` never read.
+Providers put it under `reasoning_content`, `reasoning` or `thinking`; the call
+log now keeps whichever is there, as `reasoning`, with `reasoning_chars` beside
+it, redacted like every other field (so a credential in the thinking is removed
+too). Mode D keeps its own.
+
+Why it is worth the bytes: the run pays for those tokens either way, and they
+are the only account of **why** a choice was made beyond the one line the model
+writes into its action. T09 judges a consolidator by how many of its claims are
+false, and a post-mortem is meant to explain itself; both are much weaker when
+the reasoning was thrown away. The cost is size — about 15 KB a call rather
+than 300 bytes, so a 20,000-turn run is of the order of 3 MB — and R5 already
+keeps large logs out of git.
+
+### T28. Ask by state, not by event (D12)
+
+The owner, 2026-11-09: *"I think the surface should be different. Not by event,
+but by state. When fighting, when shopping (and deciding the shop to visit),
+when in panic"*.
+
+Today the mind is asked whenever a primitive **stops**, and it is asked the same
+question every time: one system message, the whole primitive menu, whatever
+claims the store has for the character. The stop reason is passed in as
+`last_stop`, which is an event, not a situation. That makes every prompt
+average-shaped: a fight and a shopping trip get the same instructions.
+
+**The change**: the agent decides which *state* it is in, and the state decides
+the question. A state has its own prompt template, its own allowed actions and
+its own knowledge filter, and the record names it on every call.
+
+The states, as proposed (the owner's three, plus the ones the requirements
+already name):
+
+| State | When | What it may choose | What it is asked |
+|---|---|---|---|
+| `prompt` | the game is waiting on a prompt or menu | `answer`, `escape`, a command | what the screen is asking, and nothing else |
+| `fighting` | a visible monster within the pack's fighting distance | `fight_nearest`, `flee`, `walk_to`, a command | this monster, its danger, the escape it has |
+| `panic` | the pack's panic condition: hit points low, or afraid, confused, blind, poisoned | `flee`, `take_stairs`, `read_unknown_scroll`, a command | how to survive the next few turns |
+| `shopping` | in a store | `shop_list` only | this shop's stock, the gold, what the character lacks |
+| `town` | depth 0, not in a store | `walk_to`, `shop_list`, `take_stairs` | **which shop to visit**, and when to go down |
+| `at_stairs` | standing on a staircase, nothing urgent | `take_stairs`, `explore_floor`, `rest_until_healed` | **readiness**: is this character ready to go deeper (R4's readiness area) |
+| `exploring` | the default in the dungeon | `explore_floor`, `walk_to`, `rest_until_healed`, `take_stairs` | where to go and what to avoid |
+
+Three things this has to get right:
+
+1. **The thresholds live in the pack, not in the executor.** "Hit points low"
+   is a judgement, and RULES 12 keeps judgements out of the plumbing. So the
+   state definitions — distances, fractions, which conditions count as panic —
+   are **data in the versioned prompt pack**, covered by its hash, so what
+   counted as panic in any run is always recoverable. The executor only reads
+   them.
+2. **The record names the state** on every call and journal entry, so T09 can
+   score a model per state ("which model fights best?") and a post-mortem can
+   say "it was in panic and chose to explore".
+3. **Smaller prompts.** Today every call carries the whole menu and every
+   applicable claim: 2,000 prompt tokens a call. A state-shaped prompt carries
+   what that state needs, which is the one change here that makes runs cheaper
+   as well as sharper.
+
+The Borg's own `borg-think-dungeon.c` is organised this way, and reading it is
+allowed (D8) — its structure is worth copying, its thresholds are not: those
+are what this repository exists to measure.
 
 ### T24. Birth by race and class
 
