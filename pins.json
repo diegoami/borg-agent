@@ -32,7 +32,7 @@
     "borg-rs": {
       "repository": "diegoami/borg-rs",
       "commit": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
-      "role": "The Rust Borg this repository's knowledge is for - the \"Borg reborn\" - at its milestone 7, which carries better-borg-c milestone 7 (impact v7). Note that the game pin is milestone 8, so the Rust side is one C milestone behind: a claim must say which it is about. 59 Borg modules under borg-rs/src/, no unsafe, and the same inkey_hack connection the bridge uses (borg-rs/src/borg.rs). A source for the playing agent (decision D8) and the material phase 3 reconciles against."
+      "role": "The Rust Borg this repository's knowledge is for - the \"Borg reborn\". Pinned at the commit that carries better-borg-c milestone 7 (impact v7); the owner is building milestone 8 as this is written, so expect to move this pin and say so in the handover. Nothing reads it yet: it is here so a claim can cite a fixed version (decision D8), and because borg-rs/src/borg.rs holds the same inkey_hack connection the bridge attaches to on the C side. A claim says which side of the port it is about, because the two are not always on the same milestone."
     }
   },
   "manual": {
