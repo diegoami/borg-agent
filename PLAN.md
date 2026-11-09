@@ -71,6 +71,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
 | T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
 | T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | done (#24) |
+| T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | in progress (task/T18-pin-borg-rs) |
 
 ### T01. Build and play the pinned game headless
 
@@ -305,6 +306,27 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T18. Pin the Rust remake (borg-rs milestone 7)
+
+The owner, 2026-11-09: borg-rs is at milestone 7. That is the Borg reborn this
+repository's knowledge is for, so it is pinned and readable like any other
+source (decision D8): `ce27f5ed`, "Impact v7: carry better-borg-c milestone 7".
+
+Why it belongs here:
+- **Phase 3 reconciles against it.** A recommendation the remake has already
+  taken is worth knowing as such, and a claim that contradicts it is worth
+  knowing even more. Pinning fixes which version a claim argued with.
+- **It has the same connection.** `borg-rs/src/borg.rs` holds the
+  `inkey_hack` callback the bridge attaches to on the C side, so a claim about
+  the connection carries over rather than being C-specific.
+- 59 Borg modules under `borg-rs/src/`, one per original `src/borg/<x>.c`,
+  with no `unsafe` outside the FFI boundary.
+
+**The two sides are one C milestone apart**: the game pin is better-borg-c
+milestone 8 (T17), while borg-rs carries milestone 7. A claim must say which
+it is about, and `pins.json`'s roles say so for both; a test checks that they
+keep saying it.
 
 ### T17. Pin better-borg-c milestone 8
 

@@ -32,6 +32,9 @@ bridge that gives the game's input to an agent (T03) is not written yet.
 
 ## Related repositories
 
+- [borg-rs](https://github.com/diegoami/borg-rs): the Rust Borg this
+  repository's knowledge is for — the "Borg reborn". Pinned at its milestone
+  7, and a source the agent may read (decision D8).
 - [borg-zoo](https://github.com/diegoami/borg-zoo): measures Borg versions on
   seed suites; it will import this agent's runs.
 - [better-borg-c](https://github.com/diegoami/better-borg-c): the C game and

@@ -24,6 +24,7 @@ the record says which it was.
 | the game source, including `lib/gamedata/` and `docs/hacking/` | the `better-borg-c` pin, or the `original` pin for the unmodified C Borg |
 | the Borg source and its documentation | the same pins (`src/borg/`, `docs/hacking/borg.rst`) |
 | the Borg specification | the `borg-spec` pin: `docs/c-borg/BORG_SPEC.md` in diegoami/neo-angband-tracker |
+| the Rust remake, as it stands | the `borg-rs` pin: 59 Borg modules under `borg-rs/src/`, its docs and its harness. This is the Borg reborn the knowledge is for, at its milestone 7 — which carries better-borg-c **milestone 7**, while the game pin is **milestone 8**, so a claim says which side it is about |
 | the recorded deaths | `docs/deaths/` at the `better-borg-c` pin (nine cases there; more on its `main`) |
 | the open issues of the related repositories | the trackers themselves; a claim records the issue number and the date it was read |
 | the zoo's results | the `borg-zoo` pin and its results branch |

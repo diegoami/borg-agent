@@ -28,6 +28,11 @@
       "commit": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
       "path": "docs/c-borg/BORG_SPEC.md",
       "role": "The Borg specification and the Tunable Borg Plan: what the remake is meant to be. A source for the playing agent (docs/SOURCES.md, decision D8) and for phases 2 and 3."
+    },
+    "borg-rs": {
+      "repository": "diegoami/borg-rs",
+      "commit": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
+      "role": "The Rust Borg this repository's knowledge is for - the \"Borg reborn\" - at its milestone 7, which carries better-borg-c milestone 7 (impact v7). Note that the game pin is milestone 8, so the Rust side is one C milestone behind: a claim must say which it is about. 59 Borg modules under borg-rs/src/, no unsafe, and the same inkey_hack connection the bridge uses (borg-rs/src/borg.rs). A source for the playing agent (decision D8) and the material phase 3 reconciles against."
     }
   },
   "manual": {
@@ -100,6 +105,14 @@
     },
     "issues": {
       "unpinned": "The open issues of diegoami/better-borg-c, diegoami/borg-zoo and diegoami/neo-angband-tracker. A claim records the issue number and the date it was read, since a tracker moves."
+    },
+    "rust_remake": {
+      "pin": "borg-rs",
+      "paths": [
+        "borg-rs/src/",
+        "docs/",
+        "harness/"
+      ]
     }
   }
 }

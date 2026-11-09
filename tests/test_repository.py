@@ -117,3 +117,28 @@ def test_the_manual_is_still_the_manual():
     manual = json.loads((ROOT / 'pins.json').read_text())['manual']
     assert all(p.startswith(('docs/', 'lib/help')) for p in manual['paths'])
     assert not any('hacking' in p or 'gamedata' in p for p in manual['paths'])
+
+
+def test_the_rust_remake_is_pinned_and_readable():
+    """The Borg reborn, at a fixed commit, so a claim can cite it."""
+    from borg_agent import pins
+
+    data = json.loads((ROOT / 'pins.json').read_text())
+    assert data['sources']['rust_remake']['pin'] == 'borg-rs'
+    # The same connection the bridge attaches to on the C side, so a claim
+    # about the connection carries over.
+    borg = pins.show('borg-rs', 'borg-rs/src/borg.rs').decode()
+    assert 'inkey_hack' in borg and 'generate_keypress' in borg
+    # 59 Borg modules were converted; there are more files than that with the
+    # headers, and never fewer.
+    modules = pins.git('borg-rs', 'ls-tree', '--name-only',
+                       data['pins']['borg-rs']['commit'] + ':borg-rs/src').decode().split()
+    assert len([m for m in modules if m.endswith('.rs')]) >= 59, len(modules)
+
+
+def test_the_pins_say_which_c_milestone_each_side_carries():
+    # The game is at better-borg-c milestone 8; the Rust remake carries
+    # milestone 7. A claim has to say which side it is about, so the roles do.
+    data = json.loads((ROOT / 'pins.json').read_text())
+    assert 'milestone 8' in data['pins']['better-borg-c']['role']
+    assert 'milestone 7' in data['pins']['borg-rs']['role']
