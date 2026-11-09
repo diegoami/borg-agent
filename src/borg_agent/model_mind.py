@@ -93,11 +93,12 @@ class CallLog:
         self.count = 0
 
     def write(self, entry):
-        # A reply is a model's words and may hold anything; it is scanned the
-        # way a record is, so a credential-shaped string never reaches a log.
-        leaks = [problem for problem in _secret_shapes(entry)]
-        if leaks:
-            entry = {**entry, 'reply': '[removed: the reply looked like a credential]'}
+        # A model's words may hold anything, and they reach more fields than
+        # the reply: `reason` and `note` are pulled out of the same answer. So
+        # every field that looks like a credential is removed, not only the
+        # reply (milestone 3 review, finding 3 -- redacting `reply` alone left
+        # a key in `reason` in the log).
+        entry = _redacted(entry)
         with self.path.open('a') as log:
             log.write(json.dumps(entry, sort_keys=True) + '\n')
         self.count += 1
@@ -108,12 +109,29 @@ class CallLog:
         return sha(self.path) if self.path.exists() else None
 
 
-def _secret_shapes(entry):
-    from .record import SECRET_VALUE
+REMOVED = '[removed: it looked like a credential]'
+
+
+def _redacted(value, name=''):
+    """The same document with every credential-shaped part replaced.
+
+    A log entry is scanned the way a record is (`record.secrets_in`), but a
+    record is refused while a log is written: the call has already happened and
+    the rest of the entry is the evidence R2.1 asks for. So each offending
+    part is replaced where it stands, and the entry says so.
+    """
+    from .record import SECRET_NAMES, SECRET_VALUE
     import re
 
-    text = json.dumps(entry)
-    return [match.group(0)[:8] for match in re.finditer(SECRET_VALUE, text)]
+    if name.lower() in SECRET_NAMES:
+        return REMOVED
+    if isinstance(value, dict):
+        return {key: _redacted(item, key) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_redacted(item) for item in value]
+    if isinstance(value, str) and re.search(SECRET_VALUE, value):
+        return REMOVED
+    return value
 
 
 class ChatClient:

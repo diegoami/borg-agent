@@ -179,6 +179,30 @@ def test_a_reply_that_looks_like_a_credential_is_not_logged(tmp_path):
     assert 'looked like a credential' in text
 
 
+def test_a_credential_in_the_reason_is_not_logged_either(tmp_path):
+    # Milestone 3 review, finding 3: `reason` and `note` come out of the same
+    # model answer as the reply, and only the reply was redacted.
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    action = {**ACTION, 'reason': 'my key is sk-abcdefghijklmnop1234 and I will walk',
+              'note': 'bearer abcdefghijklmnop is the token'}
+    mind = api(answered(json.dumps(action)), log=log)
+    mind.act(observation())
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert 'sk-abcdefghijklmnop1234' not in json.dumps(entry)
+    assert 'abcdefghijklmnop' not in json.dumps(entry)
+    assert entry['reason'] == model_mind.REMOVED
+    # The rest of the entry is still the evidence R2.1 asks for.
+    assert entry['model'] and entry['decision'] is not None
+
+
+def test_a_field_named_like_a_key_is_removed_from_the_log(tmp_path):
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    log.write({'reply': 'fine', 'tokens': 12, 'authorization': 'whatever it holds'})
+    entry = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert entry['authorization'] == model_mind.REMOVED
+    assert entry['tokens'] == 12 and entry['reply'] == 'fine'
+
+
 def test_a_parse_failure_is_logged_with_its_reason(tmp_path):
     log = model_mind.CallLog(tmp_path / 'calls.jsonl')
     mind = api(answered('nonsense', json.dumps(ACTION)), log=log)

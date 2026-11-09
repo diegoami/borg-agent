@@ -35,6 +35,39 @@ def test_a_claim_that_breaks_the_schema_is_refused(tmp_path):
         store(tmp_path).add(example(statement='two\nlines'))
 
 
+def test_a_claim_that_carries_a_credential_is_refused(tmp_path):
+    # Milestone 3 review, finding 4: claims are model words with a worse
+    # destination than a log -- git, the views, and every later prompt.
+    kept = store(tmp_path)
+    with pytest.raises(knowledge.KnowledgeError, match='RULES 16'):
+        kept.add(example(statement='the shop sells wine with sk-abcdefghijklmnop1234'))
+    with pytest.raises(knowledge.KnowledgeError, match='RULES 16'):
+        kept.add(example(confidence='seen once; bearer abcdefghijklmnop was in the log'))
+    assert kept.all() == []
+
+
+def test_superseding_does_not_leave_half_a_store(tmp_path, monkeypatch):
+    # The pointer is written as a rewrite of the whole file; a crash mid-write
+    # must not shorten the store (review note).
+    kept = store(tmp_path)
+    first = kept.add(example(id='green-naga-bite'))
+    before = kept.path.read_text()
+
+    def explode(*_args, **_kwargs):
+        raise OSError('disk full')
+
+    monkeypatch.setattr('os.replace', explode)
+    with pytest.raises(OSError):
+        kept.supersede(first['id'], example(id='green-naga-bite-again'))
+    # The append happened and survives; only the pointer is missing, which is
+    # recoverable. What must never happen is a truncated store or a leftover
+    # temporary file beside it.
+    assert kept.path.read_text().startswith(before)
+    assert [c['id'] for c in kept.all()] == ['green-naga-bite', 'green-naga-bite-again']
+    assert 'superseded_by' not in kept.all()[0]
+    assert not list(kept.path.parent.glob('claims.jsonl.*'))
+
+
 def test_a_claim_that_breaks_a_rule_a_schema_cannot_express_is_refused(tmp_path):
     # borg_agent.checks: more successes than trials (R4).
     with pytest.raises(knowledge.KnowledgeError, match='successes'):
