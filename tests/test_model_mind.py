@@ -246,3 +246,47 @@ def test_the_external_mind_gives_up_rather_than_waiting_for_ever(tmp_path):
                                    timeout=0.05, poll=0.01, log=lambda *a: None)
     with pytest.raises(signals.CannotAct, match='no answer'):
         mind.act(observation())
+
+
+# --- the executor in front of a model ---------------------------------------
+
+def test_the_executor_is_transparent_for_what_a_run_needs(tmp_path):
+    """A run asks the mind it was handed; with a model that is the wrapper.
+
+    The first real model run wrote no call log because `ExecutingMind` hid it,
+    so the wrapper now passes these through — and a chooser that calls no
+    model must still answer None rather than a sentinel.
+    """
+    from borg_agent import executor, mind as mind_module
+
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    model = api(answered(json.dumps(ACTION)), log=log)
+    wrapped = executor.ExecutingMind(model, name='api:test')
+    assert wrapped.call_log is log
+    assert wrapped.budget is model.budget
+    assert wrapped.parse_failures == 0
+    assert wrapped.mind_record['kind'] == 'api'
+    assert wrapped.kind == 'api'
+
+    # A scripted chooser keeps no log, and says so with None.
+    scripted = executor.ExecutingMind(mind_module.PrimitiveMind())
+    assert scripted.call_log is None
+    assert scripted.budget is None and scripted.parse_failures is None
+    assert scripted.mind_record is None
+    scripted.call_log = log            # ignored, because there is nowhere to put it
+    assert scripted.call_log is None
+
+
+def test_the_model_chooses_a_primitive_and_the_executor_runs_it(tmp_path):
+    from borg_agent import executor
+
+    log = model_mind.CallLog(tmp_path / 'calls.jsonl')
+    model = api(answered(json.dumps(ACTION)), log=log)
+    wrapped = executor.ExecutingMind(model, name='api:test')
+    # One model call, then the primitive answers the next decisions itself.
+    first = wrapped.act(observation(decision=0, turn=1))
+    assert first['kind'] == 'command'            # explore_floor became a step
+    assert log.count == 1
+    journal = wrapped.drain_journal()
+    assert journal[0]['chose'] == 'explore_floor'
+    assert journal[0]['answer']['reason'] == ACTION['reason']

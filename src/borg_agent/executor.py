@@ -465,10 +465,13 @@ class ExecutingMind:
     # transparent and the chooser answers.
     @property
     def call_log(self):
-        return getattr(self.chooser, 'call_log', 'absent')
+        """The chooser's call log, or None when it keeps none."""
+        return getattr(self.chooser, 'call_log', None)
 
     @call_log.setter
     def call_log(self, value):
+        # A chooser that does not call a model has nowhere to put one, and
+        # setting it here would only hide that.
         if hasattr(self.chooser, 'call_log'):
             self.chooser.call_log = value
 
