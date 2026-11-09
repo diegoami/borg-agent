@@ -42,7 +42,10 @@ def test_classify_uses_the_last_final_state():
 def test_the_birth_input_is_the_zoo_runners():
     assert play.BIRTH_INPUT.startswith('key space\nkey a\nkey a\nkey a\n')
     assert 'key C-z' in play.BIRTH_INPUT  # the Borg's own activation
-    assert play.BORG_CONFIG == 'borg_cheat_death = FALSE\nborg_respawn_winners = FALSE\n'
+    # RULES 14 and R1.6: no munchkin start, no lunal mode. The milestone 8 tree
+    # turns munchkin **on** by default, so saying nothing was saying yes (T34).
+    for setting in ('borg_cheat_death', 'borg_respawn_winners') + play.FORBIDDEN_MODES:
+        assert f'{setting} = FALSE' in play.BORG_CONFIG, setting
 
 
 # --- choosing the birth (T24) -----------------------------------------------
@@ -102,6 +105,31 @@ def test_both_the_race_and_the_class_or_neither():
         play.birth_input('Human', None)
 
 
+@pytest.mark.slow
+def test_a_run_is_really_not_in_munchkin_mode(tmp_path):
+    """T34's gate: what the trace says was in effect, not what we asked for.
+
+    Every Borg run made here before 2026-11-09 was a munchkin run -- the
+    settings file said nothing about it and the tree's default is on. The
+    trace's own effective-options line is the only honest check, which is why
+    the zoo checks its runs the same way and calls a mismatch `config_error`.
+    """
+    from borg_agent import build
+
+    out = build.prepare(log=lambda *a: None)
+    result = play.play(out, seed=3, cap=600, output=tmp_path / 'normal',
+                       lock=not os.environ.get('BORG_AGENT_NO_LOCK'), log=lambda *a: None)
+    assert result['outcome'] in play.GOOD_OUTCOMES
+    trace = (tmp_path / 'normal/trace.txt').read_text(errors='replace')
+    effective = next(line for line in trace.splitlines() if line.startswith('BORG_OPTIONS'))
+    for setting in play.FORBIDDEN_MODES:
+        assert f'{setting}=0' in effective, (setting, effective)
+    # And the Borg's own notes stop mentioning it: with munchkin on, this seed
+    # wrote "Power Diving", "Power Climb" and "Creating an object" hundreds of
+    # times.
+    assert 'Munchkin' not in trace
+
+
 def test_cli_rejects_an_impossible_seed_or_cap():
     for argv in (['play', '--seed', '-1', '--cap', '5000'],
                  ['play', '--seed', '7', '--cap', '1'],
@@ -116,7 +144,12 @@ def test_cli_rejects_an_impossible_seed_or_cap():
 # the game admits seasonal monsters on 24-26 December, so the same seed plays a
 # different game then (decision D9) — so the hash is asserted outside that
 # window only, while the determinism of the pair is asserted always.
-GOLDEN_SEED7_CAP5000 = 'a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844'
+# Seed 7, cap 5,000, the pinned build, **munchkin off** (T34). The previous
+# value, a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844, was
+# the same seed with `borg_munchkin_by_class` left at the tree's default, which
+# turns a munchkin start on for a Warrior: a different game, not a different
+# build. Re-measured 2026-11-09, and two runs are still identical to each other.
+GOLDEN_SEED7_CAP5000 = '835fb9722a6f46e84272cfd3e419da61a42740e74a7611a25553b2dfdb71c165'
 SEASONAL_DAYS = {(12, 24), (12, 25), (12, 26)}
 
 

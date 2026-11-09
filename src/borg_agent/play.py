@@ -47,7 +47,23 @@ MENU_TAGS = 'src/ui-menu.c'
 # "a" (the first race, already highlighted), "a" (the first class) and "a" (the
 # point-based roller).
 DEFAULT_BIRTH = 'key a\nkey a\nkey a\n'
-BORG_CONFIG = 'borg_cheat_death = FALSE\nborg_respawn_winners = FALSE\n'
+# The Borg's settings for every run here. The requirements forbid munchkin mode
+# and lunal mode (R1.6, RULES 14) -- and the milestone 8 tree turns munchkin
+# **on** by default (`borg_munchkin_start=1`, `borg_munchkin_by_class=1`), which
+# this configuration did not say anything about until 2026-11-09. So every Borg
+# run made here before that was a munchkin run: the traces say "Power Diving"
+# and "Creating an object '& Rapier~'", and no survival figure from them can be
+# compared with ordinary play (T34).
+BORG_CONFIG = ('borg_cheat_death = FALSE\n'
+               'borg_respawn_winners = FALSE\n'
+               'borg_munchkin_start = FALSE\n'
+               'borg_munchkin_by_class = FALSE\n'
+               'borg_lunal_mode = FALSE\n'
+               'borg_self_lunal = FALSE\n')
+# What the trace's own effective-options line must say afterwards. The zoo
+# checks its runs the same way and calls a mismatch `config_error`.
+FORBIDDEN_MODES = ('borg_munchkin_start', 'borg_munchkin_by_class',
+                   'borg_lunal_mode', 'borg_self_lunal')
 LOCK_PATH = os.environ.get('BORG_AGENT_LOCK', '/tmp/angband-validation.lock')
 FINAL_KINDS = ('death', 'completion', 'turn_cap', 'saved')
 # How a run can legitimately end. Hitting a budget or a decision cap is an
