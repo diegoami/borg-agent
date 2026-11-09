@@ -103,11 +103,17 @@ level, HP, the RNG state, the character, the options and the Borg's messages
 — and no wall time, paths or process ids. So two runs of one seed and cap
 must give byte-identical traces.
 
-Checked on 2026-11-08, seed 7, cap 5000, Human Warrior, on the owner's
-machine (WSL2, gcc 13, Python 3.14): both runs ended `turn_cap` at turn 5000,
-53,040 bytes of trace, SHA-256
-`2242a3f55de1711fce9c37c5301c9ad3d4cdd9daf32cea8f44066b28a1d7d1f0`, about 1.9
+Checked on 2026-11-09 at the **milestone 8** pin, seed 7, cap 5000, Human
+Warrior, on the owner's machine (WSL2, gcc 15, Python 3.14): both runs ended
+`turn_cap` at turn 5000, 542,917 bytes of trace, SHA-256
+`a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844`, about 15
 seconds each. The slow test asserts that hash.
+
+**The hash belongs to the pin as much as to the seed.** At milestone 6 the
+same seed and cap gave `2242a3f5…`, 53,040 bytes, in 1.9 seconds. Milestone 8
+carries 25 more fixes, writes about ten times as much to the trace and thinks
+about eight times as long per turn; it also survives seed 7 to 100,000 turns,
+where milestone 6 died to a green naga at 27,808.
 
 **That hash is not a property of the seed alone.** The game admits seasonal
 monsters on 24-26 December (`get_mon_num` reads the clock), so the same seed

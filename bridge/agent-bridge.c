@@ -380,7 +380,9 @@ static void write_prompt_and_screen(FILE *out)
     char top[256];
     const char *kind = "none";
 
-    if (borg_what_text(0, 0, -80, attributes, top) != 0)
+    /* borg_what_text takes the buffer's size at the pinned milestone 8; it did
+     * not at milestone 6. The pin is the one that counts. */
+    if (borg_what_text(0, 0, -80, attributes, top, sizeof(top)) != 0)
         top[0] = '\0';
     if (strstr(top, "-more-"))
         kind = "more";
@@ -395,7 +397,7 @@ static void write_prompt_and_screen(FILE *out)
     json_field(out, "text", top);
     fprintf(out, "},\"screen\":[");
     for (y = 0; y < 24; ++y) {
-        if (borg_what_text(0, y, -80, attributes, line) != 0)
+        if (borg_what_text(0, y, -80, attributes, line, sizeof(line)) != 0)
             line[0] = '\0';
         if (y)
             fputc(',', out);
