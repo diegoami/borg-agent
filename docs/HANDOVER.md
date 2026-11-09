@@ -21,19 +21,23 @@ work and updates "Current state".
   the record is checked against the run), branched at a turn, and read with
   `view`, `dump` and `explain`. 221 fast tests, 13 slow gates. **No model has
   played yet** — that is T06.
-- Waiting on the owner:
-  - **the seasonal window**: neutralize the game's one `time()` read, which
-    would make replay date-independent at the price of play differing from the
-    unpatched build on 24-26 December (a RULES 9 exception), or leave `verify`
-    refusing to compare across the window as it does now;
-  - **the OpenRouter reviewer**: `nvidia/nemotron-3-ultra-550b-a55b` or the
-    `:free` variant;
-  - **`claim@1`'s `superseded`**: a status as well as the `superseded_by`
-    field, or the field alone;
-  - **whether milestone 3 may spend plan quota** on real model calls, or
-    should stop at the `scripted` and `external` minds until the owner says
-    go.
-  - Which models do which job is not a question yet: T09 measures the
+- **Answered by the owner on 2026-11-09**, so nothing is waiting:
+  - **the seasonal window** stays as it is — decision **D9**. No RULES 9
+    exception: the build never diverges from the unpatched game, every run
+    records `calendar.seasonal`, and `verify` refuses to compare across the
+    window. A run made inside it can only be replayed on a day of the same
+    kind, and that price is accepted. The item is closed; don't reopen it.
+  - **real model calls are allowed in small runs** — decision **D10**. T06 may
+    prove the `api` mind on short games on the active profile, and every PR
+    that spends reports the calls, tokens and cost. Trial-scale and
+    pilot-scale spending still waits for the owner.
+  - **the OpenRouter reviewer is the `:free` variant**
+    (`nvidia/nemotron-3-ultra-550b-a55b:free`), in `models.yaml` now. It
+    shares the plan's daily free allowance and may be rate-limited; a review
+    is a few calls, so that is acceptable, and nothing private is sent to it.
+  - **`claim@1` keeps `superseded_by` and gains no `superseded` status.** The
+    schema already does this; the question is settled, not open.
+  - Which models do which job is still not a question: T09 measures the
     `trial:` candidates and the answer becomes decision D6.
 - Settled: `default_profile: alibaba` stays (the owner, 2026-11-08).
 
