@@ -72,6 +72,19 @@ def test_the_milestone_process_is_written_down():
     assert 'reviewed' in rules and 'milestone' in rules.lower()
 
 
+def test_mode_c_comes_before_the_trial():
+    """Decision D11, 2026-11-09: milestone 4 begins with a probe, not with T09.
+
+    The order lives in the milestone table's task cell, because that is what a
+    session reads to pick up its next task (AGENTS.md).
+    """
+    cells = [row[2] for row in milestone_rows() if row[0].startswith('**4.')]
+    assert len(cells) == 1, cells
+    order = re.findall(r'T\d\d', cells[0])
+    assert order.index('T22') < order.index('T09'), order
+    assert 'D11' in (ROOT / 'docs/REQUIREMENTS.md').read_text()
+
+
 def test_local_links_resolve():
     for doc in [ROOT / 'README.md', ROOT / 'AGENTS.md', ROOT / 'RULES.md', ROOT / 'PLAN.md',
                 *sorted((ROOT / 'docs').glob('*.md'))]:

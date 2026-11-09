@@ -150,6 +150,10 @@ Probes may set up a scenario with debug commands (a given depth, gear or
 monster). Such runs are marked as interventions and never count in survival
 figures (owner decision D4).
 
+**When mode C arrives is decided**: before the model trial (decision D11).
+PLAN.md T22 builds it and answers the floating-eye question, because a probe
+is the only promoter of a claim that is not another model.
+
 ## R4. Knowledge records
 
 The knowledge base is the product. It follows the claim lifecycle of
@@ -290,3 +294,4 @@ D6 is reserved: it records which model does which job, once the model trial
 | D9 | The game's seasonal window | **Leave play as the game plays it.** The game admits seasonal monsters on 24-26 December, so a seed plays a different game on those days. Every run records `calendar.seasonal`, and `verify` refuses to compare a run with a replay on the other side of that window. There is **no RULES 9 exception**: the instrumented build never diverges from the unpatched game, not even for three days a year. The price is accepted: a run made inside the window can only be replayed on a day of the same kind. (2026-11-09) |
 | D10 | Real model calls before the trial | **Allowed, in small runs.** Milestone 3 may call a real model on the active profile to prove the `api` mind works — short games, a few hundred calls — and every PR that does reports the calls, tokens and what they cost. Spending at the scale of the model trial (T09) or the pilot (T10) still waits for the owner. (2026-11-09) |
 | D7 | How models are configured | **By profile, in `models.yaml` at the root.** It holds the providers, the models per job and named profiles, and never a key; a provider names the environment variable that holds its key. Switching profile is one line: `BORG_AGENT_PROFILE`, or `profile:` in the git-ignored `models.local.yaml`, else `default_profile`. This replaces the `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` variables and the planned `providers.json`. **The profile is the only model rule in this repository**: the owner's general model rule, which asks their local quota service (quota-tracker) for a recommendation, does not apply here, and this repository does not use that service, locally or in the cloud. |
+| D11 | When mode C arrives | **Before the model trial.** Milestone 4 begins with a probe (PLAN.md T22), not with T09. Nothing leaves `hypothesis` without counted trials or a review by another family (R4.3), so a probe is the only promoter that is not another model — and T09 measures a consolidator by how many of its claims are **false**, which needs exactly that. The probe also needs no model, so it is the one task of milestone 4 that a cloud session can finish on its own. (2026-11-09) |
