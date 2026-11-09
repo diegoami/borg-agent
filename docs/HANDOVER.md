@@ -11,10 +11,12 @@ work and updates "Current state".
   reviewed **twice** by a model of another family (Kimi K3): the first round's
   four findings are T15, the re-review's two are T16, and both rounds are
   comments on #15.
-- **The Rust remake is pinned** since 2026-11-09 (T18, #26): borg-rs at its
-  milestone 7 (`ce27f5ed`), which carries better-borg-c milestone 7. The game
-  pin is milestone **8**, so the two sides are one C milestone apart and a
-  claim must say which it is about.
+- **The Rust remake is pinned** since 2026-11-09 (T18, #26): borg-rs at
+  `ce27f5ed`, which carries better-borg-c milestone 7. **The owner is building
+  borg-rs milestone 8, so this pin is expected to move**; repinning is one
+  line in `pins.json` plus `scripts/setup.sh`. Nothing reads borg-rs yet, so
+  the version matters less than the fact that it is readable at a fixed
+  commit (decision D8).
 - **The game pin is better-borg-c milestone 8** since 2026-11-09 (T17, #24).
   The golden trace for seed 7 at cap 5,000 is now
   `a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844`; anything
@@ -60,10 +62,13 @@ the agent and the later phases may read it (decision D8) and a claim can cite
 a fixed version of the remake.
 
 Facts the next sessions will need:
-- **The two sides are one C milestone apart.** The game pin is better-borg-c
-  milestone 8; borg-rs carries milestone 7. A claim, a design record and
-  anything phase 3 writes must say which side it is about. Both pins' roles
-  say so, and a test keeps them saying it.
+- **The two sides are not always on the same milestone.** When this was
+  written the game was at better-borg-c milestone 8 and borg-rs carried
+  milestone 7, with milestone 8 being built the same day. A claim, a design
+  record and anything phase 3 writes must say which side of the port **and
+  which milestone** it is about. Both pins' roles name a milestone, and the
+  test checks that they name one — not which one, which was a mistake in the
+  first version of that test and would have failed on the next repin.
 - **borg-rs has the same connection**: `borg-rs/src/borg.rs` holds the
   `inkey_hack` callback, with `generate_keypress` beside it, exactly where the
   C bridge attaches. A claim about the connection is not C-specific, which is

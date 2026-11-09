@@ -323,10 +323,11 @@ Why it belongs here:
 - 59 Borg modules under `borg-rs/src/`, one per original `src/borg/<x>.c`,
   with no `unsafe` outside the FFI boundary.
 
-**The two sides are one C milestone apart**: the game pin is better-borg-c
-milestone 8 (T17), while borg-rs carries milestone 7. A claim must say which
-it is about, and `pins.json`'s roles say so for both; a test checks that they
-keep saying it.
+**The pin will move, and often.** When this was written the game pin was
+better-borg-c milestone 8 and borg-rs carried milestone 7, with the owner
+building milestone 8 the same day. So the number is not the point: a claim
+says which side of the port and which milestone it is about, both roles name
+a milestone, and the test checks that they name one rather than which one.
 
 ### T17. Pin better-borg-c milestone 8
 
