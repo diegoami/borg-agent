@@ -102,6 +102,20 @@ def test_a_run_records_the_turn_it_took_over_at(tmp_path, monkeypatch):
     assert "from_turn=original.get('from_turn')" in source
 
 
+def test_branching_a_post_mortem_before_its_handover_is_refused(tmp_path, monkeypatch):
+    # The recording starts at the handover, so there is nothing to replay
+    # before it; asking for that turn is a mistake worth naming.
+    run = tmp_path / 'mortem'
+    run.mkdir()
+    (run / 'result.json').write_text(json.dumps(
+        {'run_id': 'pm-1', 'seed': 3, 'turn_cap': 30000, 'from_turn': 1500,
+         'outcome': 'turn_cap', 'build_key': 'x'}))
+    (run / 'actions.jsonl').write_text('')
+    with pytest.raises(ValueError, match='took over at turn 1500'):
+        replay.branch(run, 900, tmp_path / 'branch', mind.ScriptedMind(),
+                      lock=False, log=lambda *a: None)
+
+
 # --- the gate ----------------------------------------------------------------
 
 @pytest.mark.slow
@@ -141,3 +155,37 @@ def test_a_borg_death_is_reproduced_and_then_taken_over(tmp_path):
                             log=lambda *a: None)
     assert verdict['verified'], verdict
     assert verdict['from_turn'] == parent['turn']
+
+
+@pytest.mark.slow
+def test_a_branch_of_a_handover_run_lands_in_the_same_game(tmp_path):
+    """Milestone 3 review, finding 1.
+
+    `branch` left `from_turn` out, so the actions a post-mortem recorded from
+    its handover turn were fed to a newborn character in town: a self-
+    consistent recording of a different game, under the parent's name. The
+    cheap version of that shape is enough to catch it -- a short run that takes
+    over at turn 200, branched afterwards.
+    """
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    first = agent.play_with_mind(build_out=out, seed=7, cap=400, output=tmp_path / 'handover',
+                                 mind=mind.ScriptedMind(), from_turn=200, lock=lock,
+                                 log=lambda *a: None)
+    assert first['from_turn'] == 200
+    observations = [json.loads(line) for line
+                    in (tmp_path / 'handover/observations.jsonl').read_text().splitlines()]
+    assert observations and observations[0]['turn'] >= 200, 'the prefix was not the Borg\'s'
+
+    result, parent = replay.branch(tmp_path / 'handover', observations[-1]['turn'],
+                                   tmp_path / 'branched', mind.ScriptedMind(),
+                                   lock=lock, log=lambda *a: None)
+    # The branch played the same prefix, so its own first observation is at
+    # the handover too -- not at turn 1 in the town.
+    branched = [json.loads(line) for line
+                in (tmp_path / 'branched/observations.jsonl').read_text().splitlines()]
+    assert result['from_turn'] == 200
+    assert branched and branched[0]['turn'] >= 200, branched[0]['turn']
+    assert record.state_hash(branched[0]) == record.state_hash(observations[0]), \
+        'the branch started in a different game from its parent'
+    assert parent['run_id'] == (first.get('run_id') or 'handover')

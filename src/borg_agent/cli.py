@@ -208,7 +208,13 @@ def cmd_branch(args):
     result, parent = replay_module.branch(
         args.run, args.turn, output, build_mind(args), timeout=args.timeout,
         stall_timeout=args.stall_timeout, lock=not args.no_lock)
-    record_module.write_record(output, mode='post_mortem', parent=parent)
+    # Mode B is "a death, taken over before the end". A branch of an ordinary
+    # run is mode A with a parent, and was being labelled post_mortem too
+    # (milestone 3 review, smaller notes).
+    original = json.loads((Path(args.run) / 'result.json').read_text())
+    mode = ('post_mortem' if original.get('from_turn') or original.get('outcome') == 'death'
+            else 'play')
+    record_module.write_record(output, mode=mode, parent=parent)
     print(output)
     return 0 if result['outcome'] in play_module.GOOD_OUTCOMES else 1
 

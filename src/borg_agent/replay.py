@@ -258,17 +258,28 @@ def branch(run_dir, turn, output, new_mind, timeout=900, stall_timeout=120, lock
     run_dir, output = Path(run_dir), Path(output)
     original = json.loads((run_dir / 'result.json').read_text())
     actions = recorded_actions(run_dir)
+    # A post-mortem's recorded actions start at its handover turn, so a branch
+    # of one has to play the same prefix before the stream means anything --
+    # exactly what `verify` does above. Without this the stream was fed to a
+    # newborn character in town and the branch recorded a different game under
+    # the parent's name (milestone 3 review, finding 1).
+    from_turn = original.get('from_turn')
+    if from_turn and turn < from_turn:
+        raise ValueError(
+            f'this run took over at turn {from_turn}, so it has no recorded actions at turn '
+            f'{turn}: branch at {from_turn} or later, or branch the run it came from')
     branching = ReplayMind(actions, then=new_mind, until_turn=turn)
     result = agent.play_with_mind(
         build_out=pins_build(original), seed=original['seed'], cap=original['turn_cap'],
         output=output, mind=branching, timeout=timeout, stall_timeout=stall_timeout,
-        lock=lock, log=lambda *a: None)
+        from_turn=from_turn, lock=lock, log=lambda *a: None)
     parent = {'run_id': original.get('run_id') or run_dir.name,
               'turn': branching.handed_over_at if branching.handed_over else turn}
     result['parent'] = parent
     result['branch'] = {'requested_turn': turn,
                         'handed_over_at': branching.handed_over_at,
                         'replayed_actions': branching.replayed,
+                        'parent_from_turn': from_turn,
                         'mind': new_mind.name}
     (output / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
     log(json.dumps({'branch_of': parent, 'outcome': result['outcome'],
