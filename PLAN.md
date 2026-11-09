@@ -76,7 +76,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
 | T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
 | T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | todo |
-| T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | in review |
+| T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | in review (#43) |
 
 ### T01. Build and play the pinned game headless
 
