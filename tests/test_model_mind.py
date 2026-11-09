@@ -222,9 +222,19 @@ def test_a_provider_that_cannot_be_reached_is_infrastructure_not_play():
 
 
 def test_a_missing_key_is_refused_before_any_call():
+    # The real path builds a client, which reads the key at once: a run with
+    # no key must fail before it plays, not at the first call (D7).
     with pytest.raises(models.ConfigurationError, match='HOUSE_KEY'):
-        model_mind.ApiMind(CHOICE, pack=prompts.load_pack('play-1'),
-                           transport=answered(json.dumps(ACTION)), environ={})
+        model_mind.ApiMind(CHOICE, pack=prompts.load_pack('play-1'), environ={})
+
+
+def test_a_fake_transport_needs_no_key():
+    # The seam the tests use: no provider, so no key. Everything else about
+    # the mind is the same.
+    mind = model_mind.ApiMind(CHOICE, pack=prompts.load_pack('play-1'),
+                              transport=answered(json.dumps(ACTION)), environ={})
+    assert mind.act(observation()) == ACTION
+    assert mind.client is None
 
 
 # --- the mind at a file ------------------------------------------------------

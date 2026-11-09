@@ -25,6 +25,8 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [The executor](docs/EXECUTOR.md): the primitives a mind chooses between.
 - [The mind](docs/MINDS.md): which model decides, what it is told, and what a
   call costs.
+- [The knowledge base](docs/KNOWLEDGE.md): the claims, the views, and how a
+  run becomes knowledge.
 
 ## Status
 

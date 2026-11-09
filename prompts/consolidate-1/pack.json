@@ -1,0 +1,11 @@
+{
+  "schema": "borg-agent/prompt-pack@1",
+  "version": "consolidate-1",
+  "job": "consolidate",
+  "description": "Turning one run's notes into claims (mode D). It carries no game knowledge of its own: the facts come from the run, and every claim must point at the turn it rests on.",
+  "templates": {
+    "system": "system.md",
+    "decision": "run.md"
+  },
+  "extracts": []
+}

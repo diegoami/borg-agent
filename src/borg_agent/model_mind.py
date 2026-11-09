@@ -116,6 +116,52 @@ def _secret_shapes(entry):
     return [match.group(0)[:8] for match in re.finditer(SECRET_VALUE, text)]
 
 
+class ChatClient:
+    """One OpenAI-compatible chat endpoint, and the key that opens it.
+
+    The key is read once, lives in this object, and leaves it only as an
+    Authorization header. Nothing else in the repository sees it.
+    """
+
+    def __init__(self, choice, environ=None, timeout=120):
+        self.choice = choice
+        self.timeout = timeout
+        self._key = choice.key(environ)      # fails here, before any play
+
+    def post(self, messages, **options):
+        body = json.dumps({
+            'model': self.choice.model,
+            'messages': messages,
+            **({'reasoning_effort': self.choice.effort} if self.choice.effort else {}),
+            **options,
+        }).encode()
+        request = urllib.request.Request(
+            self.choice.base_url.rstrip('/') + '/chat/completions', data=body,
+            headers={'Content-Type': 'application/json',
+                     'Authorization': f'Bearer {self._key}'})
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return json.loads(response.read().decode())
+        except urllib.error.HTTPError as error:
+            # The body may explain the refusal; it may also quote the request,
+            # so only the status and the first line are kept.
+            detail = (error.read(400).decode(errors='replace') or '').splitlines()
+            raise signals.ModelFailed(
+                f'{self.choice.provider} answered {error.code} '
+                f'({detail[0][:160] if detail else "no body"})') from None
+        except (urllib.error.URLError, TimeoutError, OSError) as error:
+            raise signals.ModelFailed(
+                f'{self.choice.provider} could not be reached: {type(error).__name__}') from None
+
+
+def reply_of(answer):
+    """The text of a chat answer, and what it cost."""
+    choices = answer.get('choices') or []
+    reply = (choices[0].get('message') or {}).get('content') or '' if choices else ''
+    usage = answer.get('usage') or {}
+    return reply, usage
+
+
 class ExternalMind:
     """A person, or another session, answering from a file.
 
@@ -175,8 +221,58 @@ class ApiMind:
         self.call_log = call_log
         self.knowledge = knowledge
         self.timeout = timeout
-        self._key = choice.key(environ)      # fails here, before play, if unset
-        self.transport = transport or self._post
+        if transport is None:
+            choice.key(environ)              # fails here, before play, if unset
+        self.client = None if transport else ChatClient(choice, environ, timeout)
+        self.transport = transport or self.client.post
+        self.decisions = 0
+        self.parse_failures = 0
+        self.journal = []
+
+    # --- the call ----------------------------------------------------------
+
+    def act(self, observation):
+        decision = observation['decision']
+        question = self.directory / QUESTION_PATTERN.format(decision=decision)
+        answer = self.directory / ANSWER_PATTERN.format(decision=decision)
+        question.write_text(json.dumps({
+            'observation': observation,
+            'prompt': prompts.render(self.pack, observation),
+            'answer_to': str(answer),
+        }, indent=2, sort_keys=True) + '\n')
+        self.log(f'waiting for {answer}')
+        deadline = time.monotonic() + self.timeout
+        while not answer.exists():
+            if time.monotonic() >= deadline:
+                raise signals.CannotAct(f'no answer in {answer} after {self.timeout}s')
+            time.sleep(self.poll)
+        self.decisions += 1
+        return json.loads(answer.read_text())
+
+
+class ApiMind:
+    """A model over an OpenAI-compatible chat API, from the active profile (D7)."""
+
+    name = 'api'
+    kind = 'api'
+
+    def __init__(self, choice, pack=None, budget=None, call_log=None, knowledge=None,
+                 timeout=120, environ=None, transport=None, choice_record=None,
+                 knowledge_sha256=None):
+        self.choice = choice
+        # What the loader said about this job, for the record. Passed in so the
+        # mind never re-reads the configuration behind the run's back.
+        self.choice_record = choice_record or {}
+        self.knowledge_sha256 = knowledge_sha256
+        self.pack = pack or prompts.load_pack()
+        self.budget = budget or Budget()
+        self.call_log = call_log
+        self.knowledge = knowledge
+        self.timeout = timeout
+        if transport is None:
+            choice.key(environ)              # fails here, before play, if unset
+        self.client = None if transport else ChatClient(choice, environ, timeout)
+        self.transport = transport or self.client.post
         self.decisions = 0
         self.parse_failures = 0
         self.journal = []
@@ -215,12 +311,9 @@ class ApiMind:
             started = time.monotonic()
             answer = self.transport(messages)
             elapsed = round(time.monotonic() - started, 3)
-            usage = answer.get('usage') or {}
+            usage = (answer.get('usage') or {})
             self.budget.spend(usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0))
-            reply = ''
-            choices = answer.get('choices') or []
-            if choices:
-                reply = (choices[0].get('message') or {}).get('content') or ''
+            reply, _usage = reply_of(answer)
             action, problem = None, None
             try:
                 action = extract_action(reply)
