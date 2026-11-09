@@ -23,6 +23,7 @@ ACT_FIFO = 'actions.fifo'
 ACTION_LOG = 'actions.jsonl'
 OBSERVATION_LOG = 'observations.jsonl'
 JOURNAL_LOG = 'decisions.jsonl'
+MODEL_CALL_LOG = 'model-calls.jsonl'
 # What apply_action in the bridge can translate. Anything else is a mistake
 # here, not at run time, so it raises before a key is sent.
 WIRE_COMMANDS = {
@@ -212,7 +213,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
     if getattr(mind, 'call_log', 'absent') is None:
         from .model_mind import CallLog
 
-        mind.call_log = CallLog(output / 'model-calls.jsonl')
+        mind.call_log = CallLog(output / MODEL_CALL_LOG)
     record = {
         'schema': 'borg-agent/play@1',
         'mind': mind.name,
@@ -370,7 +371,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
             if call_log is not None and call_log.count:
                 record['model_calls'] = {'count': call_log.count,
                                          'sha256': call_log.sha256(),
-                                         'path': 'model-calls.jsonl'}
+                                         'path': MODEL_CALL_LOG}
             budget = getattr(mind, 'budget', None)
             if budget is not None:
                 record['usage'] = budget.record()

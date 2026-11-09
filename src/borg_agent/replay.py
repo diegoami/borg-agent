@@ -102,6 +102,11 @@ def check_record_against_run(recorded, run_dir, actions):
         ('the state hashes', evidence.get('state_hashes_sha256'),
          run_dir / record.STATE_HASHES_NAME),
         ('the journal', evidence.get('journal_sha256'), run_dir / agent.JOURNAL_LOG),
+        # The stream this milestone added. T16's rule is every count and hash
+        # the record published, and the model calls were left out of it
+        # (milestone 3 review, finding 2).
+        ('the model calls', evidence.get('model_calls_sha256'),
+         run_dir / agent.MODEL_CALL_LOG),
     ]
     compared = False
     for what, published, path in checks:
@@ -117,6 +122,19 @@ def check_record_against_run(recorded, run_dir, actions):
         if stream['count'] != actions:
             return False, (f"the record says {stream['count']} actions, but "
                            f'{agent.ACTION_LOG} holds {actions}')
+    # The count is published in `usage` even when the hash is not, so it is
+    # checked on its own.
+    published_calls = (recorded.get('usage') or {}).get('model_calls')
+    if published_calls:
+        compared = True
+        log = run_dir / agent.MODEL_CALL_LOG
+        if not log.exists():
+            return False, (f'the record says {published_calls} model calls, but '
+                           f'{agent.MODEL_CALL_LOG} is not beside the run')
+        calls = len([line for line in log.read_text().splitlines() if line.strip()])
+        if calls != published_calls:
+            return False, (f'the record says {published_calls} model calls, but '
+                           f'{agent.MODEL_CALL_LOG} holds {calls}')
     return (True if compared else None), None
 
 
