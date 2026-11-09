@@ -60,7 +60,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T04 | Recording and replay | 2 | T03 | yes | done (#11) |
 | T05 | Executor primitives | 2 | T03 | yes | done (#12) |
 | T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | done (#33) |
-| T07 | Knowledge store | 3 | T02 | yes | in review (#35) |
+| T07 | Knowledge store | 3 | T02 | yes | done (#35) |
 | T08 | Post-mortem start from a Borg run | 3 | T04 | yes | todo |
 | T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
