@@ -82,8 +82,20 @@ message is 1,600 and the same every time.
 
 Every call is written to `model-calls.jsonl` (R2.1): the observation's state
 hash, the pack's version and hash, the job, provider, model, family and effort,
-the endpoint's host, the reply, the reason, the tokens and the seconds. The key
-never appears — it is a header, built in the one method that makes the request.
+the endpoint's host, the reply, **the model's own thinking**, the reason, the
+tokens and the seconds. The key never appears — it is a header, built in the one
+method that makes the request.
+
+**The thinking is not in the reply.** A thinking model returns it beside the
+answer — `reasoning_content`, `reasoning` or `thinking`, depending on the
+provider — and the first Mage run billed **3,781 completion tokens for a
+270-character reply**: everything it had to say was in a field we were not
+reading. It is kept now as `reasoning`, with `reasoning_chars` beside it, and
+it is redacted like every other field. The run pays for those tokens whether or
+not they are kept, and they are the only account of *why* a choice was made
+beyond the one line the model writes into its action — which is what T09 has to
+judge a consolidator on, and what a post-mortem is supposed to explain itself
+with.
 
 **Every field of an entry is scanned, not only the reply**, and anything that
 looks like a credential is replaced where it stands; a field named like a key

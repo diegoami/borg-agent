@@ -106,7 +106,8 @@ def cmd_play(args):
     output = Path(args.output) if args.output else run_dir(f'seed{args.seed}-cap{args.cap}-{time.time_ns()}')
     record = play_module.play(out, args.seed, args.cap, output,
                               timeout=args.timeout, stall_timeout=args.stall_timeout,
-                              checkpoint_saves=args.checkpoint_saves, lock=not args.no_lock)
+                              checkpoint_saves=args.checkpoint_saves,
+                              race=args.race, class_=args.klass, lock=not args.no_lock)
     print(output)
     return 0 if record['outcome'] in play_module.GOOD_OUTCOMES else 1
 
@@ -118,6 +119,7 @@ def cmd_determinism(args):
     traces, records = [], []
     for attempt in (1, 2):
         record = play_module.play(out, args.seed, args.cap, base / f'run{attempt}',
+                                  race=args.race, class_=args.klass,
                                   timeout=args.timeout, stall_timeout=args.stall_timeout,
                                   checkpoint_saves=False, lock=not args.no_lock)
         records.append(record)
@@ -152,8 +154,8 @@ def cmd_agent(args):
     record = agent_module.play_with_mind(
         out, args.seed, args.cap, output, build_mind(args),
         timeout=args.timeout, stall_timeout=args.stall_timeout,
-        decision_cap=args.decision_cap, validate=not args.no_validate,
-        lock=not args.no_lock)
+        decision_cap=args.decision_cap, race=args.race, class_=args.klass,
+        validate=not args.no_validate, lock=not args.no_lock)
     print(output)
     return 0 if record['outcome'] in play_module.GOOD_OUTCOMES else 1
 
@@ -346,6 +348,7 @@ def cmd_post_mortem(args):
         found = run_dir(f'death-seed{args.seed}-cap{args.cap}')
         print(f'playing the Borg on seed {args.seed} to find its death...')
         result = postmortem.find_death(out, args.seed, args.cap, found,
+                                       race=args.race, class_=args.klass,
                                        timeout=args.timeout,
                                        stall_timeout=args.stall_timeout,
                                        lock=not args.no_lock)
@@ -359,6 +362,7 @@ def cmd_post_mortem(args):
         f'post-mortem-seed{death["seed"]}-turn{death["turn"]}-{args.mind}')
     result, parent = postmortem.post_mortem(
         out, death, build_mind(args), output, before=args.before, cap=args.cap,
+        race=args.race, class_=args.klass,
         timeout=args.timeout, stall_timeout=args.stall_timeout, lock=not args.no_lock)
     postmortem.write_record(output, parent)
     print(output)
@@ -386,6 +390,10 @@ def main(argv=None):
         if name == 'play':
             p.add_argument('--checkpoint-saves', action='store_true',
                            help='write the runner\'s periodic saves (off by default)')
+        p.add_argument('--race', help="the race to be born, as the game spells it "
+                                      "(default: the cohort's Human)")
+        p.add_argument('--class', dest='klass',
+                       help="the class to be born (default: the cohort's Warrior)")
         p.set_defaults(func=handler)
 
     for name, handler, help_text in (
@@ -405,6 +413,10 @@ def main(argv=None):
                        help='stop after this many tokens; the outcome is budget_cap')
         p.add_argument('--no-budget', action='store_true',
                        help='run an api mind with no ceiling at all; say it deliberately')
+        p.add_argument('--race', help="the race to be born, as the game spells it "
+                                      "(default: the cohort's Human)")
+        p.add_argument('--class', dest='klass',
+                       help="the class to be born (default: the cohort's Warrior)")
         p.add_argument('--external-dir', type=Path, help='where the external mind reads answers')
         p.add_argument('--no-executor', action='store_true',
                        help='give the model the game directly, without the primitives')
@@ -496,6 +508,8 @@ def main(argv=None):
     mortem.add_argument('--pack', default='play-1')
     mortem.add_argument('--budget-calls', type=int, default=None)
     mortem.add_argument('--no-budget', action='store_true')
+    mortem.add_argument('--race', help='the race whose death to work from, and to be born')
+    mortem.add_argument('--class', dest='klass', help='the class, likewise')
     mortem.add_argument('--budget-tokens', type=int, default=None)
     mortem.add_argument('--external-dir', type=Path)
     mortem.add_argument('--no-executor', action='store_true')

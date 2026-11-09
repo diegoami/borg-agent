@@ -172,12 +172,41 @@ class ChatClient:
                 f'{self.choice.provider} could not be reached: {type(error).__name__}') from None
 
 
+# Where a thinking model puts its thinking. It is not in `content`: the
+# providers return it beside the answer, under one of these names, and a reply
+# of 270 characters can have cost 3,781 completion tokens -- which is what the
+# first Mage run billed and did not keep (T27).
+REASONING_FIELDS = ('reasoning_content', 'reasoning', 'thinking')
+
+
 def reply_of(answer):
-    """The text of a chat answer, and what it cost."""
+    """The text of a chat answer, the thinking behind it, and what it cost."""
     choices = answer.get('choices') or []
-    reply = (choices[0].get('message') or {}).get('content') or '' if choices else ''
+    message = (choices[0].get('message') or {}) if choices else {}
+    reply = message.get('content') or ''
     usage = answer.get('usage') or {}
-    return reply, usage
+    return reply, reasoning_of(message), usage
+
+
+def reasoning_of(message):
+    """The model's own thinking, whichever field this provider used for it.
+
+    A run pays for these tokens whether or not they are kept, and they are the
+    only account of *why* a choice was made beyond the one line the model
+    writes into its action. T09 judges a consolidator on how many of its claims
+    are false and a post-mortem is supposed to explain itself, so dropping them
+    was throwing away the evidence we had already bought.
+    """
+    for field in REASONING_FIELDS:
+        found = message.get(field)
+        if not found:
+            continue
+        if isinstance(found, str):
+            return found
+        # Some providers answer with a list of parts, or an object with the
+        # text under a key; keep whatever is there rather than guessing.
+        return json.dumps(found, sort_keys=True)
+    return None
 
 
 class ExternalMind:
@@ -274,7 +303,7 @@ class ApiMind:
             elapsed = round(time.monotonic() - started, 3)
             usage = (answer.get('usage') or {})
             self.budget.spend(usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0))
-            reply, _usage = reply_of(answer)
+            reply, reasoning, _usage = reply_of(answer)
             action, problem = None, None
             try:
                 action = extract_action(reply)
@@ -289,7 +318,8 @@ class ApiMind:
                 problem = str(error)
                 action = None
                 self.parse_failures += 1
-            self._log(observation, messages, reply, usage, elapsed, attempt, problem, action)
+            self._log(observation, messages, reply, usage, elapsed, attempt, problem, action,
+                      reasoning=reasoning)
             if action is not None:
                 self.decisions += 1
                 return action
@@ -299,7 +329,8 @@ class ApiMind:
             f'{self.choice.model} did not answer with a valid action in {TRIES} tries '
             f'at decision {observation["decision"]}: {problem}')
 
-    def _log(self, observation, messages, reply, usage, elapsed, attempt, problem, action):
+    def _log(self, observation, messages, reply, usage, elapsed, attempt, problem, action,
+             reasoning=None):
         if self.call_log is None:
             return
         from .record import state_hash
@@ -319,6 +350,11 @@ class ApiMind:
             'effort': self.choice.effort,
             'endpoint_host': self.choice.endpoint_host(),
             'reply': reply,
+            # The thinking, when the provider sends any (T27). A model that
+            # spends 3,700 completion tokens on a 270-character answer has
+            # said almost everything it has to say in here.
+            'reasoning': reasoning,
+            'reasoning_chars': len(reasoning) if reasoning else 0,
             'reason': (action or {}).get('reason'),
             'note': (action or {}).get('note'),
             'parse_problem': problem,

@@ -161,7 +161,7 @@ def consolidate(run_dir, choice, store=None, pack=None, budget=None, call_log=No
 
     started = time.monotonic()
     answer = post(messages)
-    reply, usage = model_mind.reply_of(answer)
+    reply, reasoning, usage = model_mind.reply_of(answer)
     budget.spend(usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0))
     elapsed = round(time.monotonic() - started, 3)
 
@@ -172,6 +172,10 @@ def consolidate(run_dir, choice, store=None, pack=None, budget=None, call_log=No
             'endpoint_host': choice.endpoint_host(),
             'prompt_pack': pack.version, 'prompt_pack_sha256': pack.sha256,
             'run': run_facts['run_id'], 'reply': reply,
+            # Mode D's thinking is the part worth reading when a claim turns
+            # out to be wrong (T27).
+            'reasoning': reasoning,
+            'reasoning_chars': len(reasoning) if reasoning else 0,
             'prompt_tokens': usage.get('prompt_tokens'),
             'completion_tokens': usage.get('completion_tokens'), 'seconds': elapsed,
         })
