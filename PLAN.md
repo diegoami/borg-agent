@@ -69,6 +69,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
+| T16 | Milestone-2 re-review findings | 2 | T15 | yes | in progress (task/T16-rereview-findings) |
 
 ### T01. Build and play the pinned game headless
 
@@ -298,6 +299,40 @@ Left for later tasks, not this one:
 - reading the deaths and the specification into actual claims — that is what
   T07's store and T08's post-mortems are for;
 - `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T16. Milestone-2 re-review findings
+
+The same reviewer (Kimi K3) read T15's fixes and found **two new issues, both
+in the new code** — one of them a hole the fix itself opened. Both are closed
+here, and the reviewer confirmed all four original findings closed in
+substance.
+
+- **(1) `prefix` accepted a run cut short at the end.** With both logs
+  truncated by three decisions and the record left intact, `verify` said
+  `verified: true` — the replay reproduced the states that remained, and the
+  new tolerance (`len(after) in (N, N+1)`) left room for a stream that ends
+  early. The old exact-length comparison had caught this by accident. Now
+  `check_record_against_run` compares **every** count and hash the record
+  published — the action stream's count and hash, the observations, the state
+  hashes, the journal — against the files the replay actually read, and names
+  the first that disagrees. The reviewer's own experiment is a slow test, and
+  five fast ones cover each stream and a missing file.
+- **(2) A branch lost its journal.** The run drains the journal from the mind
+  it was given, which for a branch is the `replay` mind; the mind that took
+  over kept its entries to itself. Since mode B *is* "replay, then try
+  something else", the journal was missing exactly where it was added to help.
+  `ReplayMind.drain_journal` now passes through to the mind that took over, and
+  a slow test branches with a primitive chooser and checks the entries are
+  there and all after the handover.
+- **Also from the re-review:** journal entries buffered during a decision were
+  lost when the mind raised, so the stops that led to `agent_stopped` never
+  reached the log — they are written now; and the **Home** is described the way
+  its own screen describes it (in full, no prices), which was the one
+  remaining fidelity gap in the shop block.
+- Documented: that `prefix` compares no part of the trace by construction;
+  that a replay's own outcome reads `agent_stopped` because the vocabulary has
+  no word for "the recording ended"; and that run directories made before T15
+  cannot be recorded, which is deliberate.
 
 ### T15. Milestone-2 review findings
 

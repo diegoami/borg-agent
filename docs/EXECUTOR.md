@@ -113,7 +113,8 @@ strategy.
   asked for wine and bought a Ration of Food. The bridge now reads the stock
   the way the menu does; label `c` is the Ration the store offers there, and
   buying it charges exactly the listed price (140 → 137). A slow test keeps it
-  honest.
+  honest. The Home is described the way its own screen describes it too: in
+  full, with no prices.
 - Each primitive is tested on fixtures, including the stops it reports and the
   fact that it has no threshold of its own.
 

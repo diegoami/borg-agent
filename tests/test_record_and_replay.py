@@ -377,3 +377,110 @@ def test_branching_a_death_before_it_happens(tmp_path):
     assert before[:result['branch']['replayed_actions']] == \
         after[:result['branch']['replayed_actions']]
     assert after != before
+
+
+# --- the record must describe the run beside it (re-review, finding 1) ------
+
+def run_directory(tmp_path, actions=4, record_it=True):
+    """A small run directory with a record, built without playing anything."""
+    run = tmp_path / 'run'
+    run.mkdir()
+    (run / agent.OBSERVATION_LOG).write_text(''.join(
+        json.dumps(observation(decision=i, turn=10 * i + 1)) + '\n' for i in range(actions)))
+    (run / agent.ACTION_LOG).write_text(''.join(
+        json.dumps(mind.action('command', f'step {i}', command={'name': 'stay'})) + '\n'
+        for i in range(actions)))
+    hashes = record.state_hashes(run / agent.OBSERVATION_LOG)
+    (run / record.STATE_HASHES_NAME).write_text(''.join(h + '\n' for h in hashes))
+    recorded = {
+        'action_stream': {'count': actions, 'sha256': record.sha(run / agent.ACTION_LOG)},
+        'evidence': {'observations_sha256': record.sha(run / agent.OBSERVATION_LOG),
+                     'state_hashes_sha256': record.sha(run / record.STATE_HASHES_NAME)},
+    }
+    return run, recorded
+
+
+def test_a_record_matches_the_run_it_describes(tmp_path):
+    run, recorded = run_directory(tmp_path)
+    assert replay.check_record_against_run(recorded, run, 4) == (True, None)
+
+
+def test_a_run_cut_short_at_the_end_is_caught(tmp_path):
+    """The hole the prefix rule opened, found by the re-review.
+
+    Cut the last lines off both logs and leave the record and the state hashes
+    alone: the replay reproduces what remains, and `prefix` tolerates a stream
+    that ends early — so only the record's own counts and hashes can tell.
+    """
+    run, recorded = run_directory(tmp_path, actions=6)
+    for name in (agent.ACTION_LOG, agent.OBSERVATION_LOG):
+        path = run / name
+        path.write_text('\n'.join(path.read_text().splitlines()[:-2]) + '\n')
+    matches, reason = replay.check_record_against_run(recorded, run, 4)
+    assert matches is False
+    assert 'action stream' in reason
+
+
+@pytest.mark.parametrize('what,break_it', [
+    ('the actions', lambda run: (run / agent.ACTION_LOG).write_text('{"changed": true}\n')),
+    ('the observations', lambda run: (run / agent.OBSERVATION_LOG).write_text('{}\n')),
+    ('the state hashes', lambda run: (run / record.STATE_HASHES_NAME).write_text('nope\n')),
+    ('a missing file', lambda run: (run / record.STATE_HASHES_NAME).unlink()),
+])
+def test_every_stream_the_record_names_is_compared(tmp_path, what, break_it):
+    run, recorded = run_directory(tmp_path)
+    break_it(run)
+    matches, reason = replay.check_record_against_run(recorded, run, 4)
+    assert matches is False and reason, what
+
+
+def test_a_record_with_nothing_to_compare_says_so(tmp_path):
+    run, _ = run_directory(tmp_path)
+    assert replay.check_record_against_run({}, run, 4) == (None, None)
+
+
+@pytest.mark.slow
+def test_a_tail_cut_run_does_not_verify(tmp_path):
+    """The same hole, end to end: the replay reproduces, the record does not agree."""
+    import shutil
+
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    agent.play_with_mind(out, seed=1, cap=10000, output=tmp_path / 'capped',
+                         mind=mind.ScriptedMind(), decision_cap=20, timeout=300,
+                         stall_timeout=60, lock=lock, log=lambda *a: None)
+    record.write_record(tmp_path / 'capped')
+    cut = tmp_path / 'cut'
+    cut.mkdir()
+    for item in (tmp_path / 'capped').iterdir():
+        if item.is_file() and not item.name.endswith('.fifo'):
+            shutil.copy(item, cut / item.name)
+    for name in (agent.ACTION_LOG, agent.OBSERVATION_LOG):
+        path = cut / name
+        path.write_text('\n'.join(path.read_text().splitlines()[:-3]) + '\n')
+    verdict = replay.verify(cut, tmp_path / 'verified', lock=lock, log=lambda *a: None)
+    assert verdict['verified'] is False
+    assert verdict['record_matches_run'] is False
+    assert 'the record published' in verdict['failed_because']
+
+
+@pytest.mark.slow
+def test_a_branch_keeps_the_journal_of_the_mind_that_took_over(tmp_path):
+    """Re-review finding 2: mode B is "replay, then try something else", and
+    what the something else chose is the interesting part."""
+    from borg_agent import executor
+
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    agent.play_with_mind(out, seed=1, cap=3000, output=tmp_path / 'play',
+                         mind=mind.ScriptedMind(), timeout=300, stall_timeout=60,
+                         lock=lock, log=lambda *a: None)
+    taking_over = executor.ExecutingMind(mind.PrimitiveMind(), name='scripted-primitives')
+    result, _parent = replay.branch(tmp_path / 'play', turn=150, output=tmp_path / 'branch',
+                                    new_mind=taking_over, lock=lock, log=lambda *a: None)
+    assert result['journal']['count'] > 0, 'the branch recorded no decisions'
+    entries = [json.loads(line) for line in
+               (tmp_path / 'branch' / agent.JOURNAL_LOG).read_text().splitlines()]
+    assert {entry['kind'] for entry in entries} == {'choice', 'stop'}
+    # Only what the new mind decided, so nothing before the handover.
+    assert min(entry['turn'] for entry in entries) >= 150

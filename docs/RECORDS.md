@@ -23,7 +23,7 @@ python -m borg_agent explain --run runs/<name> --turn 500
 | `actions.jsonl` | every action it answered, one per line, valid against `action@1` |
 | `trace.txt` | the observer's trace: turn, RNG state, options, the Borg's notes |
 | `state-hashes.txt` | one hash per observation, written by `record` |
-| `decisions.jsonl` | the chooser's decisions and the executor's stop reasons, when a chooser was used |
+| `decisions.jsonl` | the chooser's decisions and the executor's stop reasons, when a chooser was used (a branch keeps the journal of the mind that took over) |
 | `run-record.json` | the record itself, valid against [`run-record@1`](../schemas/run-record@1.json) |
 | `terminal.log`, `input.txt`, `user/borg.txt` | what the game was given |
 
@@ -93,17 +93,39 @@ with the decision and turn. `verify` reads that as "the stream was replayed to
 its end" and says so in `verified_as`. Before this, such a run reported
 `verified: false` with "the states differ" while naming no difference at all.
 
-`verify` also checks **the record against the run**: the
-`evidence.state_hashes_sha256` the record published must still be the hash of
-the state hashes beside the run (`record_matches_run`).
+`verify` also checks **the record against the run**: every count and hash the
+record published — the action stream's count and hash, the observations, the
+state hashes, the journal — must still be the file the replay read
+(`record_matches_run`, with `record_mismatch` naming the first that does not).
+All of them, not just one: with only the state hashes compared, a run could be
+cut short at the end — the replay reproduces what remains, and `prefix`
+tolerates a stream that ends early — while the record still claimed the longer
+run. That hole was opened by the `prefix` tolerance itself and found by the
+re-review.
+
+One limit of `prefix` by construction: it compares no part of the trace, so a
+divergence that shows only in the trace's RNG fields *after* the last recorded
+decision is out of its scope. A run the game ended is compared on the trace as
+well.
 
 Checked on 2026-11-09: a 101-decision run verified `full`; a run stopped at a
-decision cap of 20 verified `prefix` with all 20 states reproduced; and a run
-with one recorded action altered was refused, naming decision 2.
+decision cap of 20 verified `prefix` with all 20 states reproduced; a run with
+one recorded action altered was refused, naming decision 2; and a run whose
+logs were both cut short by three decisions was refused, naming the action
+stream.
 
 A record's immutability is a convention — `record` refuses to overwrite one —
 and nothing anchors its hash outside the run directory yet. The zoo's import
 contract (T11) is where that gets settled.
+
+A replay that ends on the stream records its own outcome as `agent_stopped`:
+the vocabulary has no word for "the recording ended", and the `stream_ended`
+block carries the truth. A record of a replay would therefore read
+`agent_stopped` with `mind.kind: replay`; nothing records replays today.
+
+Run directories made before T15 have no `provenance` block in their
+`result.json`, so no record can be written for them. They were throwaway; the
+refusal is deliberate.
 
 ## branch
 
@@ -134,7 +156,8 @@ build. Each takes the last observation at or before the turn asked for.
 ### The journal
 
 A run whose mind chooses primitives writes `decisions.jsonl` beside the
-actions: one line per choice (which primitive, the chooser's own reason, and
+actions — including a **branch**, where the mind that took over is the one with
+something to say (the `replay` mind passes the drain through to it): one line per choice (which primitive, the chooser's own reason, and
 the stop it was answering) and one per stop (which primitive, why, at which
 turn, after how many decisions). The commands in `actions.jsonl` carry only
 the executor's mechanical reasons, so without the journal a record could not
