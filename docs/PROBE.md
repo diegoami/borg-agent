@@ -137,7 +137,14 @@ Three things worth knowing, and the claim says all three:
    **NOT ruled out** in as many words.
 3. **Every trial is this harness's assigned birth** — a Human Warrior (R1.6).
    A probe about another class waits for a birth the probe can choose, which is
-   why the scope says `class: Warrior` and means it.
+   why the scope says `class: Warrior` and means it. *(T24 made that birth
+   choosable, and the Mage version of this probe followed.)*
+4. **Both of these probes are melee-only.** When they ran, the action surface
+   offered no spells, wands or thrown weapons (T29 added them afterwards), so
+   they are facts about characters fighting barehanded. Their claims were
+   superseded to say so, and the Mage's question deserves asking again with
+   magic — a new probe id, since a probe file changed after it has a result is
+   a new probe.
 
 ## The same question, asked of a Mage
 

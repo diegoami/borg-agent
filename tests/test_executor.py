@@ -6,6 +6,7 @@ valuations (R2, docs/SOURCES.md). A threshold only exists when the mind asked
 for one.
 """
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -18,7 +19,8 @@ ACTION_SCHEMA = Draft202012Validator(json.loads((ROOT / 'schemas/action@1.json')
 
 
 def observation(rows=None, player=(2, 1), hp=18, max_hp=18, depth=1, monsters=(),
-                inventory=(), prompt='none', shop=None, messages=(), turn=10, decision=0):
+                inventory=(), prompt='none', shop=None, messages=(), turn=10, decision=0,
+                spells=(), new_spells=0):
     rows = rows or ['#####',
                     '#.@.#',
                     '#####']
@@ -26,10 +28,16 @@ def observation(rows=None, player=(2, 1), hp=18, max_hp=18, depth=1, monsters=()
         'schema': 'borg-agent/observation@1', 'run_id': 'test',
         'decision': decision, 'turn': turn,
         'character': {'race': 'Human', 'class': 'Warrior', 'level': 1,
-                      'hp': hp, 'max_hp': max_hp, 'depth': depth, 'gold': 100},
+                      'hp': hp, 'max_hp': max_hp, 'depth': depth, 'gold': 100,
+                      'new_spells': new_spells},
         'map': {'player': {'x': player[0], 'y': player[1]}, 'origin': {'x': 0, 'y': 0},
                 'rows': rows},
-        'monsters': [dict(letter='r', name='a rat', x=x, y=y) for x, y in monsters],
+        # A monster is either (x, y) -- a rat, for the pathing tests -- or a
+        # whole dict when a test cares what it is (T29).
+        'monsters': [m if isinstance(m, dict) else dict(letter='r', name='a rat', x=m[0],
+                                                        y=m[1])
+                     for m in monsters],
+        'spells': list(spells),
         'objects': [],
         'inventory': [dict(label=label, description=description, count=1)
                       for label, description in inventory],
@@ -236,11 +244,67 @@ def test_a_primitive_stops_at_the_limit_the_mind_set():
 def test_the_primitives_are_the_ones_r2_names():
     assert set(executor.PRIMITIVES) == {
         'walk_to', 'explore_floor', 'fight_nearest', 'rest_until_healed',
-        'take_stairs', 'flee', 'read_unknown_scroll', 'shop_list'}
+        'take_stairs', 'flee', 'read_unknown_scroll', 'shop_list',
+        # T29: R2's eight were written for a Warrior. A caster that can
+        # neither cast nor study is not playing its class.
+        'cast_at_nearest', 'study_a_spell'}
     # They are also the ones action@1 allows a mind to ask for.
     schema = json.loads((ROOT / 'schemas/action@1.json').read_text())
     allowed = schema['allOf'][0]['then']['properties']['primitive']['properties']['name']['enum']
     assert set(allowed) == set(executor.PRIMITIVES)
+
+
+# --- the caster's primitives (T29) ------------------------------------------
+
+def spellbook(castable=True, studyable=False, name='Magic Missile'):
+    return [{'book': 'a', 'letter': 'a', 'name': name, 'level': 1, 'mana': 1,
+             'fail_percent': 16, 'castable': castable, 'studyable': studyable}]
+
+
+def test_casting_at_the_nearest_monster_names_both_letters():
+    primitive = executor.make({'name': 'cast_at_nearest', 'book': 'a', 'spell': 'a'})
+    seen = observation(monsters=[{'letter': 'R', 'name': 'rock lizard', 'x': 4, 'y': 1,
+                                  'distance': 2, 'asleep': None, 'health': None}],
+                       spells=spellbook())
+    answer, stop = primitive.step(seen)
+    assert stop is None
+    assert answer['command'] == {'name': 'cast', 'book': 'a', 'spell': 'a',
+                                 'target': {'x': 4, 'y': 1}}
+    assert 'Magic Missile' in answer['reason']
+
+
+@pytest.mark.parametrize('spells,monsters,stop', [
+    (spellbook(castable=False), 'one', 'cannot_cast'),
+    (spellbook(name='Light Room'), 'one', 'no_such_spell'),
+    (spellbook(), 'none', 'no_target'),
+])
+def test_what_stops_a_cast(spells, monsters, stop):
+    # The game's own judgement about whether a spell can be cast -- mana,
+    # level, whether it is even learned -- is what stops it, not ours.
+    if spells and spells[0]['name'] != 'Magic Missile':
+        spells = []            # the mind named a spell the book does not hold
+    primitive = executor.make({'name': 'cast_at_nearest', 'book': 'a', 'spell': 'a'})
+    seen = observation(spells=spells,
+                       monsters=([{'letter': 'R', 'name': 'rock lizard', 'x': 4, 'y': 1,
+                                   'distance': 2, 'asleep': None, 'health': None}]
+                                 if monsters == 'one' else []))
+    assert primitive.step(seen)[1] == stop
+
+
+def test_studying_takes_what_the_game_offers_and_stops():
+    primitive = executor.make({'name': 'study_a_spell'})
+    seen = observation(spells=spellbook(castable=False, studyable=True), new_spells=1)
+    answer, stop = primitive.step(seen)
+    assert stop is None and answer['command'] == {'name': 'study', 'book': 'a', 'spell': 'a'}
+    # One study per primitive: the mind looks at the result before asking again.
+    assert primitive.step(seen)[1] == 'studied'
+
+
+def test_a_character_with_nothing_to_learn_says_so():
+    primitive = executor.make({'name': 'study_a_spell'})
+    assert primitive.step(observation(spells=spellbook(studyable=True),
+                                      new_spells=0))[1] == 'nothing_to_study'
+    assert primitive.step(observation(spells=[], new_spells=2))[1] == 'nothing_to_study'
 
 
 def test_every_stop_reason_is_a_declared_one():
@@ -331,6 +395,77 @@ def test_everything_the_executor_produces_is_valid_and_translatable():
         assert action is not None, (primitive.name, stop)
         ACTION_SCHEMA.validate(action)
         assert agent.wire(action)
+
+
+@pytest.mark.slow
+def test_a_mage_kills_something_with_a_spell(tmp_path):
+    """T29's gate: the surface is wide enough for a caster to play its class.
+
+    Before this, a Mage could only melee -- `fight_nearest` and `walk` were
+    the whole of its options -- so every Mage result this repository had was a
+    Mage deprived of magic.
+    """
+    from borg_agent import agent, build, probe
+
+    class Caster:
+        """Summons a lizard with the game's own debug command, then blasts it."""
+
+        name, kind = 'caster', 'scripted'
+
+        def __init__(self):
+            self.steps = ['\x01j', '1\n', '\x01n', 'Rock lizard\n']
+
+        def act(self, seen):
+            prompt = seen.get('prompt') or {}
+            text = prompt.get('text') or ''
+            if probe.DEBUG_CONFIRMATION in text:
+                return mind.action('keys', 'yes', keys={'keys': 'y', 'why': 'setup'})
+            if prompt.get('kind') == 'yes_no':
+                return mind.action('keys', 'no', keys={'keys': 'n', 'why': 'setup'})
+            if (seen['character'].get('new_spells') or 0) > 0:
+                return mind.action('primitive', 'learn one',
+                                   primitive={'name': 'study_a_spell'})
+            if self.steps:
+                return mind.action('keys', 'set up',
+                                   keys={'keys': self.steps.pop(0), 'why': 'setup'})
+            missile = [s for s in seen.get('spells') or () if s['name'] == 'Magic Missile']
+            if missile and seen['monsters']:
+                return mind.action('primitive', 'blast it',
+                                   primitive={'name': 'cast_at_nearest',
+                                              'book': missile[0]['book'],
+                                              'spell': missile[0]['letter'],
+                                              'max_decisions': 8})
+            return mind.action('command', 'wait', command={'name': 'stay'})
+
+    out = build.prepare(log=lambda *a: None)
+    lock = not os.environ.get('BORG_AGENT_NO_LOCK')
+    played = agent.play_with_mind(out, seed=2, cap=600, output=tmp_path / 'mage',
+                                  mind=executor.ExecutingMind(Caster()), from_turn=100,
+                                  race='Human', class_='Mage', decision_cap=80,
+                                  lock=lock, log=lambda *a: None)
+    assert played['outcome'] in ('turn_cap', 'agent_stopped'), played
+
+    observations = [json.loads(line) for line
+                    in (tmp_path / 'mage/observations.jsonl').read_text().splitlines()
+                    if line.strip()]
+    actions = [json.loads(line) for line
+               in (tmp_path / 'mage/actions.jsonl').read_text().splitlines() if line.strip()]
+
+    # The game told the Mage what it could cast, with the letters to cast it by.
+    missile = [s for o in observations for s in (o.get('spells') or ())
+               if s['name'] == 'Magic Missile']
+    assert missile and missile[0]['book'] == 'a' and missile[0]['mana'] == 1
+
+    casts = [a for a in actions if (a.get('command') or {}).get('name') == 'cast']
+    assert casts, 'the Mage never cast anything'
+    assert casts[0]['command']['book'] and casts[0]['command']['spell']
+
+    messages = [m for o in observations for m in o['messages']]
+    assert any('Target Selected' in m for m in messages), messages[-8:]
+    assert any('dies' in m or 'destroyed' in m for m in messages), messages[-8:]
+    # Casting costs mana, which is the plainest proof the spell was really cast.
+    assert min(o['character']['sp'] for o in observations) < max(
+        o['character']['sp'] for o in observations)
 
 
 @pytest.mark.slow

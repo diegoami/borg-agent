@@ -40,6 +40,25 @@ WIRE_COMMANDS = {
     'quaff': {'item': 'item'},
     'buy': {'item': 'item', 'count': 'count'},
     'sell': {'item': 'item', 'count': 'count'},
+    # The rest of the game (T29). A spell names the book and the letter the
+    # observation gave it; anything aimed names the square, and the bridge
+    # targets it the way the Borg does before it acts.
+    'cast': {'book': 'book', 'spell': 'spell', 'at_x': 'at_x', 'at_y': 'at_y'},
+    'study': {'book': 'book', 'spell': 'spell'},
+    'aim': {'item': 'item', 'at_x': 'at_x', 'at_y': 'at_y'},
+    'zap': {'item': 'item', 'at_x': 'at_x', 'at_y': 'at_y'},
+    'throw': {'item': 'item', 'at_x': 'at_x', 'at_y': 'at_y'},
+    'use': {'item': 'item'},
+    'activate': {'item': 'item'},
+    'eat': {'item': 'item'},
+    'wield': {'item': 'item'},
+    'take_off': {'item': 'item'},
+    'drop': {'item': 'item'},
+    'tunnel': {'direction': 'dir'},
+    'disarm': {'direction': 'dir'},
+    'open': {'direction': 'dir'},
+    'close': {'direction': 'dir'},
+    'target': {'at_x': 'at_x', 'at_y': 'at_y'},
 }
 SAFE = set('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.,:/')
 
@@ -50,14 +69,35 @@ def escape(value):
                    for c in str(value))
 
 
-def wire(action):
+def aimed(command, observation):
+    """The same command with `target_nearest` resolved, and `target` flattened.
+
+    The nearest visible monster is a fact in the observation, not a judgement,
+    so the harness resolves it (T29). With nothing visible the target is
+    dropped: the game then asks for a direction and the next observation
+    carries that prompt, which is the mind's business to answer.
+    """
+    command = dict(command)
+    target = command.pop('target', None)
+    if command.pop('target_nearest', False):
+        monsters = sorted(observation.get('monsters') or (),
+                          key=lambda m: (m.get('distance') if m.get('distance') is not None
+                                         else 999))
+        target = {'x': monsters[0]['x'], 'y': monsters[0]['y']} if monsters else None
+    if target:
+        command['at_x'] = int(target['x'])
+        command['at_y'] = int(target['y'])
+    return command
+
+
+def wire(action, observation=None):
     """One action as the bridge's line. The bridge turns it into keys."""
     kind = action['kind']
     if kind == 'keys':
         return 'keys ' + escape(action['keys']['keys'])
     if kind != 'command':
         raise ValueError(f'the bridge has no translation for a {kind} action yet (T05)')
-    command = action['command']
+    command = aimed(action['command'], observation or {})
     name = command['name']
     if name not in WIRE_COMMANDS:
         raise ValueError(f'the bridge has no key translation for the command {name!r}')
@@ -330,7 +370,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                         validator.check('action', action, f'action {decisions}')
                         action_log.write(json.dumps(action, sort_keys=True) + '\n')
                         journal_entries += drain_journal_into(mind, journal_log)
-                        actions.write(wire(action) + '\n')
+                        actions.write(wire(action, observation) + '\n')
                         actions.flush()
                         # The stall limit is on the *game's* answer, so the
                         # clock starts when the action goes out, not when the

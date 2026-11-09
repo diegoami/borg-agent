@@ -37,7 +37,7 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
-| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, T22 (D11), T24, then T09, T10, T11 | **in progress** |
+| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, T22 (D11), T24, T25, T11, T26, T27, **T29, then T28** (D12), T09, T10 | **in progress** |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -82,6 +82,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T26 | A real model run as a Mage, and --race/--class on the CLI | 4 | T24 | with a profile whose key variables are set | in progress (task/T26-model-run-as-a-mage) |
 | T27 | Keep the model's reasoning | 4 | T06 | yes | in review |
 | T28 | Ask by state, not by event (D12) | 4 | T06, T27 | yes | todo |
+| T29 | The action surface: magic, items, and a refusal that is not fatal | 4 | T22 | yes | in review |
 
 ### T01. Build and play the pinned game headless
 
@@ -403,6 +404,57 @@ false, and a post-mortem is meant to explain itself; both are much weaker when
 the reasoning was thrown away. The cost is size — about 15 KB a call rather
 than 300 bytes, so a 20,000-turn run is of the order of 3 MB — and R5 already
 keeps large logs out of git.
+
+### T29. The action surface: magic, items, and a refusal that is not fatal
+
+The owner, 2026-11-09, reading the state table in T28: *"are the choices in my
+choose just examples? because there are much more choices, of course"*.
+
+They were not examples. They were the whole menu: eight primitives and thirteen
+commands (`walk`, `alter`, `stay`, `pickup`, `rest`, `go_down`, `go_up`,
+`answer`, `read`, `quaff`, `buy`, `sell`, `escape`). **No cast. No study.** So
+the Mage of T26 punched a rock lizard because melee was the only thing on
+offer, and every Mage result in the knowledge base was a fact about a Mage
+deprived of magic.
+
+What this adds, all of it typed the way the Borg types it (D8 allows reading
+its source; its *thresholds* are what we exist to measure, its *keys* are just
+how the game is spoken to):
+
+- **the observation tells a caster what it has**: a `spells` list built like
+  the game's own spell menu (`ui-spell.c`) — the book's inventory letter, the
+  spell's letter inside it, name, level, mana, failure chance, and whether the
+  game would allow casting or studying it right now — plus `new_spells` on the
+  character, the game's "You can learn N more spells". Without this a caster
+  would have to guess its own letters;
+- **the commands**: `cast` (book, spell, target), `study`, `aim`, `zap`,
+  `throw`, `use`, `activate`, `eat`, `wield`, `take_off`, `drop`, `tunnel`,
+  `disarm`, `open`, `close` and `target`;
+- **targeting is `borg_target`'s own walk**: `*`, `p`, the direction digits
+  that move the cursor to the square — diagonals first — then `5`; a spell then
+  takes `5` for "the current target". `target_nearest` is resolved by the
+  harness from the observation, because which monster is nearest is a fact
+  there, not a judgement;
+- **two primitives**, `cast_at_nearest {book, spell}` and
+  `study_a_spell {book?, spell?}`, with the game's own refusals as their stops:
+  `cannot_cast` is the game saying no, not us;
+- **an action the bridge cannot type is refused, not fatal.** It called
+  `quit()`, so a model inventing a command name ended the run; now the bridge
+  notes `# AGENT refused <name>` and the next observation carries it.
+
+**The gate**: a Human Mage studies if it needs to, summons a rock lizard with
+the game's own debug command, and casts Magic Missile at it —
+`Target Selected.` · `You failed to concentrate hard enough!` · (again) ·
+`The rock lizard dies.` — with mana falling 2 → 1 → 0. The first spell ever
+cast in this repository, and the failed one is the honest part: 16% fail, and
+it costs the mana anyway.
+
+**The two floating-eye claims are superseded**, not edited (R4.1): their counts
+stand, their scope was wrong. They now say "with melee the only attack the
+harness offered", and the notes say why, because a reader would otherwise take
+them for facts about the classes. The obvious next probe is the Mage's question
+asked again **with magic**, which is a new probe id and the first thing T28's
+`fighting` state will have something to choose between.
 
 ### T28. Ask by state, not by event (D12)
 

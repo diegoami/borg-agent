@@ -28,7 +28,7 @@ action itself:
 That keeps the judgement where it can be measured. If the executor decided
 when to flee, the thing being measured would be the plumbing.
 
-## The eight
+## The ten
 
 | Primitive | What it does | Its own stops |
 |---|---|---|
@@ -40,6 +40,16 @@ when to flee, the thing being measured would be the plumbing.
 | `flee {by}` | leaves by the nearest staircase, or reads a Phase Door scroll | `fled`, `no_escape` |
 | `read_unknown_scroll` | reads a scroll the player has not identified | `read`, `none_unknown` |
 | `shop_list {list}` | buys or sells the labels on a list, in order | `bought`, `not_in_shop`, `missing_item`, `refused` |
+| `cast_at_nearest {book, spell}` | casts that one spell at the nearest visible monster until it is gone | `no_target`, `no_such_spell`, `cannot_cast` |
+| `study_a_spell {book?, spell?}` | learns one spell the game says may be learned | `studied`, `nothing_to_study` |
+
+The last two are **T29's**, and R2's eight were written for a Warrior: a caster
+that can neither cast nor study is not playing its class, and every Mage result
+this repository had before them was a Mage deprived of magic. They hold no
+opinion about *which* spell is worth casting — the mind names it by the two
+letters the observation's `spells` list gives it — and the stops are the game's
+own judgements: `cannot_cast` is the game saying no (unlearned, too low a
+level, not enough mana), not ours.
 
 Every primitive can also stop for a change that is not its own business:
 `prompt` (a prompt opened), `changed_level`, `new_monster` (one the player
