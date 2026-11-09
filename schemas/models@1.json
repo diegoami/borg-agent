@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/diegoami/borg-agent/schemas/models@1.json",
+  "title": "Model configuration (borg-agent/models@1)",
+  "description": "models.yaml: the providers, the models per job and the named profiles (decision D7). It is the only model rule in this repository, and it never holds a key: a provider names the environment variable that holds its key, and the agent reads the key from the environment at run time. models.local.yaml, which git ignores, is validated against the same schema with everything optional but `profile` and the job overrides.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "default_profile", "providers", "profiles"],
+  "properties": {
+    "schema": {"const": "borg-agent/models@1"},
+    "default_profile": {"$ref": "#/$defs/name"},
+    "providers": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/$defs/name"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["base_url", "api_key_env", "source"],
+        "properties": {
+          "base_url": {
+            "type": "string",
+            "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]*)?$",
+            "description": "The provider's OpenAI-compatible base URL, taken from its own documentation. HTTPS, no user info: a URL with credentials is not configuration (RULES 16)."
+          },
+          "api_key_env": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$",
+            "description": "The **name** of the environment variable that holds the key. Never the key."
+          },
+          "source": {
+            "type": "string",
+            "pattern": "^https://",
+            "description": "Where the base URL was taken from, so it can be checked again."
+          }
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/$defs/name"},
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["play", "consolidate", "review"],
+        "description": "One model per job. `review` must be of a different family from `consolidate` (R4.3), which the loader checks.",
+        "properties": {
+          "play": {"$ref": "#/$defs/job"},
+          "consolidate": {"$ref": "#/$defs/job"},
+          "review": {"$ref": "#/$defs/job"}
+        }
+      }
+    },
+    "trial": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The model trial's candidates per job (T09).",
+      "properties": {
+        "play": {"$ref": "#/$defs/candidates"},
+        "consolidate": {"$ref": "#/$defs/candidates"},
+        "review": {"$ref": "#/$defs/candidates"}
+      }
+    }
+  },
+  "$defs": {
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9_-]*$"},
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider", "model", "family"],
+      "properties": {
+        "provider": {"$ref": "#/$defs/name"},
+        "model": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9._:/-]+$"},
+        "family": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$",
+                    "description": "The model's family, which is what the review rule compares (R4.3)."},
+        "context_k": {"type": "integer", "minimum": 1,
+                       "description": "How many thousand tokens of context this job may use (R2.2). The loader's default applies when it is absent."},
+        "effort": {"type": "string", "minLength": 1,
+                    "description": "The provider's reasoning-effort setting, when it has one."}
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/job"}
+    }
+  }
+}

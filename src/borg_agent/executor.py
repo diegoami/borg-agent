@@ -450,9 +450,42 @@ class ExecutingMind:
     PATIENCE = 6
 
     def drain_journal(self):
-        """The journal entries since the last call, for the run to write out."""
-        entries, self.journal = self.journal, []
+        """The journal entries since the last call, for the run to write out.
+
+        The chooser's own entries come first: a model's calls belong to the
+        decision it was asked about.
+        """
+        drain = getattr(self.chooser, 'drain_journal', None)
+        entries = (drain() if drain else []) + self.journal
+        self.journal = []
         return entries
+
+    # The executor decides nothing, so for everything a run needs to know
+    # about the mind -- the call log, the budget, what to record -- it is
+    # transparent and the chooser answers.
+    @property
+    def call_log(self):
+        """The chooser's call log, or None when it keeps none."""
+        return getattr(self.chooser, 'call_log', None)
+
+    @call_log.setter
+    def call_log(self, value):
+        # A chooser that does not call a model has nowhere to put one, and
+        # setting it here would only hide that.
+        if hasattr(self.chooser, 'call_log'):
+            self.chooser.call_log = value
+
+    @property
+    def budget(self):
+        return getattr(self.chooser, 'budget', None)
+
+    @property
+    def parse_failures(self):
+        return getattr(self.chooser, 'parse_failures', None)
+
+    @property
+    def mind_record(self):
+        return getattr(self.chooser, 'mind_record', None)
 
     def act(self, observation):
         for _ in range(self.PATIENCE):   # a stop may follow a choice at once

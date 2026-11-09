@@ -23,6 +23,8 @@ it. A later Rust Borg, the "Borg reborn", is to be built from it.
 - [Records and replay](docs/RECORDS.md): what makes a run evidence, and the
   five tools that work on it.
 - [The executor](docs/EXECUTOR.md): the primitives a mind chooses between.
+- [The mind](docs/MINDS.md): which model decides, what it is told, and what a
+  call costs.
 
 ## Status
 
