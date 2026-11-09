@@ -70,7 +70,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
 | T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
 | T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
-| T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | in progress (task/T17-repin-milestone-8) |
+| T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | done (#24) |
 
 ### T01. Build and play the pinned game headless
 
