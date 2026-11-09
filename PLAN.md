@@ -73,7 +73,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T17 | Pin better-borg-c milestone 8 | 3 | T03 | yes | done (#24) |
 | T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | done (#26) |
 | T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
-| T20 | The user manual as a source | 3 | T19 | yes | done (branch `claude/elegant-volta-r5qdic`) |
+| T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
 
 ### T01. Build and play the pinned game headless
 
