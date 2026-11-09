@@ -6,12 +6,12 @@
   },
   "calendar": {
     "TZ_environment": null,
-    "local": "2026-11-09T03:47:38.814897+01:00",
+    "local": "2026-11-09T10:18:58.662312+01:00",
     "seasonal": false,
     "timezone_name": "CET",
-    "utc": "2026-11-09T02:47:38.814897+00:00"
+    "utc": "2026-11-09T09:18:58.662312+00:00"
   },
-  "created": "2026-11-09T02:47:38.814897+00:00",
+  "created": "2026-11-09T09:18:58.662312+00:00",
   "deterministic": true,
   "engine": {
     "binary_sha256": "b5fe5f6507a7a7251a57131866acc88174ee43934d1bae6cba482e16f14dd1f7",
@@ -99,8 +99,10 @@
     },
     "pins": {
       "better-borg-c": "017e038e8726a7a423887a366b5d40e89c0550a1",
+      "borg-rs": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
       "borg-spec": "eefc55000dd5d5f43d8f077f6543b4594807ce08",
       "borg-zoo": "4c675343fa6aed8aeb9ff265d9d10a22054e0ac5",
+      "c-borg-reference": "471e1214cdf457c8035878a13c34cb6b9669b434",
       "original": "e473720ed88a0f0c7ca66815cef3000eb4a38bc3",
       "runner": "fc9d97cb46aa0aaa27773e5c83a41ec395d515fc"
     },
@@ -209,6 +211,6 @@
   "usage": {
     "decisions": 101,
     "model_calls": 0,
-    "wall_seconds": 0.36
+    "wall_seconds": 0.416
   }
 }

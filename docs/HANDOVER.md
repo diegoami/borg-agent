@@ -17,11 +17,10 @@ level and no PR open.*
   [#15](https://github.com/diegoami/borg-agent/pull/15) by a model of another
   family (Kimi K3). Every finding of both rounds is answered: T12 for
   milestone 1's, T15 and T16 for milestone 2's.
-- **Milestone 3 is in progress.** T17 (the game pin to better-borg-c
-  milestone 8), T18 (the borg-rs pin) and T19 (the strategy manual and the
-  online command reference as sources) and T20 (the user manual as a source)
-  are done. **T06 is next**: the
-  `models.yaml` loader, the prompt pack and the three minds. Then T07 (the
+- **Milestone 3 is in progress.** Done: T17 (the game pin to better-borg-c
+  milestone 8), T18 (the borg-rs pin), T19 (the strategy manual and the online
+  command reference as sources) and T20 (the user manual). **T06 is next**:
+  the `models.yaml` loader, the prompt pack and the three minds. Then T07 (the
   knowledge store) and T08 (the post-mortem start).
 - **What works end to end:** the pinned game builds; the stock Borg plays it
   reproducibly; an agent plays through the Borg's own connection choosing
@@ -68,6 +67,38 @@ and record which. Nothing else is blocked.
 Expected soon: the owner is building **borg-rs milestone 8**, so the `borg-rs`
 pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
 
+One process note, not a problem: T19 and T20 were done by a cloud session,
+which cannot choose its branch name, so both used `claude/elegant-volta-r5qdic`
+rather than `task/Tnn-short-name` (RULES 5). The substance held — one task per
+PR, #30 and #31 — and the commits carry no AI attribution. If the rule should
+say what a session that cannot name its branch does, that is the owner's
+one-line change.
+
+### The sources the agent has, after T19 and T20
+
+Three manual-like texts, and they are not equal:
+
+| | What it is | How much to trust it |
+|---|---|---|
+| the game's manual | `docs/*.rst` and `lib/help/` at the game pin | the game's own words; **required** reading, and the only basis a `documented` claim may rest on |
+| the user manual | `docs/user-manual.md` at the `c-borg-reference` pin, 3,740 lines | written by a model, with tables generated from `lib/gamedata/`. Advice to test, not fact |
+| the strategy manual | `docs/strategy/` at the same pin: a README, six generated appendices (A1-A6) and the generator | the same — a model wrote the prose. Its README links to **eight chapters that do not exist** (`01-mechanics.md` … `08-phase-strategy.md`, fourteen dead links) |
+
+Verified on 2026-11-09, so nobody need re-derive it:
+- `lib/gamedata/` is **byte-identical** across the `c-borg-reference`,
+  `better-borg-c` (m8) and `original` (e473720) pins — 46 files, the same blob
+  set. So an appendix generated from it describes the game we play.
+- `docs/command.rst` is the same blob (`fb6993d5`) at all three pins, which is
+  what makes the online command reference safe to cite *as that file*.
+- The online page itself (`angband.readthedocs.io/en/latest/command.html`) has
+  **never been read from here**: the network blocks it, and `latest` moves with
+  upstream. `pins.json` records the URL as unpinned, with that substitution.
+
+A claim read in either model-written manual uses `static:user-manual` or
+`static:strategy-manual`, and **can never be `documented`**: the schema's
+existing rule forces that status to rest on the game's own manual, and where
+the two disagree the game's manual wins. No new rule was needed for that.
+
 ### What T06 should know before it starts
 
 - The observation carries **the whole of the player's known map**, about 4 KB
@@ -82,7 +113,9 @@ pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
   writes anything.
 - The prompt pack's test is about **provenance, not permission** (D8): every
   file a prompt draws on is named in `pins.json`'s `sources`, and the pack
-  records which.
+  records which. There are twelve sources now, three of them manual-like: the
+  pack names which it loads and **keeps the game's manual first**, since it is
+  the only one whose word is final.
 - `budget_cap` is an outcome, not a failure, and `verify` handles such a run
   with its `prefix` scope. That path exists and is tested; use it.
 
