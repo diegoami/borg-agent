@@ -37,7 +37,7 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
-| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, then T22 (D11), T09, T10, T11 | **in progress** |
+| **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, which model does which job is measured, the pilot runs, and the zoo can import a run | T23, T22 (D11), T24, then T09, T10, T11 | **in progress** |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -75,8 +75,9 @@ branch), `in review` (with the PR), `done` (merged).
 | T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
 | T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
-| T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | in review |
+| T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | done (#44) |
 | T23 | Milestone-3 review findings | 4 | T06, T07, T08 | yes | done (#43) |
+| T24 | Birth by race and class | 4 | T22 | yes, and it needs no model | in review |
 
 ### T01. Build and play the pinned game headless
 
@@ -321,6 +322,64 @@ construction; `survived_past_the_death` still rests on sampled turns, which
 understates both sides; and a mode B prefix that outlives the wall limit is
 still classified `crash` rather than `harness_failure` — bounded, non-good, and
 left where the reviewer found it.
+
+### T24. Birth by race and class
+
+The owner, 2026-11-09, on seeing the first probe answer only for a Warrior:
+*"we did to do these probes with other classes and races, what is blocking
+us"*.
+
+What was blocking it was ours, not the game's: `play.BIRTH_INPUT` was one
+hardcoded key script, and a test keeps it byte-identical to the zoo runner's
+own `INPUT` at the pin so that our games are the zoo's games. The runner itself
+offers only `--random-birth` (`key *` twice: random race and class from the
+seed), so there was no way to *say* "Mage".
+
+**The birth menus select on a double tap.** Pressing an item's letter moves the
+cursor to it and pressing it again selects it; only the first item's letter
+selects at once. That is why a single `key b` in the class menu births a
+**Warrior** — the cursor moved and nothing was chosen — and it cost an hour of
+measuring to find, because the character comes out plausible and wrong. The
+rule is the zoo's own (`zoo/harness.py`, `birth_input`), found there after the
+measurements agreed with it. The menu tags also **skip h, j, k and l**, the
+roguelike movement keys (`all_letters_nohjkl` in `src/ui-menu.c`), so
+Half-Troll, the eighth race, is tagged `i`.
+
+Both the tags and the race and class order are **read from the game at the
+pin** — `src/ui-menu.c`, `lib/gamedata/p_race.txt`, `lib/gamedata/class.txt` —
+rather than written down here, because a wrong letter births someone else
+without saying so.
+
+Done in this task:
+
+- `play.choices`, `play.menu_tags`, `play.birth_input` and
+  `play.birth_description`; `race` and `class_` on `play`, `play_with_mind`,
+  `find_death` and `post_mortem`, and **through `verify` and `branch`**, which
+  is what makes a Mage's run replay as a Mage: the birth is part of the game
+  the actions were recorded in;
+- `result.json` keeps the choice as `birth_choice`, and the record's
+  `game.birth.rule` is **`assigned`** rather than `fixed` when a run asked for
+  a character (the zoo's own vocabulary);
+- `probe@1` gains `birth`, and a probe whose `scope` disagrees with its birth
+  is refused: a probe answers for the character it played;
+- **the claim's statement is the counts, not a prediction.** The Mage probe
+  came back 5 of 10 under a file that predicted "usually lives", so a probe
+  without `statement:` now has the harness write the question and what was
+  counted. A claim whose words argue with its own numbers is worse than none;
+- the gate: a Mage is born, recorded (`rule: assigned`), and **replayed as a
+  Mage**; and 10 of 10 race-and-class pairs asked for were born as asked and
+  played to the cap (Human Warrior, Human Mage, Human Priest, Half-Troll
+  Warrior, Kobold Blackguard, High-Elf Ranger, Hobbit Rogue, Dwarf Druid,
+  Gnome Necromancer, Dunadan Paladin).
+
+**What it bought immediately**: the floating-eye question, asked of the class
+it matters for. A Warrior survives 10 of 10 and kills the eye in one or two
+blows; a **Mage survives 5 of 10, and the eye kills it in 4**. On four seeds
+the control arm died at the same turn of the same cause, because the gaze
+paralyses before the character can walk away — the choice the probe meant to
+test had already been taken away. See [docs/PROBE.md](docs/PROBE.md).
+
+It also unblocks **T10**, whose pilot asks for nine runs, one per class.
 
 ### T22. Mode C probes: a question answered in counted trials
 

@@ -1,0 +1,442 @@
+{
+  "arms": {
+    "action": {
+      "deaths": 5,
+      "monster_died": 5,
+      "successes": 5,
+      "trials": 10
+    },
+    "control": {
+      "deaths": 5,
+      "monster_died": 4,
+      "successes": 5,
+      "trials": 10
+    }
+  },
+  "birth": {
+    "class": "Mage",
+    "race": "Human"
+  },
+  "cap": 1200,
+  "control_isolated_the_action": false,
+  "intervention": true,
+  "predicate": "survived",
+  "probe": "floating-eye-melee-mage",
+  "question": "Can a level-1 Human Mage melee an adjacent floating eye and live?",
+  "schema": "borg-agent/probe-result@1",
+  "seeds": [
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20
+  ],
+  "setup_failed": 0,
+  "trials": [
+    {
+      "arm": "action",
+      "cause": null,
+      "counts": true,
+      "decisions": 10,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 171,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed11",
+      "run_id": "action-seed11",
+      "seed": 11,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "control",
+      "cause": null,
+      "counts": true,
+      "decisions": 26,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 331,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed11",
+      "run_id": "control-seed11",
+      "seed": 11,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "action",
+      "cause": null,
+      "counts": true,
+      "decisions": 12,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 251,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed12",
+      "run_id": "action-seed12",
+      "seed": 12,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "control",
+      "cause": "Fang, Farmer Maggot's Dog",
+      "counts": true,
+      "decisions": 74,
+      "final_turn": 870,
+      "killed_it": true,
+      "last_turn": 861,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed12",
+      "run_id": "control-seed12",
+      "seed": 12,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "action",
+      "cause": null,
+      "counts": true,
+      "decisions": 9,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 161,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed13",
+      "run_id": "action-seed13",
+      "seed": 13,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "control",
+      "cause": null,
+      "counts": true,
+      "decisions": 6,
+      "final_turn": 1,
+      "killed_it": false,
+      "last_turn": 101,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed13",
+      "run_id": "control-seed13",
+      "seed": 13,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "action",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 8,
+      "final_turn": 271,
+      "killed_it": false,
+      "last_turn": 191,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed14",
+      "run_id": "action-seed14",
+      "seed": 14,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "control",
+      "cause": null,
+      "counts": true,
+      "decisions": 6,
+      "final_turn": 1,
+      "killed_it": false,
+      "last_turn": 101,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed14",
+      "run_id": "control-seed14",
+      "seed": 14,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "action",
+      "cause": null,
+      "counts": true,
+      "decisions": 10,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 201,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed15",
+      "run_id": "action-seed15",
+      "seed": 15,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "control",
+      "cause": "(alive and well)",
+      "counts": true,
+      "decisions": 110,
+      "final_turn": 1200,
+      "killed_it": true,
+      "last_turn": 1192,
+      "outcome": "turn_cap",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed15",
+      "run_id": "control-seed15",
+      "seed": 15,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "action",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 9,
+      "final_turn": 271,
+      "killed_it": false,
+      "last_turn": 241,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed16",
+      "run_id": "action-seed16",
+      "seed": 16,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "control",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 9,
+      "final_turn": 271,
+      "killed_it": false,
+      "last_turn": 241,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed16",
+      "run_id": "control-seed16",
+      "seed": 16,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "action",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 9,
+      "final_turn": 281,
+      "killed_it": false,
+      "last_turn": 161,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed17",
+      "run_id": "action-seed17",
+      "seed": 17,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "control",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 9,
+      "final_turn": 281,
+      "killed_it": false,
+      "last_turn": 161,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed17",
+      "run_id": "control-seed17",
+      "seed": 17,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "action",
+      "cause": null,
+      "counts": true,
+      "decisions": 9,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 161,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed18",
+      "run_id": "action-seed18",
+      "seed": 18,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "control",
+      "cause": null,
+      "counts": true,
+      "decisions": 62,
+      "final_turn": 1,
+      "killed_it": true,
+      "last_turn": 691,
+      "outcome": "agent_stopped",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed18",
+      "run_id": "control-seed18",
+      "seed": 18,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": true
+    },
+    {
+      "arm": "action",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 8,
+      "final_turn": 261,
+      "killed_it": false,
+      "last_turn": 193,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed19",
+      "run_id": "action-seed19",
+      "seed": 19,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "control",
+      "cause": "a floating eye",
+      "counts": true,
+      "decisions": 8,
+      "final_turn": 261,
+      "killed_it": false,
+      "last_turn": 193,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed19",
+      "run_id": "control-seed19",
+      "seed": 19,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "action",
+      "cause": "a wild cat",
+      "counts": true,
+      "decisions": 11,
+      "final_turn": 236,
+      "killed_it": false,
+      "last_turn": 231,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/action-seed20",
+      "run_id": "action-seed20",
+      "seed": 20,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    },
+    {
+      "arm": "control",
+      "cause": "a wild cat",
+      "counts": true,
+      "decisions": 11,
+      "final_turn": 236,
+      "killed_it": false,
+      "last_turn": 231,
+      "outcome": "death",
+      "predicate": "survived",
+      "run": "/home/diego/projects/borg-agent/runs/probe-floating-eye-melee-mage/control-seed20",
+      "run_id": "control-seed20",
+      "seed": 20,
+      "setup": "done",
+      "setup_answered": [
+        "the debug confirmation",
+        "Choose cave profile? [y/n]"
+      ],
+      "success": false
+    }
+  ]
+}

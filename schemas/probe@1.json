@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/diegoami/borg-agent/schemas/probe@1.json",
   "title": "Probe (borg-agent/probe@1)",
-  "description": "One question, answered in counted trials (R3, mode C). A probe is data: this document says what is asked, how the situation is made, which action is tried against which control, which seeds are declared before it runs, and what counts as a success. Running it plays one trial per seed per arm; the result is 'quantified N of M', written by the harness and never by a model (R4.3). A setup built with the game's debug commands is an intervention, marked as such and kept out of survival figures (decision D4).",
+  "description": "One question, answered in counted trials (R3, mode C). A probe is data: this document says what is asked, how the situation is made, which action is tried against which control, which seeds are declared before it runs, and what counts as a success. Running it plays one trial per seed per arm; the result is 'quantified N of M', written by the harness and never by a model (R4.3). A setup built with the game's debug commands is an intervention, marked as such and kept out of survival figures (decision D4). A probe may name the race and class its trials are born as, and the scope then has to agree with it.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -196,6 +196,23 @@
         "type": "string"
       },
       "description": "Anything a reader of the result needs to know about how the question was put."
+    },
+    "birth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "race",
+        "class"
+      ],
+      "description": "The character every trial is born as (T24): a race and class the game offers at the pin, chosen in the birth menus. Absent means the harness's own Human Warrior, which is the zoo cohort's birth. A probe whose scope names a class must be born that class.",
+      "properties": {
+        "race": {
+          "type": "string"
+        },
+        "class": {
+          "type": "string"
+        }
+      }
     }
   },
   "allOf": [

@@ -98,6 +98,23 @@ def validate(document):
         argument = STEPS[step['step']]['argument']
         if argument and step.get(argument) in (None, ''):
             raise ProbeError(f'the step {step["step"]!r} needs {argument!r}')
+    birth = document.get('birth')
+    if birth:
+        from . import play
+
+        # Refused here, before anything is played: a race or class the game
+        # does not have would otherwise birth someone else silently (T24).
+        try:
+            race = play._named('race', birth['race'])
+            klass = play._named('class', birth['class'])
+        except ValueError as problem:
+            raise ProbeError(str(problem)) from None
+        scope = document.get('scope') or {}
+        for field, chosen in (('class', klass), ('race', race)):
+            if scope.get(field) and scope[field].lower() != chosen.lower():
+                raise ProbeError(
+                    f'the scope says {field} {scope[field]!r} and the birth says {chosen!r}: '
+                    f'a probe answers for the character it played')
     seeds = document['trials']['seeds']
     if len(set(seeds)) != len(seeds):
         raise ProbeError('a seed is declared twice; the trials would not be independent')
@@ -263,10 +280,12 @@ def trial(build_out, probe, seed, arm, output, timeout=900, stall_timeout=120, l
     chooser = ProbeChooser(probe, arm)
     playing = executor.ExecutingMind(chooser, name=chooser.name)
     setup = probe['setup']
+    birth = probe.get('birth') or {}
     try:
         result = agent.play_with_mind(
             build_out, seed=seed, cap=probe['trials']['cap'], output=output, mind=playing,
-            from_turn=setup.get('take_over_at'), timeout=timeout, stall_timeout=stall_timeout,
+            from_turn=setup.get('take_over_at'), race=birth.get('race'),
+            class_=birth.get('class'), timeout=timeout, stall_timeout=stall_timeout,
             lock=lock, log=lambda *a: None)
     except SetupFailed as problem:
         log(json.dumps({'seed': seed, 'arm': arm, 'trial': 'setup_failed',
@@ -353,6 +372,7 @@ def run(build_out, probe, output, arms=ARMS, timeout=900, stall_timeout=120, loc
         'probe': probe['id'],
         'question': probe['question'],
         'predicate': probe['success'],
+        'birth': probe.get('birth') or {'race': 'Human', 'class': 'Warrior'},
         'intervention': probe['setup']['kind'] == 'intervened',
         'seeds': list(probe['trials']['seeds']),
         'cap': probe['trials']['cap'],
@@ -380,6 +400,20 @@ def run(build_out, probe, output, arms=ARMS, timeout=900, stall_timeout=120, loc
     return result
 
 
+def _answer(probe, result, born):
+    """The claim's statement: the question, answered by the counts."""
+    arm = result['arms']['action']
+    deaths = arm.get('deaths') or 0
+    predicate = {'survived': 'lived',
+                 'killed_it_and_lived': 'killed it and lived'}[result['predicate']]
+    counted = (f'{predicate} in {arm["successes"]} of {arm["trials"]} trials'
+               + (f', died in {deaths}' if deaths else ''))
+    question = probe['question']
+    if born['class'].lower() not in question.lower():
+        question = f'{born["race"]} {born["class"]}: {question}'
+    return f'{question} Counted: {counted}.'
+
+
 def result_arms_overlap(counted):
     """Did the control arm end the situation as well as the action arm?"""
     return any(trial.get('killed_it') for trial in counted.get('control') or ())
@@ -399,11 +433,16 @@ def claim_from(result, probe, claim_id=None, statement=None, created=None):
     if not arm['trials']:
         raise ProbeError('the action arm ran no trial that counted')
     created = created or datetime.now(timezone.utc).isoformat(timespec='seconds')
+    born = result.get('birth') or probe.get('birth') or {'race': 'Human', 'class': 'Warrior'}
     trials = [t for t in result['trials'] if t['arm'] == 'action' and t['counts']]
     return {
         'schema': 'borg-agent/claim@1',
         'id': claim_id or f'{probe["id"]}-probe',
-        'statement': statement or probe.get('statement') or probe['question'],
+        # A statement of what was counted, never the prediction the probe file
+        # may have opened with: a claim whose words can contradict its own
+        # numbers is worse than no claim (T24, after the Mage probe came back
+        # 5 of 10 under a file that said "usually lives").
+        'statement': statement or probe.get('statement') or _answer(probe, result, born),
         'area': probe['area'],
         'scope': dict(probe['scope']),
         'status': 'supported',
@@ -411,8 +450,8 @@ def claim_from(result, probe, claim_id=None, statement=None, created=None):
             'kind': 'quantified',
             'trials': arm['trials'],
             'successes': arm['successes'],
-            'reference': f'probe {probe["id"]}, seeds {result["seeds"]}, '
-                         f'cap {result["cap"]}'
+            'reference': f'probe {probe["id"]}, {born["race"]} {born["class"]}, '
+                         f'seeds {result["seeds"]}, cap {result["cap"]}'
                          + (', an intervention (D4)' if result['intervention'] else ''),
         },
         'evidence': [{'kind': 'run', 'run_id': t['run_id'], 'seed': t['seed'],

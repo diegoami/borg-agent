@@ -30,11 +30,16 @@ RECORD_NAME = 'post-mortem.json'
 DEFAULT_BEFORE = 200
 
 
-def find_death(build_out, seed, cap, output, timeout=900, stall_timeout=120, lock=True,
-               log=print):
-    """Play the pinned Borg on a seed and report how it ended."""
-    result = play.play(build_out, seed=seed, cap=cap, output=output, timeout=timeout,
-                       stall_timeout=stall_timeout, lock=lock, log=log)
+def find_death(build_out, seed, cap, output, race=None, class_=None, timeout=900,
+               stall_timeout=120, lock=True, log=print):
+    """Play the pinned Borg on a seed and report how it ended.
+
+    `race` and `class_` look for a death of that character rather than the
+    cohort's Human Warrior (T24); a post-mortem of it has to be born the same.
+    """
+    result = play.play(build_out, seed=seed, cap=cap, output=output, race=race,
+                       class_=class_, timeout=timeout, stall_timeout=stall_timeout,
+                       lock=lock, log=log)
     return result
 
 
@@ -43,16 +48,21 @@ def death_of(run_dir):
     result = json.loads((Path(run_dir) / 'result.json').read_text())
     if result['outcome'] != 'death':
         return None
-    return {'run_id': result.get('run_id') or Path(run_dir).name,
-            'seed': result['seed'],
-            'turn': result.get('final_turn'),
-            'cause': result.get('cause'),
-            'turn_cap': result['turn_cap'],
-            'trace_sha256': result.get('trace_sha256')}
+    found = {'run_id': result.get('run_id') or Path(run_dir).name,
+             'seed': result['seed'],
+             'turn': result.get('final_turn'),
+             'cause': result.get('cause'),
+             'turn_cap': result['turn_cap'],
+             'trace_sha256': result.get('trace_sha256')}
+    if result.get('birth_choice'):
+        # A post-mortem has to be born the character that died (T24).
+        found['birth'] = result['birth_choice']
+    return found
 
 
 def post_mortem(build_out, death, mind, output, before=DEFAULT_BEFORE, cap=None,
-                timeout=900, stall_timeout=120, lock=True, log=print):
+                race=None, class_=None, timeout=900, stall_timeout=120, lock=True,
+                log=print):
     """Hand over to `mind` `before` turns short of a recorded death.
 
     `death` is what `death_of` returned. The run that comes back is a branch of
@@ -71,7 +81,13 @@ def post_mortem(build_out, death, mind, output, before=DEFAULT_BEFORE, cap=None,
     result = agent.play_with_mind(
         build_out, seed=death['seed'], cap=cap or death['turn_cap'], output=output,
         mind=mind, timeout=timeout, stall_timeout=stall_timeout,
-        from_turn=handover, lock=lock, log=lambda *a: None)
+        from_turn=handover,
+        # The death's own birth wins: a post-mortem of a Mage's death is a Mage
+        # (T24). An explicit race and class override it, for a deliberate
+        # "what would another character have done here".
+        race=race or (death.get('birth') or {}).get('race'),
+        class_=class_ or (death.get('birth') or {}).get('class'),
+        lock=lock, log=lambda *a: None)
     parent = {'run_id': death['run_id'], 'turn': handover}
     result['parent'] = parent
     result['post_mortem'] = {

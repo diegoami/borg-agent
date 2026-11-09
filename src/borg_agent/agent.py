@@ -175,9 +175,13 @@ DEFAULT_TURN_STALL_DECISIONS = 500
 
 def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeout=120,
                    decision_cap=100000, turn_stall_decisions=DEFAULT_TURN_STALL_DECISIONS,
-                   checkpoint_saves=False, from_turn=None, validate=True, lock=True,
-                   log=print):
-    """Play one game with `mind` deciding, and record everything it decided."""
+                   checkpoint_saves=False, from_turn=None, race=None, class_=None,
+                   validate=True, lock=True, log=print):
+    """Play one game with `mind` deciding, and record everything it decided.
+
+    `race` and `class_` choose the birth (T24): with neither, it is the
+    runner's own Human Warrior, byte for byte.
+    """
     build_out, output = Path(build_out).resolve(), Path(output).resolve()
     manifest = json.loads((build_out / 'build.json').read_text())
     if not manifest.get('complete'):
@@ -188,7 +192,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
     for directory in ('user', 'archive', 'save', 'scores', 'panic'):
         (output / directory).mkdir()
     (output / 'user/borg.txt').write_text(play.BORG_CONFIG)
-    (output / 'input.txt').write_text(play.BIRTH_INPUT)
+    (output / 'input.txt').write_text(play.birth_input(race, class_))
     obs_path, act_path = output / OBS_FIFO, output / ACT_FIFO
     os.mkfifo(obs_path)
     os.mkfifo(act_path)
@@ -220,7 +224,9 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
         'mind_kind': getattr(mind, 'kind', 'scripted'),
         'run_id': run_id,
         'seed': seed, 'turn_cap': cap, 'decision_cap': decision_cap,
-        'birth': play.BIRTH_DESCRIPTION,
+        'birth': play.birth_description(race, class_),
+        'birth_choice': ({'race': play._named('race', race),
+                          'class': play._named('class', class_)} if race or class_ else None),
         'checkpoint_saves': checkpoint_saves,
         'from_turn': from_turn,
         'wall_limit_seconds': timeout, 'stall_limit_seconds': stall_timeout,

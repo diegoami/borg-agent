@@ -6,7 +6,8 @@ work and updates "Current state".
 ## Current state
 
 *Written on 2026-11-09, with milestone 3 reviewed and merged, its ten findings
-closed in T23, and **mode C running**: the first probe has an answer.*
+closed in T23, and **mode C running for any character**: two probes, two
+answers, and they disagree in the way that matters.*
 
 ### Where the work stands
 
@@ -37,9 +38,16 @@ closed in T23, and **mode C running**: the first probe has an answer.*
   `verify` (which also checks the record against the run), branched at a turn,
   and read with `view`, `dump` and `explain`. 347 fast tests and 15 slow gates,
   both in CI.
-- **Mode C works, and the knowledge base has its first counted claim** (T22):
-  the floating-eye question is answered — 10 of 10 trials survived meleeing it
-  — with the claim at `supported`, set by the harness and not by any model.
+- **Mode C works, and the knowledge base has its first counted claims** (T22,
+  T24). The floating-eye question, asked twice: a **Warrior survives 10 of 10**
+  and kills the eye in one or two blows; a **Mage survives 5 of 10, and the eye
+  kills it in 4**. Both claims are at `supported`, set by the harness and not
+  by any model.
+- **A run can be born any race and class** (T24), and a replay is born the same
+  character. Before it every run in this repository was a Human Warrior, which
+  is why the first probe could only answer for one. See
+  [BUILD-AND-PLAY.md](BUILD-AND-PLAY.md) — the menus select on a **double
+  tap**, and the tags skip h, j, k and l.
 - **The records of the two real runs are in git**, under
   [records/](../records/): the first model play and the first post-mortem. The
   review could not check either, because `runs/` is git-ignored and R5's own
@@ -177,6 +185,53 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T24, birth by race and class
+
+Branch `task/T24-birth-by-race-and-class`. The owner, on seeing the first probe
+answer only for a Warrior: *"we did to do these probes with other classes and
+races, what is blocking us"*.
+
+**What was blocking it was ours.** `play.BIRTH_INPUT` was one hardcoded key
+script, kept byte-identical to the zoo runner's `INPUT` by a test so that our
+games are the zoo's games; the runner itself offers only `--random-birth`
+(random race and class from the seed). So there was no way to *say* "Mage".
+
+The part that cost real time, and the reason to write it down:
+
+- **the birth menus select on a double tap.** The letter moves the cursor, the
+  letter again selects, and only the first item's letter selects at once. A
+  single `key b` in the class menu births a **Warrior** -- plausible, and
+  wrong. Six measurement rounds went into finding that: `a b b` gives a Mage,
+  `a b a` gives a Warrior, and with the roller key present every class letter
+  looked like it did nothing;
+- **the tags skip h, j, k and l** (`all_letters_nohjkl`), the roguelike
+  movement keys, so Half-Troll, the eighth race, is tagged `i`. That is why
+  `key h` quietly births a **Hobbit**;
+- the rule turned out to be **written down already, in the zoo**
+  (`zoo/harness.py`, `birth_input`), which is where to look first next time the
+  harness needs something the runner cannot do. The measurements and the zoo
+  agree.
+
+Both the tags and the race and class order are read from the game at the pin,
+never copied into Python: a wrong letter births someone else silently.
+
+Facts the next sessions will need:
+- `race` and `class_` thread through `play`, `play_with_mind`, `find_death`,
+  `post_mortem`, **`verify` and `branch`**. That last part is the one that
+  matters: the birth is part of the game the actions were recorded in, so a
+  replay that births the cohort's Warrior would be replaying a different game.
+  The gate births a Mage, records it (`rule: assigned`) and verifies it;
+- 10 of 10 race-and-class pairs asked for were born as asked and played to the
+  cap, across every class;
+- **a claim's statement is the counts, not a prediction.** The Mage probe came
+  back 5 of 10 under a probe file that predicted "usually lives". Without
+  `statement:` the harness now writes the question and what was counted;
+- the Mage answer is the interesting one: the eye killed it in **4 of 10**, and
+  on those seeds the control arm died at the same turn of the same cause,
+  because the gaze paralyses before the character can walk away. The choice the
+  probe meant to test had already been taken away -- which is also why both
+  arms read 5 of 10.
 
 ## 2026-11-09: T22, mode C -- the first probe
 

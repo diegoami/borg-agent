@@ -83,6 +83,45 @@ def test_a_natural_setup_builds_nothing():
                                          'steps': [{'step': 'cure_all'}]}))
 
 
+# --- the character a probe is born as (T24) ---------------------------------
+
+def test_a_probe_may_name_its_race_and_class():
+    mage = probe.load(ROOT / 'probes/floating-eye-melee-mage.yaml')
+    assert mage['birth'] == {'race': 'Human', 'class': 'Mage'}
+    assert mage['scope']['class'] == 'Mage'
+
+
+def test_a_birth_the_game_does_not_have_is_refused():
+    with pytest.raises(probe.ProbeError, match='no class'):
+        probe.validate(definition(birth={'race': 'Human', 'class': 'Bard'}))
+
+
+def test_a_scope_that_disagrees_with_the_birth_is_refused():
+    """A probe answers for the character it played, so the two cannot differ."""
+    with pytest.raises(probe.ProbeError, match='a probe answers for the character'):
+        probe.validate(definition(birth={'race': 'Human', 'class': 'Mage'}))   # scope: Warrior
+
+
+def test_the_claims_statement_is_the_counts_not_a_prediction():
+    """A claim whose words can contradict its own numbers is worse than none.
+
+    The Mage probe came back 5 of 10 under a file that predicted "usually
+    lives", which is where this rule comes from (T24).
+    """
+    mage = probe.load(ROOT / 'probes/floating-eye-melee-mage.yaml')
+    assert 'statement' not in mage
+    claim = probe.claim_from(a_result(action_successes=5, trials=10,
+                                      birth={'race': 'Human', 'class': 'Mage'}), mage,
+                             created='2026-11-09T14:00:00Z')
+    assert claim['statement'].startswith('Can a level-1 Human Mage melee')
+    assert 'lived in 5 of 10 trials' in claim['statement']
+    assert 'died in 5' in claim['statement']
+    # A probe that phrases its own claim still may.
+    warrior = probe.load(REAL)
+    assert probe.claim_from(a_result(), warrior,
+                            created='2026-11-09T14:00:00Z')['statement'] == warrior['statement']
+
+
 # --- the keys a step is typed as --------------------------------------------
 
 def test_a_step_is_typed_one_keypress_at_a_time():
@@ -186,7 +225,7 @@ def test_what_counts_as_the_monster_dying(message, dead):
 # --- the counts, and the claim ----------------------------------------------
 
 def a_result(action_successes=9, control_successes=9, control_killed=0, setup_failed=0,
-             trials=10):
+             trials=10, birth=None):
     def arm_trials(arm, successes, killed):
         return [{'seed': 10 + i, 'arm': arm, 'counts': True, 'success': i < successes,
                  'killed_it': i < killed, 'outcome': 'turn_cap' if i < successes else 'death',
@@ -197,8 +236,10 @@ def a_result(action_successes=9, control_successes=9, control_killed=0, setup_fa
         'schema': 'borg-agent/probe-result@1', 'probe': 'floating-eye-melee',
         'question': 'Can a level-1 Human Warrior melee an adjacent floating eye and live?',
         'predicate': 'survived', 'intervention': True, 'seeds': list(range(11, 11 + trials)),
+        'birth': birth or {'race': 'Human', 'class': 'Warrior'},
         'cap': 1200,
-        'arms': {'action': {'trials': trials, 'successes': action_successes, 'deaths': 0,
+        'arms': {'action': {'trials': trials, 'successes': action_successes,
+                            'deaths': trials - action_successes,
                             'monster_died': trials},
                  'control': {'trials': trials, 'successes': control_successes, 'deaths': 0,
                              'monster_died': control_killed}},

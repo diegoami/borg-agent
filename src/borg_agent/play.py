@@ -35,6 +35,18 @@ key y
 key z
 '''
 BIRTH_DESCRIPTION = 'Human Warrior; default point buy; normal UI birth'
+# Where the birth menus' own order comes from. The letters are the menu's tags
+# in the game's data order, so they cannot drift from the game: a race or class
+# added to `lib/gamedata` at the pin moves them, and this reads them there.
+GAMEDATA = {'race': 'lib/gamedata/p_race.txt', 'class': 'lib/gamedata/class.txt'}
+# The menu tags, read from the game as well: `all_letters_nohjkl` in
+# src/ui-menu.c, which leaves out h, j, k and l because those are the roguelike
+# movement keys. That is why the eighth race is tagged `i` and not `h`.
+MENU_TAGS = 'src/ui-menu.c'
+# The three keys of the runner's own input that choose race, class and roller:
+# "a" (the first race, already highlighted), "a" (the first class) and "a" (the
+# point-based roller).
+DEFAULT_BIRTH = 'key a\nkey a\nkey a\n'
 BORG_CONFIG = 'borg_cheat_death = FALSE\nborg_respawn_winners = FALSE\n'
 LOCK_PATH = os.environ.get('BORG_AGENT_LOCK', '/tmp/angband-validation.lock')
 FINAL_KINDS = ('death', 'completion', 'turn_cap', 'saved')
@@ -47,6 +59,90 @@ HARNESS_OUTCOMES = ('stalled', 'wall_timeout', 'crash', 'harness_failure', 'conf
 # Finding 5 of the milestone-1 review: the game needs none of the owner's keys,
 # so it is given an environment built from this list and nothing else.
 ENVIRONMENT_ALLOWLIST = ('PATH', 'HOME', 'TERM', 'TZ', 'LANG', 'LC_ALL', 'LC_CTYPE')
+
+
+def choices(kind, commit=None):
+    """The races or classes the game offers, in its own order (T24).
+
+    Read from `lib/gamedata` at the game pin rather than written down here: the
+    birth menu lists them in that order, so its letters are this list's
+    indices, and a list copied into Python would be a second source of truth.
+    """
+    from . import pins
+
+    if kind not in GAMEDATA:
+        raise ValueError(f'no birth menu for {kind!r}; the menus are {sorted(GAMEDATA)}')
+    text = pins.show('better-borg-c', GAMEDATA[kind], commit).decode()
+    return [line[len('name:'):].strip() for line in text.splitlines()
+            if line.startswith('name:')]
+
+
+def menu_tags(commit=None):
+    """The letters the game's menus tag their items with.
+
+    `all_letters_nohjkl` in src/ui-menu.c at the game pin: h, j, k and l are
+    missing because they are the roguelike movement keys. Read rather than
+    copied, because getting it wrong is silent -- a wrong tag selects another
+    item and the character is born someone else.
+    """
+    import re
+
+    from . import pins
+
+    source = pins.show('better-borg-c', MENU_TAGS, commit).decode()
+    found = re.search(r'all_letters_nohjkl\[\]\s*=\s*"([^"]+)"', source)
+    if not found:
+        raise ValueError(f'{MENU_TAGS} at the game pin does not define all_letters_nohjkl')
+    return found.group(1)
+
+
+def birth_input(race=None, class_=None, commit=None):
+    """The birth key script, with race and class chosen in the menus (T24).
+
+    With neither named this is the runner's own input, byte for byte, which is
+    what keeps our games the zoo's games.
+
+    The menus select on a **double tap**: pressing an item's letter moves the
+    cursor to it, pressing it again selects it -- except for the item already
+    highlighted, the first, whose letter selects at once. This is the zoo's own
+    rule (`zoo/harness.py`, `birth_input`), and it is the reason a single
+    `key b` in the class menu births a Warrior: the cursor moved and nothing
+    was chosen.
+    """
+    if race is None and class_ is None:
+        return BIRTH_INPUT
+    if race is None or class_ is None:
+        raise ValueError('name both the race and the class, or neither')
+    tags = menu_tags(commit)
+
+    def tap(kind, name):
+        index = choices(kind, commit).index(_named(kind, name, commit))
+        if index >= len(tags):
+            raise ValueError(f'the {kind} {name!r} is past the menu\'s tags')
+        return 'key a\n' if index == 0 else f'key {tags[index]}\n' * 2
+
+    keys = tap('race', race) + tap('class', class_) + 'key a\n'   # the point-based roller
+    if BIRTH_INPUT.count(DEFAULT_BIRTH) != 1:
+        raise ValueError('the runner birth input is not what this knows how to change')
+    return BIRTH_INPUT.replace(DEFAULT_BIRTH, keys, 1)
+
+
+def _named(kind, name, commit=None):
+    """The race or class as the game spells it, or a refusal naming the choices."""
+    offered = choices(kind, commit)
+    for candidate in offered:
+        if candidate.lower() == str(name).lower():
+            return candidate
+    raise ValueError(f'no {kind} {name!r} in the game at this pin; the choices are '
+                     f'{", ".join(offered)}')
+
+
+def birth_description(race=None, class_=None, commit=None):
+    """What the record says the birth was."""
+    if race is None and class_ is None:
+        return BIRTH_DESCRIPTION
+    return (f'{_named("race", race, commit)} {_named("class", class_, commit)}; '
+            f'default point buy; normal UI birth')
 
 
 def game_environment(**extra):
@@ -233,8 +329,12 @@ def monitor(process, trace_path, wall_limit, stall_limit):
 
 
 def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
-         checkpoint_saves=False, lock=True, log=print):
-    """Play one game with the stock Borg and write the run's files to `output`."""
+         checkpoint_saves=False, race=None, class_=None, lock=True, log=print):
+    """Play one game with the stock Borg and write the run's files to `output`.
+
+    `race` and `class_` choose the birth (T24); with neither, the birth is the
+    runner's own Human Warrior, byte for byte.
+    """
     build_out, output = Path(build_out).resolve(), Path(output).resolve()
     manifest = json.loads((build_out / 'build.json').read_text())
     if not manifest.get('complete'):
@@ -248,7 +348,7 @@ def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
     for directory in ('user', 'archive', 'save', 'scores', 'panic'):
         (output / directory).mkdir()
     (output / 'user/borg.txt').write_text(BORG_CONFIG)
-    (output / 'input.txt').write_text(BIRTH_INPUT)
+    (output / 'input.txt').write_text(birth_input(race, class_))
     source = build_out / 'source'
     command = [str(binary(build_out)), '-mtest', '-uMeasure']
     command += [f'-d{d}={output / d}' for d in ('user', 'archive', 'save', 'scores', 'panic')]
@@ -263,7 +363,10 @@ def play(build_out, seed, cap, output, timeout=600, stall_timeout=60,
         'mind': 'stock-borg',
         'mind_kind': 'stock-borg',
         'seed': seed, 'turn_cap': cap,
-        'birth': BIRTH_DESCRIPTION,
+        'birth': birth_description(race, class_),
+        # What a replay has to ask for again. Null is the runner's own birth.
+        'birth_choice': ({'race': _named('race', race), 'class': _named('class', class_)}
+                         if race or class_ else None),
         'checkpoint_saves': checkpoint_saves,
         'wall_limit_seconds': timeout, 'stall_limit_seconds': stall_timeout,
         'build_key': manifest['build_key'],
