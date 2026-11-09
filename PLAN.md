@@ -74,7 +74,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T18 | Pin the Rust remake (borg-rs milestone 7) | 3 | T13 | yes | done (#26) |
 | T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
-| T21 | The finished strategy manual as a source | 3 | T19 | yes | in progress (task/T21-c-manual) |
+| T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
 
 ### T01. Build and play the pinned game headless
 
