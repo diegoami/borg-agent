@@ -36,8 +36,8 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 |---|---|---|---|
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
-| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08; the pins T17 and T18 and the sources T19 and T20 landed here too | **in progress**: T17–T20 done, T06 next |
-| **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | not started |
+| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **complete; in review** ([#41](https://github.com/diegoami/borg-agent/pull/41)) |
+| **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | **next**, once the owner merges milestone 3's review |
 | later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -61,7 +61,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T05 | Executor primitives | 2 | T03 | yes | done (#12) |
 | T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | done (#33) |
 | T07 | Knowledge store | 3 | T02 | yes | done (#35) |
-| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | in review (#39) |
+| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | done (#39) |
 | T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | 4 | T04 | yes | todo |
