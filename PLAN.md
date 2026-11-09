@@ -61,7 +61,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T05 | Executor primitives | 2 | T03 | yes | done (#12) |
 | T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | done (#33) |
 | T07 | Knowledge store | 3 | T02 | yes | done (#35) |
-| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | todo |
+| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | in review (#39) |
 | T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
 | T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
 | T11 | Zoo import contract | 4 | T04 | yes | todo |
@@ -202,15 +202,33 @@ Play the `better-borg-c` pin's Borg on a zoo seed and birth, record its
 action stream with the bridge watching (the Borg still decides), stop k
 turns before the recorded death, and hand over to the agent with `branch`.
 
-The first cases were the zoo's `classes-m6` results (cause "a floating eye",
-specimen `4.2.6-bbc-m6`, cap 100,000): seed 1865911738, Half-Troll Mage, and
-seed 1375157069, Dunadan Priest. **They are deaths of a build we no longer
-play**: T17 moved the pin to milestone 8, and the zoo has no m8 results (its
-newest bbc specimen is m7). So this task first says where its cases come
-from — `docs/deaths/` at the pin (19 recorded deaths), deaths our own build
-produces, or a zoo run of m8 the owner commissions — and records the choice.
+**The cases are deaths this build produces** — decided here, and recorded in
+[docs/POST-MORTEM.md](docs/POST-MORTEM.md). The task originally named two of
+the zoo's `classes-m6` floating-eye deaths, but the game pin is milestone 8
+now and the zoo has no m8 results, so those are deaths of a build we no longer
+play (T17). The pinned tree's own `docs/deaths/` is richer than anything we
+can make — 19 cases with verified replays, assessments and issues — but those
+belong to older builds and to turns in the hundreds of thousands, so they are
+a **source to read** (D8), which is where a post-mortem's questions come from,
+not a case list.
+
+**No save file is involved.** The Borg's play is deterministic (T01), so the
+bridge simply keeps the agent's hand off the wheel until a turn the run names
+(`BORG_AGENT_FROM_TURN`): the Borg plays its own game up to there, the
+handover is written into the trace, and the agent plays on. A post-mortem is
+therefore replayable like any other run — `verify` reads the handover turn
+from the record, plays the prefix again and feeds the recorded actions back
+from there.
+
+The known case at this pin: **seed 3, where the Borg dies to a green naga at
+turn 15,714**. Seeds 1, 2 and 11 survive 30,000 turns, and seed 7 survives
+100,000 — milestone 8's Borg is good, which makes finding a case slower than
+it was. `BORG_AGENT_DEATH_SEED` points the slow gate at a seed; CI skips it,
+because finding a death costs minutes of play.
+
 The floating-eye question itself still stands: it killed 4 of 13 Mandos
-characters in `mandos-classes-18`.
+characters in `mandos-classes-18`, and a probe (mode C) is the way to settle
+it.
 
 Done when replaying the Borg's prefix reproduces the zoo's death when left
 to the Borg, and a branch k turns before it hands over to another mind.

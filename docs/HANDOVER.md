@@ -21,9 +21,10 @@ level and no PR open.*
   milestone 8), T18 (the borg-rs pin), T19 (the strategy manual and the online
   command reference as sources), T20 (the user manual) and **T06** (the
   `models.yaml` loader, the prompt pack and the three minds — a model has now
-  played) and **T07** (the knowledge store — the first real claims are in
-  `knowledge/`). **T08 is next** (the post-mortem start), and then milestone
-  3's review PR.
+  played), **T07** (the knowledge store — the first real claims are in
+  `knowledge/`), T21 (the finished strategy manual) and **T08** (mode B).
+  **Milestone 3 is complete**: its review PR is the next thing to open, and a
+  session does not start milestone 4 until the owner merges it (RULES 7).
 - **What works end to end:** the pinned game builds; the stock Borg plays it
   reproducibly; an agent plays through the Borg's own connection choosing
   between the eight primitives of R2; a run is recorded, replayed with
@@ -58,15 +59,39 @@ milestone's last task is merged** to open the review PR (`main` into
 | **D10** | Real model calls are allowed in **small** runs: milestone 3 may prove the `api` mind on short games, and every PR that spends reports the calls, tokens and cost. Trial scale (T09) and pilot scale (T10) still wait for the owner. |
 | 2026-11-09 | The OpenRouter reviewer is the **`:free`** variant; `default_profile: alibaba` stays (the owner's general notes about that provider do not apply here); `claim@1` keeps `superseded_by` and gains no `superseded` status. |
 
-### The one thing still open
+### Known Borg deaths at the milestone 8 pin
 
-**T08's cases.** Its two floating-eye deaths (seed 1865911738 Half-Troll Mage,
-seed 1375157069 Dunadan Priest) belong to the zoo's `4.2.6-bbc-m6`. T17 moved
-the game pin to milestone 8 and the zoo has **no m8 results** — its newest bbc
-specimen is m7 — so those are deaths of a build we no longer play. T08 must
-take its cases from `docs/deaths/` at the pin (19 recorded deaths), from
-deaths our own build produces, or from an m8 zoo run the owner commissions,
-and record which. Nothing else is blocked.
+Mode B needs a death, and milestone 8's Borg is good enough that finding one
+takes minutes. Searched on 2026-11-09 at cap 30,000:
+
+| Seed | What the Borg did |
+|---|---|
+| **3** | **died: a green naga at turn 15,714** — the case T08's gate uses |
+| 1, 2, 11 | survived 30,000 turns |
+| 7 | survives 100,000 (it died to a green naga at 27,808 at milestone 6) |
+
+`BORG_AGENT_DEATH_SEED=3` points the slow gate at it. Add to this table rather
+than searching again.
+
+### Settled: where T08's cases come from
+
+**Deaths this build produces.** The zoo has no milestone 8 results, so its
+`classes-m6` floating-eye deaths are deaths of a build we no longer play. The
+pin's own `docs/deaths/` (19 cases, verified replays, assessments, issues)
+belongs to older builds and to turns in the hundreds of thousands: it is a
+**source to read** for the questions a post-mortem should ask, not a case list.
+See docs/POST-MORTEM.md.
+
+### Still open
+
+Nothing blocks the work. Two things the owner may want to weigh in on:
+
+- **the floating-eye question** the requirements name (it killed 4 of 13
+  Mandos characters in `mandos-classes-18`) needs a **probe**, mode C, which
+  does not exist: nothing can turn one branch into "N of M". That is the
+  natural next task after milestone 3;
+- whether the zoo should run milestone 8, which would give mode B paired
+  evidence instead of deaths we find ourselves.
 
 Expected soon: the owner is building **borg-rs milestone 8**, so the `borg-rs`
 pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
@@ -134,6 +159,43 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T08, taking over before a death (mode B)
+
+Branch `task/T08-post-mortem`, PR
+[#39](https://github.com/diegoami/borg-agent/pull/39).
+`src/borg_agent/postmortem.py`, `python -m borg_agent post-mortem`, the
+bridge's `BORG_AGENT_FROM_TURN`, and `docs/POST-MORTEM.md`.
+
+**The gate passed in 119 seconds**: the Borg's death on seed 3 reproduced from
+the seed alone (same trace hash, same cause, same turn), the agent took over
+200 turns before it, and the post-mortem **verified** — so a mode B run is
+evidence like any other.
+
+Facts the next sessions will need:
+- **No save file is involved, and none is needed.** The Borg's play is
+  deterministic, so the bridge simply keeps the agent's hand off the wheel
+  until the turn the run names (`BORG_AGENT_FROM_TURN`): the Borg plays its own
+  prefix, the handover goes into the trace, and the agent plays on. `verify`
+  reads that turn from the record and does the same thing, which is why a
+  post-mortem replays. The runner's named-play save path is not used at all —
+  and its own notes say a save does not carry the Borg's memory, so this is the
+  better road.
+- The cost is time, not storage: taking over at turn 15,514 means playing
+  15,514 turns of Borg first, about 45 seconds at this pin.
+- **`final_turn` is the last *sampled* state**, not the last turn: the observer
+  writes a state every hundred Borg decisions. So
+  `survived_past_the_death` understates — in the real post-mortem the model's
+  own call log showed turn 16,229 where the record said 16,039.
+- **The play mind's timeout was too short.** A real post-mortem ended
+  `harness_failure` because one call went over 120 seconds mid-fight. It is 240
+  now, with `--model-timeout`. A provider's slowest answer sets that, not its
+  median.
+- The first real post-mortem: `qwen3.8-flash` took over 200 turns before the
+  green naga, fought something, and reached turn 16,039 — 325 turns past where
+  the Borg died — before the provider timed out. **Nothing about avoiding the
+  death is proved**, and the record says so: the facts are recorded and the
+  conclusion is not drawn. Mode C is what would settle it.
 
 ## 2026-11-09: T21, the strategy manual at its finished home
 
