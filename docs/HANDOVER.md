@@ -5,51 +5,96 @@ work and updates "Current state".
 
 ## Current state
 
-- **Milestone 2 is reviewed, merged and closed.** The owner merged the review
-  PR ([#15](https://github.com/diegoami/borg-agent/pull/15)) on 2026-11-09, so
-  `reviewed` stands at that merge and `main` is level with it. Milestone 2 was
-  reviewed **twice** by a model of another family (Kimi K3): the first round's
-  four findings are T15, the re-review's two are T16, and both rounds are
-  comments on #15.
-- **The Rust remake is pinned** since 2026-11-09 (T18, #26): borg-rs at
-  `ce27f5ed`, which carries better-borg-c milestone 7. **The owner is building
-  borg-rs milestone 8, so this pin is expected to move**; repinning is one
-  line in `pins.json` plus `scripts/setup.sh`. Nothing reads borg-rs yet, so
-  the version matters less than the fact that it is readable at a fixed
-  commit (decision D8).
-- **The game pin is better-borg-c milestone 8** since 2026-11-09 (T17, #24).
-  The golden trace for seed 7 at cap 5,000 is now
-  `a6ffbae042dddaabfd8d48a9b6d3546d935c422249062fe633f10688ee4ce844`; anything
-  quoting `2242a3f5…` is talking about milestone 6.
-- **Milestone 3 is next**: **T06** (the model-backed mind, the `models.yaml`
-  loader and the prompt pack), **T07** (the knowledge store) and **T08** (the
-  post-mortem start). All three have what they need; nothing blocks them but
-  the owner's answers below.
-- **What works end to end today:** the pinned game builds; the stock Borg
-  plays it reproducibly; an agent plays through the Borg's own connection with
-  the eight primitives of R2; a run is recorded, replayed with `verify` (and
-  the record is checked against the run), branched at a turn, and read with
-  `view`, `dump` and `explain`. 221 fast tests, 13 slow gates. **No model has
-  played yet** — that is T06.
-- **Answered by the owner on 2026-11-09**, so nothing is waiting:
-  - **the seasonal window** stays as it is — decision **D9**. No RULES 9
-    exception: the build never diverges from the unpatched game, every run
-    records `calendar.seasonal`, and `verify` refuses to compare across the
-    window. A run made inside it can only be replayed on a day of the same
-    kind, and that price is accepted. The item is closed; don't reopen it.
-  - **real model calls are allowed in small runs** — decision **D10**. T06 may
-    prove the `api` mind on short games on the active profile, and every PR
-    that spends reports the calls, tokens and cost. Trial-scale and
-    pilot-scale spending still waits for the owner.
-  - **the OpenRouter reviewer is the `:free` variant**
-    (`nvidia/nemotron-3-ultra-550b-a55b:free`), in `models.yaml` now. It
-    shares the plan's daily free allowance and may be rate-limited; a review
-    is a few calls, so that is acceptable, and nothing private is sent to it.
-  - **`claim@1` keeps `superseded_by` and gains no `superseded` status.** The
-    schema already does this; the question is settled, not open.
-  - Which models do which job is still not a question: T09 measures the
-    `trial:` candidates and the answer becomes decision D6.
-- Settled: `default_profile: alibaba` stays (the owner, 2026-11-08).
+*Written at the end of the session of 2026-11-09, with `main` and `reviewed`
+level and no PR open.*
+
+### Where the work stands
+
+- **Milestones 1 and 2 are done, reviewed and merged.** Milestone 1
+  (foundation) was reviewed in issue
+  [#7](https://github.com/diegoami/borg-agent/issues/7); milestone 2 (the
+  connection) was reviewed **twice** on
+  [#15](https://github.com/diegoami/borg-agent/pull/15) by a model of another
+  family (Kimi K3). Every finding of both rounds is answered: T12 for
+  milestone 1's, T15 and T16 for milestone 2's.
+- **Milestone 3 is in progress.** T17 (the game pin to better-borg-c
+  milestone 8) and T18 (the borg-rs pin) are done. **T06 is next**: the
+  `models.yaml` loader, the prompt pack and the three minds. Then T07 (the
+  knowledge store) and T08 (the post-mortem start).
+- **What works end to end:** the pinned game builds; the stock Borg plays it
+  reproducibly; an agent plays through the Borg's own connection choosing
+  between the eight primitives of R2; a run is recorded, replayed with
+  `verify` (which also checks the record against the run), branched at a turn,
+  and read with `view`, `dump` and `explain`. 223 fast tests and 13 slow gates,
+  both in CI.
+- **No model has played yet.** Nothing in the repository has called a provider.
+
+### Start here
+
+```sh
+bash scripts/setup.sh --strict        # four pinned clones; ends "setup: ready"
+uv venv .venv && uv pip install -e '.[test]' --python .venv/bin/python
+.venv/bin/python -m pytest -q         # 223; the slow gates are -m slow
+```
+
+Read [PLAN.md](../PLAN.md)'s milestone table first — it says which tasks
+belong to the milestone in progress, and RULES 7 says a session works only
+inside it, merges its own task PRs when CI is green, and **stops when the
+milestone's last task is merged** to open the review PR (`main` into
+`reviewed`).
+
+### Decisions that are closed — do not reopen them
+
+| | |
+|---|---|
+| **D7** | The agent's models come from `models.yaml` and the active profile, and from nothing else. No quota service anywhere in this repository. |
+| **D8** | The playing agent may read the manual (required), the game and Borg source, the specification, the deaths, the issues, the zoo's results and the Rust remake. What is asked instead is provenance: every claim names its sources and says whether a fact was read or seen. |
+| **D9** | The seasonal window stays as the game plays it. **No RULES 9 exception.** Every run records `calendar.seasonal` and `verify` refuses to compare across 24-26 December; a run made inside it replays only on such a day. The owner weighed this against neutralizing the game's one `time()` call and chose the game's behaviour. |
+| **D10** | Real model calls are allowed in **small** runs: milestone 3 may prove the `api` mind on short games, and every PR that spends reports the calls, tokens and cost. Trial scale (T09) and pilot scale (T10) still wait for the owner. |
+| 2026-11-09 | The OpenRouter reviewer is the **`:free`** variant; `default_profile: alibaba` stays (the owner's general notes about that provider do not apply here); `claim@1` keeps `superseded_by` and gains no `superseded` status. |
+
+### The one thing still open
+
+**T08's cases.** Its two floating-eye deaths (seed 1865911738 Half-Troll Mage,
+seed 1375157069 Dunadan Priest) belong to the zoo's `4.2.6-bbc-m6`. T17 moved
+the game pin to milestone 8 and the zoo has **no m8 results** — its newest bbc
+specimen is m7 — so those are deaths of a build we no longer play. T08 must
+take its cases from `docs/deaths/` at the pin (19 recorded deaths), from
+deaths our own build produces, or from an m8 zoo run the owner commissions,
+and record which. Nothing else is blocked.
+
+Expected soon: the owner is building **borg-rs milestone 8**, so the `borg-rs`
+pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
+
+### What T06 should know before it starts
+
+- The observation carries **the whole of the player's known map**, about 4 KB
+  after 10,000 turns and growing. A prompt needs a summary of it, not a paste.
+- The run record's `mind` block is **one model per run**, while R2.4 speaks of
+  three jobs. A run that calls a player and a consolidator needs that to
+  become per-job; the milestone 1 review raised it and it was deferred to here.
+- `decisions.jsonl` already records what a chooser chose and why, and why each
+  primitive stopped. **The model call belongs on those lines** (R2.1).
+- The secret guard scans the run record but **not** the observation and action
+  logs. Model replies will land there, so it has to grow before an `api` run
+  writes anything.
+- The prompt pack's test is about **provenance, not permission** (D8): every
+  file a prompt draws on is named in `pins.json`'s `sources`, and the pack
+  records which.
+- `budget_cap` is an outcome, not a failure, and `verify` handles such a run
+  with its `prefix` scope. That path exists and is tested; use it.
+
+### Two lessons worth keeping
+
+- **When the bridge mirrors something the game shows, mirror the function the
+  UI calls, not the data behind it.** Reading `store->stock` instead of
+  `store_stock_list` made a shop label point at the wrong item: the agent
+  asked for wine and bought a Ration of Food. Buying the first label had
+  worked by luck, which is why the first live check passed.
+- **When a check is loosened, ask what the strict version was catching by
+  accident.** `verify`'s new tolerance for a stream that ends early also
+  accepted a run cut short at the end; the exact-length comparison it replaced
+  had been catching that without anyone intending it.
 
 ## 2026-11-09: T18, the Rust remake is a pinned source
 
@@ -276,7 +321,7 @@ Left for the owner: the seasonal-window decision above.
 
 ## 2026-11-08: T05, the executor's primitives
 
-Branch `task/T05-executor-primitives`, PR #TBD.
+Branch `task/T05-executor-primitives`, PR [#12](https://github.com/diegoami/borg-agent/pull/12).
 
 What exists now:
 - `src/borg_agent/executor.py`: the eight primitives of R2 (`walk_to`,
@@ -326,7 +371,7 @@ Left for the owner:
 
 ## 2026-11-08: T04, run records and replay
 
-Branch `task/T04-record-and-replay`, PR #TBD.
+Branch `task/T04-record-and-replay`, PR [#11](https://github.com/diegoami/borg-agent/pull/11).
 
 What exists now:
 - `src/borg_agent/record.py`: builds a run record from a finished run and
