@@ -4,6 +4,29 @@ The requirements are in [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Where
 this plan and the requirements differ, the requirements win; say so in your
 PR and propose a fix to whichever is wrong.
 
+## Frozen (2026-11-09)
+
+**No task is in progress and none should be started.** The owner froze the
+repository after the pivot, because the analyser it now intends
+([docs/DEATH-ANALYSIS-SPEC.md](docs/DEATH-ANALYSIS-SPEC.md)) has no honest
+input: every death available is a munchkin Borg's (T34), and with munchkin off
+this Borg reaches depth 2–3 in 30,000 turns and does not die.
+
+It thaws when any of these is true, and [README.md](README.md) says the same:
+
+1. **borg-rs plays and dies** — the Borg reborn is the subject the knowledge is
+   for, and its deaths are the input the analyser wants;
+2. **a munchkin-free death corpus exists** — better-borg-c changes its default,
+   the zoo runs a profile with it off, or the thirteen curated cases are
+   re-run. Then `index.json`'s 36 hand-written leads become the validation set;
+3. **deaths are found in ordinary play** — nothing here has looked past 30,000
+   turns or below depth 3.
+
+Milestones 1–4 are built and merged. Milestone 5 holds the pivot: T34 (the
+munchkin finding) and T35 (the specification). T36 to T38 — the extractor, the
+skill, and the measurement against those 36 leads — are what a thaw starts
+with.
+
 ## Milestones, and when we stop for a review
 
 A **milestone** is a named set of tasks. Inside a milestone a session works
@@ -39,7 +62,7 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
 | **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, a person can read a run, and **how the agent plays is specified** before more is built on it | T23, T22 (D11), T24, T25, T11, T26, T27, T29, T30, **T31** (the spec, which absorbs T28) | **in progress** |
 | ~~5. The play redesign~~ | dropped by the owner's pivot of 2026-11-09, before any of it was built. [T31](#t31-the-playing-specification) stays as the record of what was wrong and what the fix would have been | — | **dropped** |
-| **5. The death replay analyser** | a Borg death in, **leads** out: a deterministic extractor here and a skill with the game's own knowledge, no model keys, for the Borg reborn to reuse | T34, T35 (the spec), then T36 (the extractor), T37 (the skill), T38 (measured against the 36 leads a person wrote) | **in progress** |
+| **5. The death replay analyser** | a Borg death in, **leads** out: a deterministic extractor here and a skill with the game's own knowledge, no model keys, for the Borg reborn to reuse | T34, T35 (the spec) — then T36 (the extractor), T37 (the skill), T38 (measured against the 36 leads a person wrote) | **specified; frozen** until there is a Borg worth analysing |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:

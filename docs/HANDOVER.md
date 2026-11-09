@@ -3,12 +3,50 @@
 The newest entry is first. Each session adds one entry at the end of its
 work and updates "Current state".
 
-## Current state
+## Current state: FROZEN (2026-11-09)
 
-*Written on 2026-11-09. Milestone 3 is reviewed and merged, mode C runs, a run
-can be read as a page — and **how the agent plays has gone back to the drawing
-board**: [docs/PLAY-SPEC.md](PLAY-SPEC.md) is the new specification and the
-next session implements it.*
+**Nothing is in progress and nothing should be started.** The owner froze the
+repository after pivoting it; [README.md](../README.md) says what unfreezes it
+and [docs/DEATH-ANALYSIS-SPEC.md](DEATH-ANALYSIS-SPEC.md) says what to build
+when it does.
+
+### The pivot, and the freeze, in one place
+
+- **The purpose is unchanged**: knowledge the Borg reborn can be built from.
+- **How it is to be produced changed** (D13): not an agent playing, but a
+  **death replay analyser** — a Borg death in, *leads* out. A deterministic
+  extractor here, and a **skill** carrying the game's rules, the manuals and
+  the Borg's specification as fixed pinned context. **No model keys.**
+- **Why playing was dropped**: it works and it is the wrong economy. Every
+  *counted* claim the agent produced came from a **probe**, not from play, and
+  the claims from play were thin. The Borg meanwhile logs its own reasoning
+  into every trace — 1,563 note lines in one death, with its own danger
+  estimate, its intent and why, its flow costs, the target's hit points, the
+  weapon's dice and every blow. That is a better input than a model's game.
+- **Why it is frozen** (D14): the deaths available are a **munchkin Borg's**.
+  The milestone 8 tree defaults `borg_munchkin_by_class = TRUE`, which by the
+  Borg's own comment gives Warriors, Druids and Rangers a munchkin start
+  whatever the munchkin-start setting says. Ours, the curated corpus's and the
+  zoo's cohort all run on those defaults. Leads from them would be about a mode
+  nobody wants. And with munchkin off, **twelve seeds survived 30,000 turns at
+  depth 2–3**, so there is nothing to analyse either.
+- **It thaws** when borg-rs plays and dies, or a munchkin-free corpus exists,
+  or deaths are found in ordinary play.
+
+### What a thaw starts with
+
+1. Check whether the curated corpus is munchkin-polluted — one grep of each
+   case's settings line. If it is not, `index.json`'s **36 hand-written action
+   keys** are the validation set and T36 can start immediately.
+2. T36, the extractor: the features are listed in the spec, and the note
+   grammar is already known (`# Loc:… Danger:p=`, `# Fleeing… (scaryguy)`,
+   `# Flowing toward stairs at cost 51`, `# Facing … who has 14 Hit Points`,
+   `# Attacking with weapon 'Whip (1d3)'`, `# HIT_BY:`/`# MISS:`).
+3. T37, the skill, and T38, the measurement against those 36 leads.
+
+### What was built, and still works
+
+*(the state as the freeze found it; nothing below is being extended)*
 
 ### Where the work stands
 
