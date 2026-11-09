@@ -1,0 +1,62 @@
+{
+  "action": {
+    "primitive": {
+      "name": "fight_nearest"
+    }
+  },
+  "area": "monster",
+  "id": "floating-eye-melee",
+  "notes": [
+    "The eye's danger is paralysis, so a death often comes some turns after the fight rather than during it; the cap gives the trial room for that.",
+    "The control walks away instead of fighting, on the same seeds, so the count says whether meleeing it mattered rather than how often a level-1 Warrior lives for 1,200 turns."
+  ],
+  "question": "Can a level-1 Human Warrior melee an adjacent floating eye and live?",
+  "schema": "borg-agent/probe@1",
+  "scope": {
+    "character_level": {
+      "max": 1,
+      "min": 1
+    },
+    "class": "Warrior",
+    "depth": {
+      "max": 1,
+      "min": 1
+    },
+    "race": "Human",
+    "version": "4.2.6"
+  },
+  "setup": {
+    "expect": {
+      "monster_adjacent": "floating eye"
+    },
+    "kind": "intervened",
+    "steps": [
+      {
+        "depth": 1,
+        "step": "depth"
+      },
+      {
+        "monster": "Floating eye",
+        "step": "summon"
+      }
+    ],
+    "take_over_at": 100
+  },
+  "statement": "A level-1 Human Warrior who melees an adjacent floating eye at depth 1 usually lives.",
+  "success": "survived",
+  "trials": {
+    "cap": 1200,
+    "seeds": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ]
+  }
+}

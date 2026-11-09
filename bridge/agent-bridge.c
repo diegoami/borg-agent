@@ -470,6 +470,24 @@ static void unescape(char *text)
     *out = '\0';
 }
 
+/* Raw keys, byte by byte. Two things the Borg's own borg_keypresses cannot
+ * do, and a prompt needs both: a byte above 0x7f (it passes a signed char to
+ * a keycode, so 0x9c arrives as 0xffffff9c), and Enter, which the game knows
+ * as the keycode KC_ENTER (0x9c) rather than as '\r'. A newline or carriage
+ * return in the string means Enter -- that is what lets the agent answer a
+ * text prompt, such as the debug command's "Summon which monster?" (T22). */
+static void send_raw_keys(const char *keys)
+{
+    const unsigned char *s;
+
+    for (s = (const unsigned char *)keys; *s; s++) {
+        if (*s == '\n' || *s == '\r')
+            borg_keypress(KC_ENTER);
+        else
+            borg_keypress((keycode_t)*s);
+    }
+}
+
 static const char *argument(char *fields[], int count, const char *name)
 {
     int i;
@@ -517,7 +535,7 @@ static void apply_action(char *line)
     if (!strcmp(kind, "keys")) {
         /* The escape hatch (R1.2), logged as raw keys. */
         borg_note(format("# AGENT raw keys <%s>", name));
-        borg_keypresses(name);
+        send_raw_keys(name);
         return;
     }
     if (strcmp(kind, "command"))

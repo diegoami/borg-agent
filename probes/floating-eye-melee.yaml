@@ -1,0 +1,42 @@
+# Mode C, the first probe (T22). The question mode B kept raising and nothing
+# has answered: floating eyes killed 4 of 13 Mandos characters in the zoo's
+# `mandos-classes-18`, which is Neo through Mandos, and the C side at this pin
+# has no number for it at all.
+#
+# The situation is built with the game's own debug commands, so this is an
+# intervention (decision D4): its trials never count in survival figures.
+schema: borg-agent/probe@1
+id: floating-eye-melee
+question: Can a level-1 Human Warrior melee an adjacent floating eye and live?
+statement: A level-1 Human Warrior who melees an adjacent floating eye at depth 1 usually lives.
+area: monster
+scope:
+  class: Warrior
+  race: Human
+  character_level: {min: 1, max: 1}
+  depth: {min: 1, max: 1}
+  version: 4.2.6
+setup:
+  kind: intervened
+  # The Borg plays the first hundred turns, which is the game's own ordinary
+  # start; the agent then takes over, as mode B does.
+  take_over_at: 100
+  steps:
+    - {step: depth, depth: 1}
+    - {step: summon, monster: Floating eye}
+  expect:
+    monster_adjacent: floating eye
+action:
+  primitive: {name: fight_nearest}
+control:
+  primitive: {name: explore_floor}
+trials:
+  seeds: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+  cap: 1200
+success: survived
+notes:
+  - The eye's danger is paralysis, so a death often comes some turns after the
+    fight rather than during it; the cap gives the trial room for that.
+  - The control walks away instead of fighting, on the same seeds, so the count
+    says whether meleeing it mattered rather than how often a level-1 Warrior
+    lives for 1,200 turns.
