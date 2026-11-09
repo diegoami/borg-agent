@@ -69,7 +69,9 @@
                   "take_stairs",
                   "flee",
                   "read_unknown_scroll",
-                  "shop_list"
+                  "shop_list",
+                  "cast_at_nearest",
+                  "study_a_spell"
                 ]
               },
               "max_decisions": {
@@ -81,6 +83,18 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Stop as soon as the character's hit points fall below this. The executor holds no thresholds of its own (R2, docs/SOURCES.md): a threshold is the mind's judgement, so it is said here or not at all."
+              },
+              "book": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1,
+                "description": "The book's inventory letter, from the observation's `spells`."
+              },
+              "spell": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1,
+                "description": "The spell's letter inside that book, from the same list."
               }
             },
             "allOf": [
@@ -194,6 +208,25 @@
                     }
                   }
                 }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "name": {
+                      "const": "cast_at_nearest"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
+                },
+                "then": {
+                  "required": [
+                    "book",
+                    "spell"
+                  ],
+                  "description": "A spell is named by the two letters the observation gave it: nothing is guessed (T29)."
+                }
               }
             ]
           }
@@ -267,6 +300,18 @@
                   "turns"
                 ],
                 "description": "For `rest`: until healed, as needed, or a count of turns."
+              },
+              "book": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1,
+                "description": "The book's inventory letter, as the observation's `spells` gives it (T29)."
+              },
+              "spell": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1,
+                "description": "The spell's letter inside that book, as the observation's `spells` gives it. A class that is given its spells rather than choosing them needs none for `study`."
               }
             },
             "not": {

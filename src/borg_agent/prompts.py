@@ -166,6 +166,10 @@ def primitive_help():
         'flee': '`by: "stairs"` or `"phase_door"`',
         'read_unknown_scroll': 'no arguments',
         'shop_list': '`list: [{label, count, side: "buy"|"sell"}]` — only in a shop',
+        'cast_at_nearest': '`book` and `spell`, the letters the `spells` list gives — '
+                           'casts that spell at the nearest monster until it is gone',
+        'study_a_spell': '`book` and `spell` to learn a particular one, or no arguments '
+                         'to learn the first the game offers',
     }
     missing = set(executor.PRIMITIVES) - set(arguments)
     if missing:

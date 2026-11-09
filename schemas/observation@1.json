@@ -252,6 +252,59 @@
       "required": [
         "fields"
       ]
+    },
+    "spells": {
+      "type": "array",
+      "description": "What the character could cast or study, as the game's own spell menu builds it (T29): the book's inventory letter, the spell's letter in that book, and what the game says about it. Empty for a class with no magic. Without this a caster would have to guess its own letters.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "book",
+          "letter",
+          "name",
+          "level",
+          "mana",
+          "fail_percent",
+          "castable",
+          "studyable"
+        ],
+        "properties": {
+          "book": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1
+          },
+          "letter": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "mana": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fail_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "castable": {
+            "type": "boolean",
+            "description": "The game would allow it right now (level, mana)."
+          },
+          "studyable": {
+            "type": "boolean"
+          }
+        }
+      }
     }
   },
   "$defs": {
@@ -361,6 +414,11 @@
           "items": {
             "type": "string"
           }
+        },
+        "new_spells": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many spells the character may still learn \u2014 the game's own \"You can learn N more spells\"."
         }
       }
     },

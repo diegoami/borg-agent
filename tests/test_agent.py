@@ -69,6 +69,64 @@ def test_every_wire_command_is_one_the_bridge_knows():
         assert f'"{field}"' in bridge, field
 
 
+# --- aiming, and the keys a spell becomes (T29) ------------------------------
+
+def test_a_cast_names_its_letters_and_its_target():
+    action = mind.action('command', 'blast it',
+                         command={'name': 'cast', 'book': 'a', 'spell': 'a',
+                                  'target': {'x': 9, 'y': 4}})
+    ACTION_SCHEMA.validate(action)
+    assert agent.wire(action) == 'command cast at_x=9 at_y=4 book=a spell=a'
+
+
+def test_the_nearest_monster_is_resolved_by_the_harness():
+    """Which monster is nearest is a fact in the observation, not a judgement,
+    so the harness resolves `target_nearest` rather than the bridge or the
+    mind (T29)."""
+    seen = observation()
+    seen['monsters'] = [
+        {'letter': 'R', 'name': 'rock lizard', 'x': 9, 'y': 4, 'distance': 5},
+        {'letter': 'r', 'name': 'a rat', 'x': 3, 'y': 1, 'distance': 1},
+    ]
+    action = mind.action('command', 'blast the near one',
+                         command={'name': 'cast', 'book': 'a', 'spell': 'a',
+                                  'target_nearest': True})
+    ACTION_SCHEMA.validate(action)
+    assert agent.wire(action, seen) == 'command cast at_x=3 at_y=1 book=a spell=a'
+
+
+def test_with_nothing_visible_the_target_is_dropped():
+    # The game then asks for a direction, and the next observation carries the
+    # prompt: that is the mind's business, not a crash.
+    action = mind.action('command', 'cast anyway',
+                         command={'name': 'cast', 'book': 'a', 'spell': 'a',
+                                  'target_nearest': True})
+    assert agent.wire(action, observation()) == 'command cast book=a spell=a'
+
+
+def test_the_bridge_refuses_an_action_it_cannot_type_instead_of_quitting():
+    """A model that invents a command name used to end the run: the bridge
+    called quit(). Now it says so in a note the next observation carries."""
+    bridge = (ROOT / 'bridge/agent-bridge.c').read_text()
+    assert 'refuse(name, "no key translation")' in bridge
+    assert 'quit(format("agent bridge: no key translation' not in bridge
+    # And the refusal is a borg_note, which is what reaches the messages.
+    assert 'borg_note(format("# AGENT refused <%s>: %s", name, why))' in bridge
+
+
+def test_the_bridge_types_magic_the_way_the_borg_does():
+    """The key sequences are the Borg's own (borg-magic.c, borg-magic-play.c,
+    borg-projection.c at the game pin), so the game sees nothing new."""
+    bridge = (ROOT / 'bridge/agent-bridge.c').read_text()
+    for keys in ("borg_keypress('m')", "borg_keypress('G')", "borg_keypress('*')",
+                 "borg_keypress('p')", "borg_keypress('5')"):
+        assert keys in bridge, keys
+    # The targeting walk: diagonals first, then the straight runs, as
+    # borg_target does it.
+    for digit in '13972846':
+        assert f"borg_keypress('{digit}')" in bridge, digit
+
+
 # --- the scripted mind ------------------------------------------------------
 
 def test_the_mind_walks_where_it_can_and_keeps_its_heading():

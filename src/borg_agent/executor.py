@@ -36,6 +36,8 @@ STOPS = (
     'no_escape', 'read', 'none_unknown', 'bought', 'not_in_shop', 'unreachable',
     'missing_item', 'refused', 'new_monster', 'prompt', 'hp_below',
     'decision_limit', 'done',
+    # T29, the caster's own stops.
+    'no_such_spell', 'cannot_cast', 'studied', 'nothing_to_study',
 )
 
 
@@ -259,6 +261,84 @@ class FightNearest(Primitive):
         return (command, None) if command else (None, 'blocked')
 
 
+class CastAtNearest(Primitive):
+    """Cast one named spell at the nearest visible monster, until it is gone.
+
+    The spell is the mind's choice, by the book and letter the observation's
+    `spells` gives it: this holds no opinion about which spell is good, only
+    about repeating the one it was told (T29). It stops when nothing is
+    visible, when the spell is not castable (no mana, or too low a level), or
+    when the mind's own limits say so.
+    """
+
+    name = 'cast_at_nearest'
+    stops_on_new_monster = False
+
+    def __init__(self, book=None, spell=None, **settings):
+        super().__init__(**settings)
+        self.book = book
+        self.spell = spell
+
+    def act(self, observation):
+        if not self.book or not self.spell:
+            return None, 'refused'
+        known = [s for s in observation.get('spells') or ()
+                 if s['book'] == self.book and s['letter'] == self.spell]
+        if not known:
+            return None, 'no_such_spell'
+        if not known[0]['castable']:
+            # The game's own judgement: unlearned, too low a level, or not
+            # enough mana for it right now.
+            return None, 'cannot_cast'
+        monsters = observation['monsters']
+        if not monsters:
+            return None, 'no_target'
+        player = observation['map']['player']
+        target = min(monsters, key=lambda m: (max(abs(m['x'] - player['x']),
+                                                  abs(m['y'] - player['y'])),
+                                              m['y'], m['x']))
+        return action('command',
+                      f"Cast {known[0]['name']} at the "
+                      f"{target['name'] or target['letter']}.",
+                      command={'name': 'cast', 'book': self.book, 'spell': self.spell,
+                               'target': {'x': target['x'], 'y': target['y']}}), None
+
+
+class StudyASpell(Primitive):
+    """Learn one spell the game says may be learned, and stop.
+
+    Which spell is the mind's choice when it names one; with none named it
+    takes the first the game offers, which is the order the book itself lists.
+    A character with nothing to learn stops at once (T29).
+    """
+
+    name = 'study_a_spell'
+
+    def __init__(self, book=None, spell=None, **settings):
+        super().__init__(**settings)
+        self.book = book
+        self.spell = spell
+        self.asked = False
+
+    def act(self, observation):
+        if self.asked:
+            # One study per primitive: the game either learned it or said why,
+            # and either way the mind should look at the result.
+            return None, 'studied'
+        if not (observation.get('character') or {}).get('new_spells'):
+            return None, 'nothing_to_study'
+        offered = [s for s in observation.get('spells') or () if s['studyable']
+                   and (self.book is None or s['book'] == self.book)
+                   and (self.spell is None or s['letter'] == self.spell)]
+        if not offered:
+            return None, 'nothing_to_study'
+        chosen = offered[0]
+        self.asked = True
+        return action('command', f"Learn {chosen['name']}.",
+                      command={'name': 'study', 'book': chosen['book'],
+                               'spell': chosen['letter']}), None
+
+
 class RestUntilHealed(Primitive):
     """Rest until the character is whole again, or something interrupts."""
 
@@ -383,10 +463,14 @@ def find_item(observation, text):
 
 
 PRIMITIVES = {p.name: p for p in (WalkTo, ExploreFloor, FightNearest, RestUntilHealed,
-                                  TakeStairs, Flee, ReadUnknownScroll, ShopList)}
+                                  TakeStairs, Flee, ReadUnknownScroll, ShopList,
+                                  CastAtNearest, StudyASpell)}
 assert set(PRIMITIVES) == {
     'walk_to', 'explore_floor', 'fight_nearest', 'rest_until_healed', 'take_stairs',
-    'flee', 'read_unknown_scroll', 'shop_list'}, 'the primitives of R2'
+    'flee', 'read_unknown_scroll', 'shop_list',
+    # T29: the two a caster cannot play without. R2's eight were written for a
+    # Warrior, and a Mage that cannot cast or study is not a Mage.
+    'cast_at_nearest', 'study_a_spell'}, 'the primitives of R2, and T29\'s two'
 
 
 def make(primitive):

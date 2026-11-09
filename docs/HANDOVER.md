@@ -6,9 +6,8 @@ work and updates "Current state".
 ## Current state
 
 *Written on 2026-11-09, with milestone 3 reviewed and merged, its ten findings
-closed in T23, **mode C running for any character** — two probes, two answers,
-and they disagree in the way that matters — and the zoo's import contract
-written.*
+closed in T23, mode C running, the zoo's contract written, and — since T29 —
+**a Mage that can actually cast**.*
 
 ### Where the work stands
 
@@ -186,6 +185,47 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: T29, the action surface
+
+Branch `task/T29-the-action-surface`. The owner, reading T28's state table:
+*"are the choices in my choose just examples? because there are much more
+choices, of course"*.
+
+**They were not examples — they were the whole menu**, and the menu had no
+`cast` and no `study`. So T26's Mage punched a rock lizard because melee was
+all we offered, and every Mage result in the knowledge base was a fact about a
+Mage deprived of magic. That is the kind of mistake that looks like a result.
+
+What the next session should know:
+
+- **the observation now carries `spells`**, built like the game's own spell
+  menu: the book's inventory letter, the spell's letter inside it, level, mana,
+  fail chance, and whether the game would allow casting or studying it right
+  now. Plus `new_spells` on the character. A caster cannot act without this —
+  it would be guessing its own letters;
+- **the keys are the Borg's**, read from `borg-magic.c`, `borg-magic-play.c`
+  and `borg-projection.c`: `m` + book + spell + `5`; `G` + book (+ spell for a
+  class that chooses); and targeting is `*`, `p`, the direction digits walked to
+  the square — diagonals first — then `5`. Nothing new is typed at the game;
+- **`target_nearest` is resolved by the harness**, because which monster is
+  nearest is a fact in the observation rather than a judgement;
+- **an unknown command no longer kills the run.** The bridge called `quit()`;
+  it now writes `# AGENT refused <name>` and the next observation carries it in
+  its messages;
+- the gate: a Mage summons a rock lizard with the game's own debug command and
+  kills it with Magic Missile — `Target Selected.`, `You failed to concentrate
+  hard enough!`, then `The rock lizard dies.`, mana 2 → 1 → 0. **The first
+  spell cast in this repository.** The failed cast is the honest part: 16%
+  fail, and it costs the mana anyway;
+- **the two floating-eye claims are superseded**, not edited (R4.1): same
+  counts, honest scope — "with melee the only attack the harness offered". The
+  Mage's question wants asking again **with magic**, which is a new probe id
+  and the first thing T28's `fighting` state will have a real choice between.
+
+Still missing from the surface, for whoever needs it: `fire` from the quiver,
+`inscribe`, `browse`, running, and the shop's full repertoire. Nothing depends
+on them today.
 
 ## 2026-11-09: T25 and T11, the call log and the zoo's contract
 

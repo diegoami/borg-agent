@@ -79,6 +79,29 @@ Borg itself sends for the same command.
 | `answer` with text | the text itself |
 | `escape` | Escape |
 | `keys` (the escape hatch of R1.2) | the keys, logged as raw |
+| `cast` with `book`, `spell` and a target | the Borg's own sequence: the target, then `m`, the book's letter, the spell's letter, then `5` for "the current target" |
+| `study` with `book` (and `spell` for a class that chooses) | `G`, the book, the spell |
+| `aim`, `zap`, `throw` with `item` and a target | the target, then `a`, `z` or `v`, the item, `5` |
+| `use`, `activate`, `eat`, `wield`, `take_off`, `drop` with `item` | one key (`u`, `A`, `E`, `w`, `t`, `d`) and the item's letter |
+| `tunnel`, `disarm`, `open`, `close` with a direction | `T`, `D`, `o`, `c`, then the direction |
+| `target` with a square | target mode, `p`, the cursor walked there, `5` |
+
+**Targeting is the Borg's own walk** (`borg_target` in `borg-projection.c`):
+`*`, then `p` for a position, then the direction digits that move the cursor
+from the player to the square — diagonals first — then `5` to select. A spell
+or a wand then takes `5` again, which the game reads as "the current target".
+Nothing new is typed at the game: these are the keys the Borg sends for the
+same acts (RULES 9).
+
+Which monster is "nearest" is resolved by the **harness**, not here: a mind may
+answer `target_nearest` and the agent turns it into the square from the
+observation it was shown, because that is a fact in the observation rather than
+a judgement.
+
+**An action the bridge cannot type is refused, not fatal.** It used to call
+`quit()`, so a model that invented a command name ended the run. Now the bridge
+writes `# AGENT refused <name>: why`, sends no keys, and the next observation
+carries that line in its messages — the game simply asks again (T29).
 
 Anything else is refused on the Python side before a key is sent, and the
 bridge refuses it again. The executor primitives of R2 (`walk_to`,
@@ -98,6 +121,8 @@ Everything comes from what the player could know:
 | messages | the game's message log since the last observation, in reading order |
 | shop | while in a store: its name, and its stock **in the store menu's own order** (`store_stock_list`), described as the store describes it (`ODESC_STORE`), with the menu's own letters and `price_item`'s price |
 | prompt, screen | the screen as the player sees it, through the Borg's own `borg_what_text` |
+| spells | what the character could cast or study, as the game's own spell menu builds it (`ui-spell.c`): the book's inventory letter, the spell's letter inside that book, its name, level, mana and failure chance, and whether the game would allow casting or studying it **right now**. Empty for a class with no magic. Without it a caster would have to guess its own letters, which is why the Mage played barehanded until T29 |
+| character's `new_spells` | the game's own "You can learn N more spells" |
 
 No field is read from a monster's or a grid's hidden state, so **no
 observation the bridge writes carries a `true_state` block** (R1.1). The

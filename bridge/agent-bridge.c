@@ -24,8 +24,10 @@
 #include "obj-gear.h"
 #include "obj-util.h"
 #include "player.h"
+#include "player-spell.h"
 #include "player-timed.h"
 #include "store.h"
+#include "ui-menu.h"            /* all_letters_nohjkl, the menus' own tags */
 #include "ui-term.h"
 #include "borg/borg.h"
 #include "borg/borg-io.h"
@@ -134,6 +136,9 @@ static void write_character(FILE *out)
         (int)player->depth, (int)player->max_depth, (int)player->au,
         (int)(player->state.ac + player->state.to_a),
         (int)player->state.speed, (int)player->food);
+    /* "You can learn N more spells" -- the game's own counter, so a caster
+     * knows it has something to study (T29). */
+    fprintf(out, ",\"new_spells\":%d", (int)player->upkeep->new_spells);
     fprintf(out, ",\"stats\":{");
     for (i = 0; i < STAT_MAX && i < (int)N_ELEMENTS(stat_names); ++i) {
         char buf[16];
@@ -311,6 +316,64 @@ static void write_items(FILE *out, const char *field, bool equipment)
     fprintf(out, "]");
 }
 
+/* The spells the character could cast or study, as the game's own spell menu
+ * builds them (ui-spell.c): the book's inventory letter, the spell's letter
+ * inside the book, its level, mana and failure chance, and whether the game
+ * would allow it right now. Without this a caster cannot cast: it would have
+ * to guess which letters its book holds (T29). */
+static void write_spells(FILE *out)
+{
+    int i;
+    bool first = true;
+
+    fprintf(out, "\"spells\":[");
+    for (i = 0; i < z_info->pack_size; ++i) {
+        struct object *obj = player->upkeep->inven[i];
+        const struct class_book *book;
+        int *spells = NULL;
+        int count, s;
+
+        if (!obj)
+            continue;
+        book = player_object_to_book(player, obj);
+        if (!book)
+            continue;
+        count = spell_collect_from_book(player, obj, &spells);
+        for (s = 0; s < count; ++s) {
+            const struct class_spell *spell = spell_by_index(player, spells[s]);
+            char book_label[2], spell_label[2];
+
+            if (!spell)
+                continue;
+            book_label[0] = I2A(i);
+            book_label[1] = '\0';
+            /* The letter inside the book is its position in this book's list,
+             * which is what the menu offers and what the Borg types. */
+            spell_label[0] = all_letters_nohjkl[s];
+            spell_label[1] = '\0';
+            if (!first)
+                fputc(',', out);
+            first = false;
+            fprintf(out, "{");
+            json_field(out, "book", book_label);
+            fputc(',', out);
+            json_field(out, "letter", spell_label);
+            fputc(',', out);
+            json_field(out, "name", spell->name);
+            fprintf(out,
+                ",\"level\":%d,\"mana\":%d,\"fail_percent\":%d,"
+                "\"castable\":%s,\"studyable\":%s}",
+                (int)spell->slevel, (int)spell->smana,
+                (int)spell_chance(spells[s]),
+                spell_okay_to_cast(player, spells[s]) ? "true" : "false",
+                spell_okay_to_study(player, spells[s]) ? "true" : "false");
+        }
+        if (spells)
+            mem_free(spells);
+    }
+    fprintf(out, "]");
+}
+
 static void write_shop(FILE *out)
 {
     struct store *store = cave ? store_at(cave, player->grid) : NULL;
@@ -441,6 +504,8 @@ static void write_observation(void)
     fputc(',', out);
     write_items(out, "equipment", true);
     fputc(',', out);
+    write_spells(out);
+    fputc(',', out);
     write_messages(out);
     fputc(',', out);
     write_shop(out);
@@ -508,6 +573,59 @@ static int direction_of(char *fields[], int count)
     if (dir < 1 || dir > 9 || dir == 5)
         quit("agent bridge: a direction must be 1-9 and not 5");
     return dir;
+}
+
+/* An action the bridge will not type, said out loud. borg_note lines reach the
+ * next observation's messages, so the agent sees the refusal and can try
+ * something else; no keys are sent, so the game simply asks again. */
+static void refuse(const char *name, const char *why)
+{
+    borg_note(format("# AGENT refused <%s>: %s", name, why));
+}
+
+/* Target a square the way the Borg does (borg_target in borg-projection.c):
+ * target mode, "p" for a position, the cursor walked there with the direction
+ * digits -- diagonals first -- and "5" to select. A spell or a wand then takes
+ * "5" again, which the game reads as "the current target" (T29). */
+static void target_location(int x, int y, bool require_monster)
+{
+    int x1 = player->grid.x, y1 = player->grid.y;
+
+    borg_note(format("# AGENT targeting (%d,%d)", y, x));
+    borg_keypress('*');
+    borg_keypress('p');
+    for (; (y1 < y) && (x1 < x); y1++, x1++)
+        borg_keypress('3');
+    for (; (y1 < y) && (x1 > x); y1++, x1--)
+        borg_keypress('1');
+    for (; (y1 > y) && (x1 < x); y1--, x1++)
+        borg_keypress('9');
+    for (; (y1 > y) && (x1 > x); y1--, x1--)
+        borg_keypress('7');
+    for (; y1 < y; y1++)
+        borg_keypress('2');
+    for (; y1 > y; y1--)
+        borg_keypress('8');
+    for (; x1 < x; x1++)
+        borg_keypress('6');
+    for (; x1 > x; x1--)
+        borg_keypress('4');
+    if (require_monster)
+        borg_keypress('m');
+    borg_keypress('5');
+}
+
+/* An item or a direction argument, or NULL. */
+static bool aimed_at(char *fields[], int count, int *x, int *y)
+{
+    const char *at_x = argument(fields, count, "at_x");
+    const char *at_y = argument(fields, count, "at_y");
+
+    if (!at_x || !at_y || !*at_x || !*at_y)
+        return false;
+    *x = atoi(at_x);
+    *y = atoi(at_y);
+    return true;
 }
 
 /* The command table: this is where an action becomes keys. The keys are the
@@ -609,8 +727,106 @@ static void apply_action(char *line)
         borg_keypress(KC_ENTER);
     } else if (!strcmp(name, "escape")) {
         borg_keypress(ESCAPE);
+    } else if (!strcmp(name, "cast")) {
+        /* The Borg's own sequence (borg_spell): "m", the book's letter, the
+         * spell's letter inside it, and "5" for the target when one is given.
+         * The observation lists both letters, so nothing has to be guessed. */
+        const char *book = argument(fields, count, "book");
+        const char *spell = argument(fields, count, "spell");
+        int x, y;
+
+        if (!book || !*book || !spell || !*spell) {
+            refuse(name, "cast needs book and spell");
+            return;
+        }
+        bool aimed = aimed_at(fields, count, &x, &y);
+
+        if (aimed)
+            target_location(x, y, true);
+        borg_keypress('m');
+        borg_keypress((keycode_t)book[0]);
+        borg_keypress((keycode_t)spell[0]);
+        /* "5" is "the current target". Without one, a spell that needs aiming
+         * raises the game's own prompt, which the next observation carries. */
+        if (aimed)
+            borg_keypress('5');
+    } else if (!strcmp(name, "study")) {
+        /* "G", the book, and the spell for a class that chooses its own
+         * (borg_study_spell; a Priest is given one and types no letter). */
+        const char *book = argument(fields, count, "book");
+        const char *spell = argument(fields, count, "spell");
+
+        if (!book || !*book) {
+            refuse(name, "study needs book");
+            return;
+        }
+        borg_keypress('G');
+        borg_keypress((keycode_t)book[0]);
+        if (player_has(player, PF_CHOOSE_SPELLS) && spell && *spell)
+            borg_keypress((keycode_t)spell[0]);
+    } else if (!strcmp(name, "aim") || !strcmp(name, "zap")
+               || !strcmp(name, "throw")) {
+        /* A wand ("a"), a rod ("z") or a thrown item ("v"), then the item and
+         * the target, as borg-fight-attack.c types them. */
+        const char *item = argument(fields, count, "item");
+        int x, y;
+
+        if (!item || !*item) {
+            refuse(name, "needs item");
+            return;
+        }
+        bool aimed = aimed_at(fields, count, &x, &y);
+
+        if (aimed)
+            target_location(x, y, true);
+        borg_keypress(!strcmp(name, "aim") ? 'a' : (!strcmp(name, "zap") ? 'z' : 'v'));
+        borg_keypress((keycode_t)item[0]);
+        if (aimed)
+            borg_keypress('5');
+    } else if (!strcmp(name, "use") || !strcmp(name, "activate")
+               || !strcmp(name, "eat") || !strcmp(name, "wield")
+               || !strcmp(name, "take_off") || !strcmp(name, "drop")) {
+        /* A staff, an artifact, food, a weapon or armour: one key and the
+         * item's own letter. */
+        const char *item = argument(fields, count, "item");
+        static const struct { const char *name; char key; } simple[] = {
+            { "use", 'u' }, { "activate", 'A' }, { "eat", 'E' },
+            { "wield", 'w' }, { "take_off", 't' }, { "drop", 'd' },
+        };
+        size_t which;
+
+        if (!item || !*item) {
+            refuse(name, "needs item");
+            return;
+        }
+        for (which = 0; which < N_ELEMENTS(simple); ++which)
+            if (!strcmp(name, simple[which].name))
+                break;
+        borg_keypress(simple[which].key);
+        borg_keypress((keycode_t)item[0]);
+    } else if (!strcmp(name, "tunnel") || !strcmp(name, "disarm")
+               || !strcmp(name, "open") || !strcmp(name, "close")) {
+        /* A direction, the way `alter` takes one. */
+        char key = !strcmp(name, "tunnel") ? 'T'
+                 : (!strcmp(name, "disarm") ? 'D'
+                 : (!strcmp(name, "open") ? 'o' : 'c'));
+
+        borg_keypress(key);
+        borg_keypress(I2D(direction_of(fields, count)));
+    } else if (!strcmp(name, "target")) {
+        int x, y;
+
+        if (!aimed_at(fields, count, &x, &y)) {
+            refuse(name, "target needs at_x and at_y");
+            return;
+        }
+        target_location(x, y, false);
     } else {
-        quit(format("agent bridge: no key translation for <%s>", name));
+        /* An action the bridge cannot type is the agent's mistake, not the
+         * game's: it is refused and the agent is told in the next
+         * observation's messages. Quitting here ended a run because a model
+         * guessed a command name (T29). */
+        refuse(name, "no key translation");
     }
 }
 
