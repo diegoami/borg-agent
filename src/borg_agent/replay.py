@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 
 from . import agent, mind as mind_module, play, record
+from .build import sha
+from .signals import StreamEnded
 
 VERIFY_NAME = 'verify.json'
 
@@ -51,13 +53,21 @@ class ReplayMind:
                 self.handed_over_at = observation['turn']
             return self.then.act(observation)
         if self.replayed >= len(self.actions):
-            # The stream ran out before the game ended: say so rather than
-            # inventing an action.
-            raise ValueError(f'the recorded action stream ended at decision {self.replayed}, '
-                             f'but the game asked again at turn {observation["turn"]}')
+            # The stream ran out while the game was still asking. For a run the
+            # harness ended — a cap, a stall — that is the expected end of the
+            # replay, not a divergence; `verify` reads it that way. Either way
+            # no action is invented here.
+            raise StreamEnded(self.replayed, observation['turn'])
         action = self.actions[self.replayed]
         self.replayed += 1
         return action
+
+
+# A run the game itself ended can be replayed to the same end; one the harness
+# ended stops where the recording stops, because the game would have played on
+# (R2.3). The two are verified differently, and conflating them was finding 1
+# of the milestone 2 review.
+GAME_ENDED = ('death', 'completion', 'turn_cap', 'saved')
 
 
 def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print):
@@ -65,6 +75,19 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
 
     Compares, decision by decision, the state hash the agent was shown, and
     then the outcome, the final turn and the trace.
+
+    How far the comparison can go depends on how the run ended:
+
+    - the **game** ended it (a death, a cap on turns, a win): the replay must
+      reach the same end, so every state hash, the outcome, the cause, the
+      final turn and the trace must match. `scope` is `full`.
+    - the **harness** ended it (a decision or budget cap, a stall, a wall
+      limit, the agent giving up): the recording stops where the harness
+      stopped it, and a replay runs out of actions one decision later, by
+      which time the game has already been asked again. Every recorded state
+      must match and the stream must end exactly where it did before.
+      `scope` is `prefix`, and the outcome and trace are reported but not
+      required to match, because they cannot.
     """
     run_dir, output = Path(run_dir), Path(output)
     original = json.loads((run_dir / 'result.json').read_text())
@@ -78,24 +101,38 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
         output=output, mind=replay_mind, timeout=timeout, stall_timeout=stall_timeout,
         decision_cap=max(len(actions) + 1, 2), validate=False, lock=lock, log=lambda *a: None)
     after = record.state_hashes(output / 'observations.jsonl')
+    scope = 'full' if original['outcome'] in GAME_ENDED else 'prefix'
     first_difference = next((i for i, (a, b) in enumerate(zip(before, after)) if a != b), None)
+    # Every state the original run saw must appear, in order, in the replay.
+    states_match = bool(before) and before == after[:len(before)]
+    stream_ended = result.get('stream_ended')
     verdict = {
         'schema': 'borg-agent/verify@1',
         'run': original.get('run_id') or run_dir.name,
         'run_record': str(record_path) if recorded else None,
         'replay': str(output),
+        'scope': scope,
         'actions': len(actions),
         'decisions': [len(before), len(after)],
         'outcome': [original['outcome'], result['outcome']],
         'final_turn': [original.get('final_turn'), result.get('final_turn')],
         'cause': [original.get('cause'), result.get('cause')],
         'trace_sha256': [original.get('trace_sha256'), result.get('trace_sha256')],
-        'state_hashes_match': before == after,
+        'state_hashes_match': states_match,
         'first_differing_decision': first_difference,
+        'stream_ended': stream_ended,
         'calendar': [original['calendar']['utc'], result['calendar']['utc']],
+        'seasonal': [original['calendar'].get('seasonal'), result['calendar'].get('seasonal')],
     }
-    verdict['seasonal'] = [original['calendar'].get('seasonal'),
-                           result['calendar'].get('seasonal')]
+    if recorded:
+        # The record is checked against the run as well, not only the run
+        # against its replay: the hash the record published must still be the
+        # hash of the state hashes beside it.
+        published = (recorded.get('evidence') or {}).get('state_hashes_sha256')
+        verdict['record_state_hashes_sha256'] = published
+        verdict['record_matches_run'] = (
+            published == sha(run_dir / record.STATE_HASHES_NAME)
+            if published and (run_dir / record.STATE_HASHES_NAME).exists() else None)
     if verdict['seasonal'][0] != verdict['seasonal'][1]:
         # The game's monster table differs on 24-26 December, so this replay
         # was never going to match and its result says nothing about the run.
@@ -110,15 +147,43 @@ def verify(run_dir, output, timeout=900, stall_timeout=120, lock=True, log=print
                                                 'incomparable_because')}))
         return verdict
     verdict['comparable'] = True
-    verdict['verified'] = bool(
-        before and before == after
-        and original['outcome'] == result['outcome']
-        and original.get('final_turn') == result.get('final_turn')
-        and original.get('cause') == result.get('cause')
-        and original.get('trace_sha256') == result.get('trace_sha256'))
+    if verdict.get('record_matches_run') is False:
+        verdict['verified'] = False
+        verdict['failed_because'] = ("the record's state_hashes_sha256 is not the hash of the "
+                                     'state hashes beside the run')
+    elif scope == 'full':
+        verdict['verified'] = bool(
+            states_match and len(after) == len(before)
+            and original['outcome'] == result['outcome']
+            and original.get('final_turn') == result.get('final_turn')
+            and original.get('cause') == result.get('cause')
+            and original.get('trace_sha256') == result.get('trace_sha256'))
+        if not verdict['verified']:
+            verdict['failed_because'] = ('the replay did not reach the same end as the run'
+                                         if states_match else
+                                         'the replay diverged from the run')
+    else:
+        # The harness ended the run, so the replay ends with the stream. It may
+        # see one observation more: the game asks again, and there is nothing
+        # recorded to answer with.
+        ended_where_it_should = bool(stream_ended
+                                     and stream_ended['decisions'] == len(before))
+        verdict['verified'] = bool(states_match
+                                   and len(after) in (len(before), len(before) + 1)
+                                   and ended_where_it_should)
+        if not verdict['verified']:
+            verdict['failed_because'] = (
+                'the replay diverged from the run' if not states_match else
+                f'the recorded stream ended at {stream_ended and stream_ended.get("decisions")} '
+                f'decisions, not at the {len(before)} the run recorded')
+        else:
+            verdict['verified_as'] = (
+                f'every one of the {len(before)} recorded states reproduced, and the stream '
+                f'ended where the harness ended the run ({original["outcome"]})')
     (output / VERIFY_NAME).write_text(json.dumps(verdict, indent=2, sort_keys=True) + '\n')
-    log(json.dumps({k: verdict[k] for k in
-                    ('run', 'verified', 'outcome', 'decisions', 'first_differing_decision')}))
+    log(json.dumps({k: verdict.get(k) for k in
+                    ('run', 'verified', 'scope', 'outcome', 'decisions',
+                     'first_differing_decision', 'failed_because')}))
     return verdict
 
 
@@ -187,19 +252,31 @@ def dump(run_dir, turn):
     return at_turn(run_dir, turn)
 
 
+def journal(run_dir):
+    """The chooser's decisions and the executor's stop reasons, if any."""
+    path = Path(run_dir) / agent.JOURNAL_LOG
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
 def explain(run_dir, turn, window=3):
     """What was decided around a turn, and why (R5).
 
-    With a model mind this will also carry the model call; until T06 there is
-    none, so it shows the action, its reason and any note.
+    The command the game was sent, the reason given with it, and — when a
+    chooser was picking primitives — what it chose, why, and why the previous
+    primitive stopped. With a model mind the model call joins the same line
+    (T06).
     """
     observed = observations(run_dir)
     actions = recorded_actions(run_dir)
+    entries = journal(run_dir)
     index, _ = at_turn(run_dir, turn)
     lines = []
     for i in range(max(0, index - window), min(len(observed), index + window + 1)):
         observation = observed[i]
         action = actions[i] if i < len(actions) else None
+        decided = [entry for entry in entries if entry.get('decision') == observation['decision']]
         lines.append({
             'decision': observation['decision'],
             'turn': observation['turn'],
@@ -207,6 +284,12 @@ def explain(run_dir, turn, window=3):
             'hp': f"{observation['character']['hp']}/{observation['character']['max_hp']}",
             'messages': observation['messages'],
             'action': action and {k: v for k, v in action.items() if k not in ('schema',)},
+            'chose': [{'kind': entry['kind'],
+                       'what': entry.get('chose') or entry.get('stop'),
+                       'why': (entry.get('answer') or {}).get('reason'),
+                       'primitive': entry.get('primitive'),
+                       'after_stop': entry.get('after_stop')}
+                      for entry in decided] or None,
             'current': i == index,
         })
     return lines

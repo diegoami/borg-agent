@@ -123,11 +123,20 @@ static void write_character(FILE *out)
     fprintf(out, ",\"stats\":{");
     for (i = 0; i < STAT_MAX && i < (int)N_ELEMENTS(stat_names); ++i) {
         char buf[16];
-        /* As the character sheet prints it, so 18/40 stays itself. */
-        if (player->stat_cur[i] >= 18 + 10)
-            strnfmt(buf, sizeof(buf), "18/%d", (int)player->stat_cur[i] - 18);
-        else
-            strnfmt(buf, sizeof(buf), "%d", (int)player->stat_cur[i]);
+        /* Exactly as the character sheet prints it (cnv_stat in ui-display.c):
+         * padded to six columns, 18/09 not 18/9, and 18/*** at 18/220. */
+        int value = (int)player->stat_cur[i];
+        if (value >= 19) {
+            int bonus = value - 18;
+            if (bonus >= 220)
+                my_strcpy(buf, "18/***", sizeof(buf));
+            else if (bonus >= 100)
+                strnfmt(buf, sizeof(buf), "18/%03d", bonus);
+            else
+                strnfmt(buf, sizeof(buf), " 18/%02d", bonus);
+        } else {
+            strnfmt(buf, sizeof(buf), "    %2d", value);
+        }
         if (i)
             fputc(',', out);
         json_field(out, stat_names[i], buf);
@@ -291,8 +300,8 @@ static void write_items(FILE *out, const char *field, bool equipment)
 static void write_shop(FILE *out)
 {
     struct store *store = cave ? store_at(cave, player->grid) : NULL;
-    struct object *obj;
-    int index = 0;
+    struct object **listed;
+    int index, written = 0;
     size_t letters;
 
     if (!store) {
@@ -305,21 +314,27 @@ static void write_shop(FILE *out)
      * ui-store.c titles the page. */
     json_field(out, "kind", f_info[store->feat].name);
     fprintf(out, ",\"stock\":[");
-    /* The store's stock, described the way its own screen describes it:
-     * ODESC_STORE hides what the player has not learned (ui-store.c does the
-     * same). The labels are the ones the store's menu offers, taken from the
-     * Borg's own table, so a buy lands on the item the agent named. */
-    for (obj = store->stock; obj; obj = obj->next, ++index) {
+    /* In the store menu's own order. The raw store->stock list is in
+     * insertion order; the screen shows store_stock_list()'s order, and the
+     * menu's letters follow that, so reading the raw list made a label point
+     * at the wrong item (found by the milestone 2 review). Each item is
+     * described as the store describes it -- ODESC_STORE hides what the player
+     * has not learned -- and the letters are the store menu's own selection
+     * string, which the Borg also uses. */
+    listed = mem_zalloc(sizeof(*listed) * z_info->store_inven_max);
+    store_stock_list(store, listed, z_info->store_inven_max);
+    for (index = 0; index < z_info->store_inven_max; ++index) {
+        struct object *obj = listed[index];
         char description[120];
         char label[2];
 
-        if (!obj->kind)
+        if (!obj || !obj->kind)
             continue;
         object_desc(description, sizeof(description), obj,
             ODESC_PREFIX | ODESC_FULL | ODESC_STORE, player);
         label[0] = (index < (int)letters) ? SHOP_MENU_ITEMS[index] : '?';
         label[1] = '\0';
-        if (index)
+        if (written++)
             fputc(',', out);
         fprintf(out, "{");
         json_field(out, "label", label);
@@ -328,6 +343,7 @@ static void write_shop(FILE *out)
         fprintf(out, ",\"count\":%d,\"price\":%d}",
             (int)obj->number, price_item(store, obj, false, 1));
     }
+    mem_free(listed);
     fprintf(out, "]}");
 }
 

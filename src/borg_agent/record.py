@@ -9,7 +9,6 @@ birth input's hash, the calendar, and the action stream with its hash.
 """
 import hashlib
 import json
-import subprocess
 from pathlib import Path
 
 from . import pins
@@ -23,12 +22,17 @@ STATE_HASHES_NAME = 'state-hashes.txt'
 ENGINE = 'c-4.2.6'
 
 
-def git_state():
-    """This repository's commit and whether it was dirty when the run was made."""
-    def git(*args):
-        return subprocess.run(['git', '-C', str(pins.ROOT), *args],
-                              check=True, capture_output=True, text=True).stdout.strip()
-    return git('rev-parse', 'HEAD'), git('status', '--porcelain', '--untracked-files=no')
+def required(value, what):
+    """Refuse to invent what a record must carry.
+
+    A truncated trace, or a run that died before the observer printed its
+    options, is exactly the run where a plausible-looking default would do the
+    most harm (finding 4 of the milestone 2 review).
+    """
+    if not value:
+        raise ValueError(f'the run does not say what its {what} were, so no record can be '
+                         'written for it; look at the trace')
+    return value
 
 
 def parse_settings(trace, marker):
@@ -110,7 +114,7 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
     trace = trace_path.read_text() if trace_path.exists() else ''
     states = result.get('states') or []
     last = states[-1] if states else {}
-    commit, dirty = git_state()
+    provenance = required(result.get('provenance'), 'build and repository state')
     kind = result.get('mind_kind') or result['mind']
     if kind not in KINDS:
         raise ValueError(f'the mind kind {kind!r} is not one of {KINDS}')
@@ -135,14 +139,11 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
             'build_key': result['build_key'],
             'binary_sha256': result['binary_sha256'],
             'patch_sha256': patch_sha256,
-            'data_sha256': json.loads((pins.ROOT / 'build' / result['build_key']
-                                       / 'build.json').read_text())['data_sha256'],
-            'compiler': json.loads((pins.ROOT / 'build' / result['build_key']
-                                    / 'build.json').read_text())['compiler'],
-            'platform': json.loads((pins.ROOT / 'build' / result['build_key']
-                                    / 'build.json').read_text())['platform'],
-            'commit': commit,
-            'dirty': dirty,
+            'data_sha256': provenance['data_sha256'],
+            'compiler': provenance['compiler'],
+            'platform': provenance['platform'],
+            'commit': provenance['commit'],
+            'dirty': provenance['dirty'],
         },
         'game': {
             'seed': result['seed'],
@@ -151,9 +152,9 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
                 'class': (result.get('character') or ' ').split(' ')[-1],
                 'name': (result.get('character') or '').split(' ')[0] or None,
                 'rule': 'fixed',
-                'options': birth_options(trace) or {'birth_connect_stairs': 1},
+                'options': required(birth_options(trace), 'birth options'),
             },
-            'settings': parse_settings(trace, 'BORG_OPTIONS') or {'borg_cheat_death': 0},
+            'settings': required(parse_settings(trace, 'BORG_OPTIONS'), 'Borg settings'),
             'settings_sha256': result['configuration_sha256'],
             'input_sha256': result['input_sha256'],
             'turn_cap': result['turn_cap'],
@@ -170,6 +171,7 @@ def build_record(run_dir, mode='play', parent=None, mind=None, intervention=Fals
             'trace_sha256': result.get('trace_sha256'),
             'state_hashes_sha256': hashes_sha,
             'observations_sha256': (result.get('observations') or {}).get('sha256'),
+            'journal_sha256': (result.get('journal') or {}).get('sha256'),
         }.items() if v},
         'outcome': {
             'kind': result['outcome'],

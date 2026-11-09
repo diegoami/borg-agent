@@ -15,13 +15,14 @@ import subprocess
 import time
 from pathlib import Path
 
-from . import checks, executor, play
-from .build import binary, sha
+from . import checks, play, signals
+from .build import binary, provenance, sha
 
 OBS_FIFO = 'observations.fifo'
 ACT_FIFO = 'actions.fifo'
 ACTION_LOG = 'actions.jsonl'
 OBSERVATION_LOG = 'observations.jsonl'
+JOURNAL_LOG = 'decisions.jsonl'
 # What apply_action in the bridge can translate. Anything else is a mistake
 # here, not at run time, so it raises before a key is sent.
 WIRE_COMMANDS = {
@@ -195,6 +196,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
         'build_key': manifest['build_key'],
         'binary_sha256': manifest['binary_sha256'],
         'recipe': manifest['recipe'],
+        'provenance': provenance(build_out),
         'input_sha256': sha(output / 'input.txt'),
         'configuration_sha256': sha(output / 'user/borg.txt'),
         'schemas_validated': validate,
@@ -207,6 +209,7 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
     process = None
     interrupted = None
     decisions = 0
+    journal_entries = 0
     with play.heavy_lock(lock):
         started = time.monotonic()
         record['lock_wait_seconds'] = round(started - waiting, 3)
@@ -221,7 +224,8 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                 with (observations or open(os.devnull)) as observations, \
                         (actions or open(os.devnull, 'w')) as actions, \
                         (output / ACTION_LOG).open('w') as action_log, \
-                        (output / OBSERVATION_LOG).open('w') as observation_log:
+                        (output / OBSERVATION_LOG).open('w') as observation_log, \
+                        (output / JOURNAL_LOG).open('w') as journal_log:
                     last_turn = None
                     decisions_at_this_turn = 0
                     stall_deadline = time.monotonic() + stall_timeout
@@ -252,13 +256,29 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
                                 break
                         try:
                             action = mind.act(observation)
-                        except executor.CannotAct as exc:
+                        except signals.CannotAct as exc:
                             # The agent gave up; that is an outcome (R5).
                             interrupted = 'agent_stopped'
                             record['error'] = str(exc)
                             break
+                        except signals.StreamEnded as exc:
+                            # A replay reached the end of what was recorded.
+                            # The run it came from was ended by the harness, so
+                            # this is where the recording stops (R2.3).
+                            interrupted = 'agent_stopped'
+                            record['error'] = str(exc)
+                            record['stream_ended'] = {'decisions': exc.decisions,
+                                                      'turn': exc.turn}
+                            break
                         validator.check('action', action, f'action {decisions}')
                         action_log.write(json.dumps(action, sort_keys=True) + '\n')
+                        # A mind that chooses primitives has more to say than
+                        # the command it produced: what it chose, why, and why
+                        # the last primitive stopped (R2).
+                        for entry in (mind.drain_journal()
+                                      if hasattr(mind, 'drain_journal') else ()):
+                            journal_log.write(json.dumps(entry, sort_keys=True) + '\n')
+                            journal_entries += 1
                         actions.write(wire(action) + '\n')
                         actions.flush()
                         # The stall limit is on the *game's* answer, so the
@@ -297,6 +317,10 @@ def play_with_mind(build_out, seed, cap, output, mind, timeout=900, stall_timeou
             }
             record['observations'] = {'count': decisions, 'sha256': sha(output / OBSERVATION_LOG),
                                       'path': OBSERVATION_LOG}
+            if journal_entries:
+                record['journal'] = {'count': journal_entries,
+                                     'sha256': sha(output / JOURNAL_LOG),
+                                     'path': JOURNAL_LOG}
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             record['error'] = f'{type(exc).__name__}: {exc}'
         finally:

@@ -9,6 +9,10 @@ work and updates "Current state".
   `flock /tmp/angband-validation.lock pytest -m slow` waited for ever, because
   the suite's own runs took the same lock. An outer `flock` is now detected.
   The review PR's diff moved with it.
+- **Milestone 2 has been reviewed** (Kimi K3, a different family, on
+  [#15](https://github.com/diegoami/borg-agent/pull/15), 2026-11-09) and its
+  four findings are answered in **T15** (#18). The review PR's diff moved with
+  them; it is still the owner's to merge, and milestone 3 waits for that.
 - **Milestone 2 is complete and waiting for the owner's review.** Its review
   PR is `main` into `reviewed` ([#15](https://github.com/diegoami/borg-agent/pull/15)); the owner merges it, which advances
   `reviewed`. **A session does not start milestone 3 until then** (RULES 7).
@@ -39,6 +43,49 @@ work and updates "Current state".
 - Settled: `default_profile: alibaba` stays (the owner, 2026-11-08 — the
   general notes about that provider do not apply here, since D7 makes the
   profile the only model rule).
+
+## 2026-11-09: T15, the milestone-2 review findings
+
+Branch `task/T15-milestone-2-review`, PR
+[#18](https://github.com/diegoami/borg-agent/pull/18). The review is a comment
+on [#15](https://github.com/diegoami/borg-agent/pull/15).
+
+All four findings are fixed; what matters for later sessions:
+
+- **`verify` now has a scope.** `full` for a run the game ended, `prefix` for
+  one the harness ended — a decision or budget cap, a stall, a wall limit, the
+  agent giving up. A capped run is the *expected* shape of a model run, and it
+  could not be verified at all before: the replay ran out of actions, which
+  was recorded as a harness failure, and the one extra observation made the
+  state hashes look different while naming no difference. T09 and T10 depend
+  on this working.
+- **`StreamEnded`** (in the new `signals.py`, with `CannotAct`) is how a
+  replay says "the recording stops here". It is an outcome (`agent_stopped`),
+  not a failure.
+- **A run with a chooser writes `decisions.jsonl`**: what it chose, why, and
+  why each primitive stopped. T06's model calls belong on those lines, and
+  T08's post-mortems will read them. `actions.jsonl` has only the executor's
+  mechanical reasons, so the journal is the only place that says why.
+- **Provenance is captured at play time** (`build.provenance`), not when a
+  record is written. A record of a run played on a dirty tree says so even if
+  the tree was committed in between.
+- **The recorder refuses to invent.** No settings or birth options in the
+  trace means no record.
+- **The store's stock is read the way the store's menu reads it.** The raw
+  `store->stock` list is in insertion order; `store_stock_list` is what the
+  screen and its letters follow. Reading the raw list made `shop_list` buy the
+  wrong item — the agent asked for wine and bought a Ration of Food. Buying
+  label `a` had worked by luck. **The lesson for T06 and beyond: when the
+  bridge mirrors something the game shows, mirror the function the UI calls,
+  not the data behind it.**
+- A **death can be branched before it happens** and needs no save, because
+  replay starts from birth. That is T08's whole mechanism, now under test.
+
+Still open, as the reviewer suggested: the `mind` block is one model per run
+(T06); the secret guard does not scan the observation and action logs, which
+matters once model replies land there (T06); the build subprocess inherits the
+full environment; and `calendar.seasonal` is sampled at run start, so a run
+crossing midnight into 24 December is described by neither value.
 
 ## 2026-11-09: T14, the heavy-run lock under an outer flock
 

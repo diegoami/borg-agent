@@ -15,6 +15,7 @@ front of it.
 from collections import deque
 
 from .mind import DIRECTIONS, ORDER, action
+from .signals import CannotAct
 
 # Terrain a step can land on, as the player's map draws it. A shop entrance
 # (a digit) is walkable only as a destination, since stepping on it enters the
@@ -32,7 +33,7 @@ DEFAULT_MAX_DECISIONS = 400
 STOPS = (
     'arrived', 'no_path', 'blocked', 'explored', 'no_target', 'target_gone',
     'healed', 'interrupted', 'changed_level', 'no_stairs_known', 'fled',
-    'no_escape', 'read', 'none_unknown', 'bought', 'not_in_shop',
+    'no_escape', 'read', 'none_unknown', 'bought', 'not_in_shop', 'unreachable',
     'missing_item', 'refused', 'new_monster', 'prompt', 'hp_below',
     'decision_limit', 'done',
 )
@@ -111,13 +112,6 @@ def step_command(observation, square, reason):
     return action('command', reason, command={'name': name, 'direction': direction})
 
 
-class CannotAct(Exception):
-    """The agent could not act: every primitive it chose stopped at once.
-
-    An outcome (`agent_stopped`), not a failure of the harness.
-    """
-
-
 class Primitive:
     """One primitive. `step` answers an observation, or stops and says why."""
 
@@ -190,6 +184,9 @@ class WalkTo(Primitive):
         if not steps:
             return None, 'arrived'
         command = step_command(observation, steps[0], f'Walk towards {target}.')
+        # `blocked` is defensive: the first step of a path is always adjacent,
+        # so a command is always built. Kept so a future pathing change cannot
+        # return no action at all.
         return (command, None) if command else (None, 'blocked')
 
 
@@ -222,7 +219,10 @@ class ExploreFloor(Primitive):
             return None, 'explored'
         steps = path(observation, frontier)
         if steps is None:
-            return None, 'explored'
+            # There is somewhere unseen, but no known way to it: a different
+            # situation from a floor with nothing left, and the mind may want
+            # to dig, search or leave (finding of the milestone 2 review).
+            return None, 'unreachable'
         if not steps:
             return None, 'arrived'
         command = step_command(observation, steps[0], 'Explore towards the unknown.')
@@ -417,6 +417,11 @@ class ExecutingMind:
         self.last_stop = None
         self.stops = []
         self.chosen = []
+        # What to write to the run's journal: the chooser's own decisions and
+        # the stop reasons the primitives report. Without these a record
+        # cannot say why the agent stopped exploring at a turn, which is what
+        # R2 has primitives report stops for.
+        self.journal = []
 
     def choose(self, observation):
         asked = dict(observation)
@@ -424,6 +429,16 @@ class ExecutingMind:
             asked['last_stop'] = self.last_stop
         answer = self.chooser.act(asked)
         self.chosen.append(answer)
+        self.journal.append({
+            'kind': 'choice',
+            'turn': observation['turn'],
+            'decision': observation['decision'],
+            'chooser': getattr(self.chooser, 'name', 'unknown'),
+            'after_stop': self.last_stop,
+            'chose': (answer['primitive']['name'] if answer['kind'] == 'primitive'
+                      else answer.get('command', {}).get('name', answer['kind'])),
+            'answer': answer,
+        })
         if answer['kind'] == 'primitive':
             self.current = make(answer['primitive'])
             self.last_stop = None
@@ -433,6 +448,11 @@ class ExecutingMind:
 
     # How many primitives may stop without acting before the agent gives up.
     PATIENCE = 6
+
+    def drain_journal(self):
+        """The journal entries since the last call, for the run to write out."""
+        entries, self.journal = self.journal, []
+        return entries
 
     def act(self, observation):
         for _ in range(self.PATIENCE):   # a stop may follow a choice at once
@@ -444,9 +464,11 @@ class ExecutingMind:
             if result is not None:
                 return result
             self.last_stop = stop
-            self.stops.append({'primitive': self.current.name, 'stop': stop,
-                               'turn': observation['turn'],
-                               'decisions': self.current.decisions})
+            entry = {'primitive': self.current.name, 'stop': stop,
+                     'turn': observation['turn'],
+                     'decisions': self.current.decisions}
+            self.stops.append(entry)
+            self.journal.append({'kind': 'stop', 'decision': observation['decision'], **entry})
             self.current = None
         # Every primitive the chooser offered stopped without acting. That is
         # the agent giving up, not the harness failing, so it is the outcome

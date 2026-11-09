@@ -33,7 +33,7 @@ when to flee, the thing being measured would be the plumbing.
 | Primitive | What it does | Its own stops |
 |---|---|---|
 | `walk_to {target}` | the shortest known path to a square | `arrived`, `no_path`, `blocked` |
-| `explore_floor` | walks to the nearest known square bordering the unknown | `explored`, `blocked` |
+| `explore_floor` | walks to the nearest known square bordering the unknown | `explored` (nothing left), `unreachable` (somewhere unseen, but no known way to it), `blocked` |
 | `fight_nearest` | attacks the nearest visible monster, closing in if it must | `no_target`, `no_path` |
 | `rest_until_healed` | rests until whole | `healed`, `interrupted` |
 | `take_stairs {direction}` | uses the staircase underfoot, or walks to the nearest known one | `changed_level`, `no_stairs_known` |
@@ -77,6 +77,15 @@ and leaving a shop, or walking into a wall, costs no game time — which is
 exactly how a first version of this executor burned 31,681 decisions in a
 shop doorway.
 
+## What the chooser decided is written down
+
+A run with a chooser in front writes `decisions.jsonl`: one line per choice
+(the primitive, the chooser's own reason, the stop it was answering) and one
+per stop (the primitive, the reason, the turn, the decisions it took). The
+commands in `actions.jsonl` carry only the executor's mechanical reasons —
+"Walk towards (34, 11)." — so the journal is the only place that says *why*,
+and `explain` reads it. See [docs/RECORDS.md](RECORDS.md).
+
 ## The scripted chooser
 
 `mind.PrimitiveMind` is a fixture, not a policy: the shortest rules that
@@ -96,10 +105,15 @@ strategy.
 - The same seed and fixture played twice: **identical action streams** (876
   decisions, `01aeca55…`), and `verify` reproduced the run with the same state
   hash at every observation.
-- The shop path was checked in a live store: the stock read as the store's own
-  screen describes it (`a Mushroom of Stoneskin {unseen}`), `shop_list` bought
-  label `a`, gold went 140 → 80 and the mushroom was in the inventory
-  afterwards.
+- The shop path was checked in a live store, twice. Buying label `a` (the
+  Mushroom of Stoneskin, 60 gold) worked from the start. Buying label **`c`**
+  did not, and that is how a real bug was found: the observation listed the
+  stock in `store->stock` order while the store's menu uses
+  `store_stock_list`'s order, so a label pointed at the wrong item — the agent
+  asked for wine and bought a Ration of Food. The bridge now reads the stock
+  the way the menu does; label `c` is the Ration the store offers there, and
+  buying it charges exactly the listed price (140 → 137). A slow test keeps it
+  honest.
 - Each primitive is tested on fixtures, including the stops it reports and the
   fact that it has no threshold of its own.
 

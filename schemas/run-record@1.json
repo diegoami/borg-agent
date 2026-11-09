@@ -485,6 +485,10 @@
             "type": "string"
           },
           "description": "Where each large log is stored, by the same names."
+        },
+        "journal_sha256": {
+          "$ref": "#/$defs/sha256",
+          "description": "The chooser's decisions and the executor's stop reasons, one per line (R2)."
         }
       }
     },
