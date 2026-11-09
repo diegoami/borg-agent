@@ -5,8 +5,9 @@ work and updates "Current state".
 
 ## Current state
 
-*Written at the end of the session of 2026-11-09, with `main` and `reviewed`
-level and no PR open.*
+*Written on 2026-11-09, with milestone 3 complete, its review PR
+[#41](https://github.com/diegoami/borg-agent/pull/41) open, and milestone 4
+decided but not started.*
 
 ### Where the work stands
 
@@ -23,8 +24,14 @@ level and no PR open.*
   `models.yaml` loader, the prompt pack and the three minds — a model has now
   played), **T07** (the knowledge store — the first real claims are in
   `knowledge/`), T21 (the finished strategy manual) and **T08** (mode B).
-  **Milestone 3 is complete**: its review PR is the next thing to open, and a
-  session does not start milestone 4 until the owner merges it (RULES 7).
+  **Milestone 3 is complete**, and its review PR
+  [#41](https://github.com/diegoami/borg-agent/pull/41) is open (42 commits,
+  eight tasks, the reviewer prompt in its first comment). **No session starts
+  milestone 4 until the owner merges it** (RULES 7).
+- **Milestone 4 begins with a probe, not with the trial** — decision **D11**,
+  2026-11-09: T22 (mode C) comes before T09, T10 and T11. It is also the only
+  milestone-4 task that needs no model, so a cloud session with no key can
+  finish it.
 - **What works end to end:** the pinned game builds; the stock Borg plays it
   reproducibly; an agent plays through the Borg's own connection choosing
   between the eight primitives of R2; a run is recorded, replayed with
@@ -84,14 +91,19 @@ See docs/POST-MORTEM.md.
 
 ### Still open
 
-Nothing blocks the work. Two things the owner may want to weigh in on:
+Only the review of #41. Both questions this section used to hold are answered:
 
-- **the floating-eye question** the requirements name (it killed 4 of 13
-  Mandos characters in `mandos-classes-18`) needs a **probe**, mode C, which
-  does not exist: nothing can turn one branch into "N of M". That is the
-  natural next task after milestone 3;
-- whether the zoo should run milestone 8, which would give mode B paired
-  evidence instead of deaths we find ourselves.
+- **mode C** is decided: it comes before the model trial (**D11**) and is
+  written up as **T22**, the first task of milestone 4. The floating-eye
+  question — 4 of 13 Mandos characters in `mandos-classes-18`, and no C-side
+  number at all — is its first probe;
+- **the zoo and milestone 8** is now a request in the owner's own repository:
+  [borg-zoo#36](https://github.com/diegoami/borg-zoo/issues/36), asked for by
+  the owner on 2026-11-09 (which is the RULES 8 exception, written into the
+  rule). It asks for a `4.2.6-bbc-m8` specimen, an `m8-smoke` and a
+  `classes-m8` experiment on `classes-18`, and the death evidence retained per
+  run. Nothing here waits for it: T22 needs no zoo result, and mode B already
+  has seed 3.
 
 Expected soon: the owner is building **borg-rs milestone 8**, so the `borg-rs`
 pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
@@ -159,6 +171,61 @@ the two disagree the game's manual wins. No new rule was needed for that.
   accident.** `verify`'s new tolerance for a stream that ends early also
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
+
+## 2026-11-09: mode C before the trial (D11), and the zoo asked for milestone 8
+
+Branch `task/mode-c-before-the-trial`. **Documents only — no code, and no task
+started**: milestone 3's review PR
+[#41](https://github.com/diegoami/borg-agent/pull/41) is still open, and RULES
+7 holds.
+
+The owner decided the two questions milestone 3 left open.
+
+- **D11: mode C comes before the model trial.** Milestone 4 is now T22, then
+  T09, T10, T11. The reason is in the requirements and worth keeping in mind
+  while reading T09: every claim in the store today is a `hypothesis`, the
+  only promoter we have is a second model, and T09 measures a consolidator by
+  how many of its claims are **false**. A probe is the only check that is not
+  another model. It is also the one task in milestone 4 that needs no model,
+  so CI and a keyless cloud session can run it.
+- **T22 is written out in the plan**, with the parts that took reading the
+  game source to settle: a probe is a **file** under `probes/`, not code; a
+  `natural` setup reuses T08's takeover machinery with a condition instead of
+  a turn, while an `intervened` one uses the game's own wizard **commands**
+  (`CMD_WIZ_SUMMON_NAMED` takes the monster as a numeric `index`, so no debug
+  menu has to be typed at; `CMD_WIZ_JUMP_LEVEL`, `CMD_WIZ_CREATE_OBJ`,
+  `CMD_WIZ_CURE_ALL`, `CMD_WIZ_TELEPORT_TO` cover the rest). The game sets
+  `player->noscore |= NOSCORE_WIZARD` on that path, so **the game's own flag
+  is the intervention marker** — a run that claims to be untouched can be
+  checked rather than believed. And a summon can fail ("Could not place
+  monster"), so a trial whose setup did not take is `setup_failed` and counted
+  apart; counting it as a survivor would be the easiest way to fake a good
+  number.
+- **borg-zoo#36** asks for the milestone 8 specimen and run. It carries what
+  took measuring here: the runner and observer are byte-identical at the zoo's
+  harness pin and at m8 (so no harness change), m8 is **~8× slower per game
+  turn** than m6 (15 s against 1.9 s on seed 7 at cap 5,000, trace 10× the
+  size), and `IMPACT-MILESTONE8.md` does not exist yet, at the tag or on main,
+  so the specimen can only cite the tag.
+- **The owner moved the manuals the same day** (merge
+  [842dc5d0](https://github.com/diegoami/neo-angband-tracker/commit/842dc5d0eff96eee0fbfcb1c78cafd168aa6f256)):
+  `c-borg-reference` is now pristine angband/angband `e473720`, and the
+  manuals live on `workbench/c-borg`. **No pin changes**, and it was checked
+  rather than assumed: our `c-borg-reference` pin `471e1214` is an **ancestor
+  of `workbench/c-borg`** (26 behind its head, 0 ahead), so it is still
+  fetchable, and `docs/user-manual.md` is the **same blob** (`eedd740c`,
+  194,941 bytes) there. Two things to know: the branch no longer contains the
+  commit the pin is named after, which `pins.json` now says; and that branch's
+  `docs/strategy` is the **earlier eight-chapter** manual (01-08, A1-A6), not
+  the finished `docs/c-manual` (17 chapters, 10 appendices) that T21 repointed
+  to on master — so repointing the strategy manual at the workbench branch
+  would be a step backwards. `docs/strategy-manual` is safe for the owner to
+  delete: the pinned commit stays reachable through `workbench/c-borg`, which
+  must not be force-pushed below it.
+- **RULES 8 now says what just happened**: nothing is filed in another
+  repository unless the owner asks, and then only in one of their own. The
+  rule names #36 as the example, so the next session does not have to guess
+  whether it may do this (it may not, unasked).
 
 ## 2026-11-09: T08, taking over before a death (mode B)
 

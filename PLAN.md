@@ -37,13 +37,13 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)) |
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **complete; in review** ([#41](https://github.com/diegoami/borg-agent/pull/41)) |
-| **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | **next**, once the owner merges milestone 3's review |
-| later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
+| **4. Probe, trial and pilot** | a question is answered in counted trials, which model does which job is measured, the pilot runs, and the zoo can import a run | T22 first (D11), then T09, T10, T11 | **next**, once the owner merges milestone 3's review |
+| later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
 **the agent plays the pinned C game through the Borg's connection, every run
-replays exactly without the model, and a pilot produces its first claims with
-evidence.** Phase 2, the Neo adapter and larger runs wait for the owner.
+replays exactly without the model, a probe turns one question into counted
+trials, and a pilot produces its first claims with evidence.** Phase 2, the Neo adapter and larger runs wait for the owner.
 
 ## The tasks
 
@@ -75,6 +75,7 @@ branch), `in review` (with the PR), `done` (merged).
 | T19 | The strategy manual and the online command reference as sources | 3 | T13 | yes | done (#30) |
 | T20 | The user manual as a source | 3 | T19 | yes | done (#31) |
 | T21 | The finished strategy manual as a source | 3 | T19 | yes | done (#37) |
+| T22 | Mode C probes | 4 | T07, T08 | yes, and it needs no model | todo |
 
 ### T01. Build and play the pinned game headless
 
@@ -233,6 +234,85 @@ it.
 Done when replaying the Borg's prefix reproduces the zoo's death when left
 to the Borg, and a branch k turns before it hands over to another mind.
 
+### T22. Mode C probes: a question answered in counted trials
+
+The owner, 2026-11-09 (decision **D11**): mode C comes **before** the model
+trial, and milestone 4 begins here.
+
+Why it goes first. Nothing in the knowledge base can leave `hypothesis`
+without counted trials or a review by another model family (R4.3, RULES 13),
+so today every claim the store holds is a hypothesis and the only promoter
+available is a second model. T09 then measures a consolidator by **how many
+of its claims are false**, which needs a way to check a claim that is not
+another model. A probe is that way. It is also the one task of this milestone
+that **needs no model at all**, so it runs in CI and in a cloud session with
+no key set.
+
+What a probe is:
+
+1. **Data, not code.** One file per probe under `probes/`, holding the
+   question in one line, the scope (class, race, character level, depth), the
+   setup, the action under test, the control action, the declared seeds, and
+   the predicate that decides each trial. A new probe is a file, not a patch.
+2. **Two kinds of setup, and the record says which.**
+   - `natural`: the situation is found in deterministic play — play to the
+     first turn that matches a condition, then take over, which is T08's
+     machinery (`BORG_AGENT_FROM_TURN`, `branch`) with a condition instead of
+     a turn. Nothing is tampered with, so such a run counts in survival
+     figures.
+   - `intervened`: the situation is built with the game's **own wizard
+     commands**, pushed as commands rather than typed into the debug menu's
+     prompts — `CMD_WIZ_SUMMON_NAMED` takes the monster as a numeric `index`
+     argument (`src/cmd-wizard.c` at the game pin; a name resolves through
+     `lookup_monster`), and `CMD_WIZ_JUMP_LEVEL`, `CMD_WIZ_CREATE_OBJ`,
+     `CMD_WIZ_CURE_ALL` and `CMD_WIZ_TELEPORT_TO` cover depth, gear, health
+     and position. Decision D4: these runs are marked interventions and never
+     count in survival figures.
+
+     **The game's own marker is the proof.** Entering that path sets
+     `player->noscore |= NOSCORE_WIZARD` (`src/wiz-debug.c`), so the record
+     carries `noscore` from the game and a run that claims to be untouched can
+     be checked rather than believed.
+3. **Off unless the run is a probe.** The bridge's setup actions exist only
+   when the run says so, and with the agent mode off the game and the Borg
+   behave exactly as without the patch: T01's trace is unchanged (RULES 9).
+4. **A trial is an ordinary run**: recorded, replayable with `verify`, in the
+   same outcome vocabulary. A probe result is its trials' records plus the
+   counts; it introduces no new kind of evidence.
+5. **A setup that did not take is not a result.** The game's own summon can
+   fail ("Could not place monster"), and a trial whose setup did not happen
+   must be counted as `setup_failed` and excluded, never as a trial the
+   character survived. A probe whose predicate matches nothing fails loudly
+   instead of reporting 0 of M.
+6. **The harness writes the result, not a model.** The outcome is
+   `quantified N of M`, with the status the harness sets: at most `supported`
+   from one probe, `corroborated` only when a second probe on fresh seeds
+   agrees (R4.3, and the `borg_agent.checks` rule that a quantified basis may
+   not claim more successes than trials). A model may **propose** a probe —
+   mode D already does — and may never score one.
+7. **Seeds are declared before the probe runs**, and the result names them, so
+   a probe cannot be run again until it gives the wanted answer. Editing a
+   probe file after it has a result makes a new probe id.
+
+**The first probe** is the question mode B keeps raising and nothing has
+answered: *can a level-1 Warrior melee a floating eye and live?* It killed 4 of
+13 Mandos characters in `mandos-classes-18` — which is Neo, through Mandos —
+and the C side at this pin has no number for it at all. As an `intervened`
+probe: Human Warrior at character level 1, a floating eye summoned adjacent,
+the action under test `alter` towards it until one of them dies, the control
+walking away, over at least 20 declared seeds. The claim that comes out carries
+`intervened` as well as `quantified N of M`, because what it measures is a
+fight the game was told to arrange.
+
+Also in this task: `docs/PROBE.md` — what a probe file holds, how a trial
+becomes evidence, what the harness may set and what a model may not — and a
+`probe@1` schema if the result needs a shape of its own beyond the claim's.
+
+Done when the floating-eye probe runs end to end: every trial replays with
+`verify`, the result is a claim with `quantified N of M` and `intervened` whose
+status the **harness** set, a `setup_failed` trial is counted apart, and a
+second probe file with a different question needs no new Python.
+
 ### T09. Model trial
 
 Which model should do which job is measured, not assumed. The jobs differ:
@@ -267,8 +347,9 @@ the whole trial.
    deaths.
 3. **Post-mortems** (consolidators): both T08 floating-eye cases, the same
    replay windows for every candidate. Count the claims each produces and
-   check each one: by a probe where one can be run, otherwise by a reviewer
-   candidate of another family. The number that matters most is **false
+   check each one: by a probe where one can be run — **T22 comes first in this
+   milestone, so one can** — otherwise by a reviewer candidate of another
+   family. The number that matters most is **false
    claims**, since the knowledge base is the product.
 
 Report in `docs/reports/model-trial.md`: per candidate and part, the scores,
@@ -639,8 +720,8 @@ YAML in `tests/test_models_file.py` goes when T06's loader lands.
 ## After milestone 4 (not started)
 
 - Neo Angband adapter (R1.5).
-- Mode C probes at scale, and repeat runs to measure how much the agent
-  varies.
+- Mode C probes **at scale** (the first one is T22, inside milestone 4), and
+  repeat runs to measure how much the agent varies.
 - Phase 2, the Borg archaeologist, and phase 3, the reconciler.
 
 Each of these becomes a milestone of its own, reviewed the same way.
