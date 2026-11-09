@@ -4,31 +4,72 @@ The requirements are in [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Where
 this plan and the requirements differ, the requirements win; say so in your
 PR and propose a fix to whichever is wrong.
 
-## Milestone 1: a first learner on C 4.2.6
+## Milestones, and when we stop for a review
 
-Goal: the agent plays the pinned C game through the Borg's connection,
-every run replays exactly without the model, and a pilot produces its first
-claims with evidence. Stop after the pilot report (T10). Phase 2, the Neo
-adapter and larger runs wait for the owner.
+A **milestone** is a named set of tasks. Inside a milestone a session works
+normally: one task per branch and PR, and **it merges its own PR into `main`
+once CI is green** — no approval needed, nothing waits for the owner.
+
+**When the last task of a milestone is merged, the session stops.** It does
+not start the next milestone's work. Instead it opens the **review PR**:
+
+```sh
+gh pr create --base reviewed --head main --title "Milestone N review: <what it delivers>"
+```
+
+- `reviewed` is a long-lived branch that stands at the last reviewed state of
+  `main`. So the review PR's diff is **exactly everything delivered since the
+  previous milestone**, with every task's commits in it.
+- Its body lists the tasks in the milestone, what each one verified, what was
+  not checked, and the open questions. The prompt a reviewer needs goes in the
+  body or in a comment.
+- The owner's reviewer — a model of another family, or the owner — goes
+  through that PR and posts findings on it. Findings that span tasks may also
+  be gathered in an issue; milestone 1's are in
+  [#7](https://github.com/diegoami/borg-agent/issues/7).
+- The **owner merges the review PR**, which advances `reviewed`. That is the
+  only merge a session never makes (RULES 1).
+- A session then turns the findings into a task of its own, as T12 does for
+  milestone 1, and the next milestone begins.
+
+| Milestone | What it delivers | Tasks | State |
+|---|---|---|---|
+| **1. Foundation** | the pinned game builds and plays reproducibly, the four schemas, and the model rule | T01, T02, T06's documents (D7) | **reviewed** on 2026-11-08 at `11c8303` ([#7](https://github.com/diegoami/borg-agent/issues/7)); `reviewed` stands there |
+| **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12 | **complete; in review** ([#15](https://github.com/diegoami/borg-agent/pull/15)) |
+| **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08 | not started |
+| **4. Trial and pilot** | which model does which job is measured, the pilot runs, and the zoo can import a run | T09, T10, T11 | not started |
+| later | the Neo adapter, mode C probes at scale, phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
+
+Milestones 1 to 4 together are the goal the requirements set for this stage:
+**the agent plays the pinned C game through the Borg's connection, every run
+replays exactly without the model, and a pilot produces its first claims with
+evidence.** Phase 2, the Neo adapter and larger runs wait for the owner.
+
+## The tasks
 
 ### Status
 
 Each task's PR updates its row. Statuses: `todo`, `in progress` (with the
 branch), `in review` (with the PR), `done` (merged).
 
-| Task | Title | Needs | Runs in a cloud session | Status |
-|---|---|---|---|---|
-| T01 | Build and play the pinned game headless | none | yes | done (#3) |
-| T02 | Schemas | none | yes | done (#5) |
-| T03 | C bridge | T01, T02 | yes | todo |
-| T04 | Recording and replay | T03 | yes | todo |
-| T05 | Executor primitives | T03 | yes | todo |
-| T06 | Mind and model calls | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
-| T07 | Knowledge store | T02 | yes | todo |
-| T08 | Post-mortem start from a Borg run | T04 | yes | todo |
-| T09 | Model trial | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
-| T10 | Pilot | T01–T09 | with a profile whose key variables are set in the environment | todo |
-| T11 | Zoo import contract | T04 | yes | todo |
+| Task | Title | Milestone | Needs | Runs in a cloud session | Status |
+|---|---|---|---|---|---|
+| T01 | Build and play the pinned game headless | 1 | none | yes | done (#3) |
+| T02 | Schemas | 1 | none | yes | done (#5) |
+| T03 | C bridge | 2 | T01, T02 | yes | done (#8) |
+| T04 | Recording and replay | 2 | T03 | yes | done (#11) |
+| T05 | Executor primitives | 2 | T03 | yes | done (#12) |
+| T06 | Mind and model calls | 3 | T02, T05 | yes, with the scripted and external minds | todo (documents done in #4; the loader and the minds are left) |
+| T07 | Knowledge store | 3 | T02 | yes | todo |
+| T08 | Post-mortem start from a Borg run | 3 | T04 | yes | todo |
+| T09 | Model trial | 4 | T06, T07, T08 | with a profile whose key variables are set in the environment | todo |
+| T10 | Pilot | 4 | T01–T09 | with a profile whose key variables are set in the environment | todo |
+| T11 | Zoo import contract | 4 | T04 | yes | todo |
+| T12 | Milestone-1 review findings | 2 | T01, T02 | yes | in review (#13) |
+| T13 | Open the playing agent's sources (D8) | 2 | T02 | yes | done (#9) |
+| T14 | The heavy-run lock under an outer flock | 2 | T03 | yes | done (#16) |
+| T15 | Milestone-2 review findings | 2 | T04, T05 | yes | done (#18) |
+| T16 | Milestone-2 re-review findings | 2 | T15 | yes | done (#20) |
 
 ### T01. Build and play the pinned game headless
 
@@ -104,8 +145,13 @@ one-line reason. Three backends behind one interface:
   profile in `models.yaml` (decision D7).
 
 Also:
-- a prompt pack, versioned, built only from the allowed sources
-  ([docs/SOURCES.md](docs/SOURCES.md)), with a test that checks it;
+- a prompt pack, versioned, built from the sources of
+  [docs/SOURCES.md](docs/SOURCES.md) — the manual is required, and decision D8
+  allows the game source, the Borg source, the specification, the deaths, the
+  issues and the zoo's results. The test that checks it is about **provenance,
+  not permission**: every file a prompt draws on is named in `pins.json`'s
+  `sources` (or recorded with its issue number and date), and the pack records
+  which, so a claim made from that prompt can cite it;
 - every call logged (R2.1);
 - a budget cap per run (R2.3);
 - **`models.yaml` at the root, and its loader.** The file holds the
@@ -176,7 +222,10 @@ unset is skipped, and the report says so. Each candidate has a budget cap for
 the whole trial.
 
 **Three parts**, the same prompt pack for every candidate:
-1. **Decision quiz** (players). At least 30 situations from Borg games on
+1. **Decision quiz** (players). The quiz and its answer key never enter a
+   prompt or the knowledge base: a candidate must not be able to read the
+   answers (test hygiene, not a source rule — see decision D8). At least 30
+   situations from Borg games on
    zoo seeds: windows a few turns before a death, and first sightings of a
    monster. For each situation, try every action the executor offers as a
    `branch`, let the stock Borg play on for 2,000 game turns, and record
@@ -222,9 +271,218 @@ fields the zoo needs, how its CI replays an imported run without a model,
 the build it needs for that, and how agent runs are marked
 non-deterministic. The zoo itself is not changed here.
 
-## Later milestones (not started)
+### T13. Open the playing agent's sources (D8)
+
+The owner's decision of 2026-11-08: the playing agent may read whatever helps
+it build the knowledge base — the manual and the in-game help (required), its
+own play, the game source, the Borg source and its documentation, the Borg
+specification, the recorded deaths, the open issues and the zoo's results. The
+earlier rule, that phase 1 saw only the manual, was not the owner's intent.
+
+Done in this task:
+- [docs/SOURCES.md](docs/SOURCES.md) rewritten: what may be read, where each
+  source is pinned, and the two things still asked — provenance, and honesty
+  about what was read rather than seen;
+- the requirements: the phases table, the paragraph that made the phases a
+  reading rule, D2 marked superseded, and **D8** recorded;
+- `pins.json`: a `borg-spec` pin (diegoami/neo-angband-tracker) and a
+  `sources` block naming each source with the pin it is read at; the issues
+  are listed as unpinned, to be cited by number and date;
+- `claim@1`: a basis for each source (`static:borg-spec`, `static:deaths`,
+  `static:issue` beside the two that existed), the matching `sources` values,
+  the phase-1 restriction removed, and a new rule that a `static:` basis must
+  name its reference;
+- the examples and the tests that encoded the old rule.
+
+Left for later tasks, not this one:
+- the prompt pack and its provenance test (T06);
+- reading the deaths and the specification into actual claims — that is what
+  T07's store and T08's post-mortems are for;
+- `knowledge/` keeping fixtures out of the ingestion path (T12).
+
+### T16. Milestone-2 re-review findings
+
+The same reviewer (Kimi K3) read T15's fixes and found **two new issues, both
+in the new code** — one of them a hole the fix itself opened. Both are closed
+here, and the reviewer confirmed all four original findings closed in
+substance.
+
+- **(1) `prefix` accepted a run cut short at the end.** With both logs
+  truncated by three decisions and the record left intact, `verify` said
+  `verified: true` — the replay reproduced the states that remained, and the
+  new tolerance (`len(after) in (N, N+1)`) left room for a stream that ends
+  early. The old exact-length comparison had caught this by accident. Now
+  `check_record_against_run` compares **every** count and hash the record
+  published — the action stream's count and hash, the observations, the state
+  hashes, the journal — against the files the replay actually read, and names
+  the first that disagrees. The reviewer's own experiment is a slow test, and
+  five fast ones cover each stream and a missing file.
+- **(2) A branch lost its journal.** The run drains the journal from the mind
+  it was given, which for a branch is the `replay` mind; the mind that took
+  over kept its entries to itself. Since mode B *is* "replay, then try
+  something else", the journal was missing exactly where it was added to help.
+  `ReplayMind.drain_journal` now passes through to the mind that took over, and
+  a slow test branches with a primitive chooser and checks the entries are
+  there and all after the handover.
+- **Also from the re-review:** journal entries buffered during a decision were
+  lost when the mind raised, so the stops that led to `agent_stopped` never
+  reached the log — they are written now; and the **Home** is described the way
+  its own screen describes it (in full, no prices), which was the one
+  remaining fidelity gap in the shop block.
+- Documented: that `prefix` compares no part of the trace by construction;
+  that a replay's own outcome reads `agent_stopped` because the vocabulary has
+  no word for "the recording ended"; and that run directories made before T15
+  cannot be recorded, which is deliberate.
+
+### T15. Milestone-2 review findings
+
+A review of milestone 2 by a model of another family (Kimi K3) on
+[#15](https://github.com/diegoami/borg-agent/pull/15), 2026-11-09. Four
+findings, with notes and doc drift. All four are done here, and two of the
+notes turned out to matter more than they looked.
+
+- **(1) `verify` could not confirm any run the harness ended**, and said "the
+  states differ" while naming no difference. Reproduced exactly as reported: a
+  run capped at 20 decisions verified `false` although all 20 states
+  reproduced. `verify` now has a **scope**: `full` for a run the game ended
+  (every state, the outcome, the cause, the turn and the trace must match) and
+  `prefix` for one the harness ended (every recorded state must match, and the
+  stream must run out where the recording stops). A replay that runs out of
+  actions raises `StreamEnded`, which the run records as `agent_stopped` with
+  the decision and turn, and `verify` reads it as the stream's end. A test
+  verifies a capped run, and another alters one recorded action to prove the
+  prefix rule still catches a real divergence (it names decision 2).
+- **(2) The chooser's decisions and the stop reasons were in memory only.** A
+  run with a chooser now writes `decisions.jsonl`: one line per choice (the
+  primitive, the chooser's own reason, the stop it answered) and one per stop.
+  `explain` reads it, its hash joins the record's evidence as
+  `journal_sha256`, and the T05 gate asserts it.
+- **(3) Provenance was sampled when a record was written**, so a run played on
+  a dirty tree and committed before recording claimed the new commit. The
+  commit, dirty state, compiler, platform and content hashes are now captured
+  into `result.json` at play time (`build.provenance`), and the recorder uses
+  them.
+- **(4) The recorder invented settings and birth options** when the observer's
+  lines were missing. It now refuses to write a record at all, and says to
+  look at the trace.
+- **The notes, acted on:** `explore_floor` distinguishes `unreachable` from
+  `explored`; the stat strings are `cnv_stat`'s exactly (` 18/09`, `18/***`);
+  `verify` checks the record's published `state_hashes_sha256` against the run;
+  `WalkTo`'s unreachable `blocked` is marked as the defensive branch it is; and
+  the three stale passages in docs/BRIDGE.md and docs/RECORDS.md are corrected.
+- **The tests the review said would pass over a broken thing:** the T05 gate
+  now asserts fighting, resting and the stop reasons; the seasonal days are
+  read out of `mon-make.c` at the pin rather than copied; a **death is branched
+  before it happens** (T08's own shape, and it needs no save because replay
+  starts from birth); and a **live shop purchase of a label that is not the
+  first** was added.
+
+  That last test earned the whole exercise: buying label `c` bought a **Ration
+  of Food when the agent asked for wine**. The observation listed the stock in
+  `store->stock` order, while the store's menu uses `store_stock_list`'s
+  order, so the labels pointed at the wrong items. The bridge now reads the
+  stock exactly as `ui-store.c` does. Buying label `a` had worked by luck,
+  which is why the first live check passed.
+
+**Left where the reviewer suggested:** the `mind` block is still one model per
+run (T06, when a run may call several); the secret guard does not scan the
+observation and action logs, which only matters once a model's replies land
+there (T06); the build subprocess still inherits the full environment; and the
+`seasonal` flag is sampled at run start, so a run spanning midnight into 24
+December is described by neither value — a footnote while runs last minutes,
+and another argument for the owner's open question.
+
+### T14. The heavy-run lock under an outer flock
+
+Found by the milestone 2 reviewer, who ran the documented command
+
+```sh
+flock /tmp/angband-validation.lock .venv/bin/python -m pytest -q -m slow
+```
+
+and waited an hour and three quarters. The outer `flock` holds the lock; the
+suite's own runs then open the same file and wait for a lock their own parent
+holds. Nothing could ever release it.
+
+`heavy_lock` now skips the lock when a process we are a child of already
+holds it — the work is serialized by that ancestor, which is the point of the
+lock — acquires without blocking so a wait can be reported and given up on
+(ten minutes, naming the holder, pointing at `BORG_AGENT_NO_LOCK`), and
+honours `BORG_AGENT_NO_LOCK` everywhere rather than only in tests. AGENTS.md
+and docs/BUILD-AND-PLAY.md say so, and a test builds a small `/proc` to check
+the ancestor case without a real deadlock.
+
+### T12. Milestone-1 review findings
+
+A review of milestone 1 by a model of another family
+([#7](https://github.com/diegoami/borg-agent/issues/7), 2026-11-08) found
+thirteen things. Six were fixed in T03's PR, one in T04's, one in T13's; the
+rest are done here. Each item keeps the review's own number.
+
+**Done in this task:**
+
+- **(1) The game is not date-independent.** `get_mon_num` reads the clock and
+  admits seasonal monsters on 24-26 December, so the same seed plays a
+  different game on those days. Every run now records `calendar.seasonal`, and
+  `verify` **refuses to compare** a run and a replay that fall on different
+  sides of that window: it reports `comparable: false` with the reason instead
+  of calling it a failure to reproduce. Neutralizing that clock read, as the
+  zoo's recording profile does, would make the build differ from the unpatched
+  game on three days a year, which RULES 9 forbids without the owner's
+  say-so — see "For the owner" below.
+- **(4) The claim lifecycle.** `produced_by` is required and a model names
+  itself and its family; every review names a family (null for a probe); run
+  evidence names its seed; anything above `hypothesis` rests on counted trials
+  or on a review. The two rules that compare fields — a review by the
+  producer's own family does not promote, and a `quantified` basis may not
+  claim more successes than trials — are in `borg_agent.checks`, with tests
+  for the same-family, disagreeing, probe and model-promotes-itself cases.
+- **(7) The observation's knowledge rule.** `true_state.fields` must name
+  exactly the fields it carries, checked by `borg_agent.checks` on every
+  observation the bridge writes; the level feeling's danger and treasure
+  numbers are gone from the ordinary map, since the player sees words.
+  `docs/SCHEMAS.md` no longer claims the schema enforces what it cannot.
+- **(6) Runner parity.** The recipe's `ui-game.c` replacement regained the
+  indentation it had lost, so all six sites are byte-identical to the
+  runner's, and four tests now parse `tools/measure-native.py` at the runner
+  pin and compare the replacements, the include list, the CMake arguments and
+  the activation block.
+- **(5) Keys.** `record.validate` refuses a record with a key-shaped field
+  name or a credential-shaped value anywhere in it, not only in the mind
+  block, with tests for a key in a note, in `endpoint_host` and in a URI.
+- **(10) The build key** now covers the include line, the CMake lines, the
+  version suffix, the compiler and the platform, so none of them can be served
+  from the cache; `--output` already refused to delete what is not a build.
+- **(9) The examples** carry a README saying they are fixtures, not knowledge,
+  and must not enter `knowledge/`, a prompt pack or any ingestion path. The
+  run-record examples are generated by `scripts/refresh-examples.py`.
+- **The weak tests.** The assertion-free one now checks that the build key is
+  order-independent and stable; the birth input is compared with the runner's
+  own `INPUT` at the pin, character for character; the outcome vocabulary is
+  read from the zoo's `docs/DESIGN.md` at its pin; `models.yaml`'s trial lists
+  are checked so T09 can always pair a reviewer of another family (finding 8);
+  and three paths that were untested now have slow tests — a **death with the
+  checkpoint saves** (the fork-and-save path T08 needs), and a **slow mind**,
+  which found that the stall clock still spanned the mind's thinking. It now
+  starts when the action goes out, so model latency cannot become an outcome
+  (finding 2 again).
+
+**For the owner**, from finding 1: neutralizing the game's one `time()` read
+would make replay independent of the date, at the price of play differing from
+the unpatched build on 24-26 December. That is a RULES 9 exception, so it is
+the owner's call. Until then, a run made in that window can only be replayed
+in it, and `verify` says so.
+
+**Left for later tasks, not this one:** `mind` is still one block where R2.4
+speaks of three jobs (finding 3's remainder) — that becomes real in T06, when
+one run may call more than one model; and the regex reader standing in for
+YAML in `tests/test_models_file.py` goes when T06's loader lands.
+
+## After milestone 4 (not started)
 
 - Neo Angband adapter (R1.5).
 - Mode C probes at scale, and repeat runs to measure how much the agent
   varies.
 - Phase 2, the Borg archaeologist, and phase 3, the reconciler.
+
+Each of these becomes a milestone of its own, reviewed the same way.

@@ -33,14 +33,18 @@ What it is not:
 
 | Phase | Agent | Reads | Writes |
 |---|---|---|---|
-| 1 | **Player-learner** | the Angband manual, the in-game help and monster recall, its own play | game knowledge: facts, dangers, tactics, readiness by class |
+| 1 | **Player-learner** | the manual and the in-game help (required), its own play, and — decision D8 — the game source, the Borg source and its documentation, the Borg specification, the recorded deaths, the open issues and the zoo's results | game knowledge: facts, dangers, tactics, readiness by class |
 | 2 | **Borg archaeologist** | the C Borg source (4.2.6 original and the better-borg-c milestones), its history and comments, the zoo's results | design records: what each Borg mechanism does, and why |
 | 3 | **Reconciler** | the outputs of phases 1 and 2 | the remake's specification: what to keep, change or drop, and the evidence for each |
 
-Phase 1 must not read the game source, the Borg source or spoilers. Then its
-knowledge is what a player can learn, and phase 3 can compare it with the
-Borg's assumptions. Phase 2 may read everything. Every knowledge record says
-which phase and sources produced it.
+The phases say **what each one produces**, not what it may read (decision
+D8, 2026-11-08). Phase 1 plays and writes down what it learns about the game;
+phase 2 describes the Borg's mechanisms; phase 3 reconciles them into the
+remake's specification. Every record says which phase and which sources
+produced it, and a claim's basis says whether it was read in the source
+(`static:game-source`, `static:borg-source`) or seen in play (`observed`,
+`quantified`) — that distinction is what phase 3 needs, and it is carried by
+the record rather than by a wall between the phases.
 
 These requirements cover phase 1 in detail. Phases 2 and 3 are sketched at
 the end, and get their own requirements once phase 1 has produced knowledge.
@@ -160,7 +164,9 @@ Each **claim** has:
 - its **status**: `unknown`, `documented` (the manual says so), `hypothesis`,
   `supported`, `corroborated`, `refuted`, `contested`, plus `superseded-by`;
 - its **basis**: `manual`, `observed`, `quantified N of M`, `intervened`,
-  and in later phases `static:game-source` or `static:borg-source`;
+  `static:game-source`, `static:borg-source`, `static:borg-spec`,
+  `static:deaths` or `static:issue` — in any phase (decision D8), since what
+  matters is that the record says which;
 - its **evidence**: run ids, seeds and turns, each one replayable (R5);
 - a **confidence** line in words: what the claim rests on, and which
   alternative explanations were ruled out;
@@ -264,7 +270,7 @@ All five were accepted as recommended on 2026-11-08.
 | # | Decision | Accepted |
 |---|---|---|
 | D1 | First engine: C 4.2.6 or Neo | **C 4.2.6.** The Rust remake will play the C game. The Borg's own state-reading code fills the observation in the Borg's own terms, and the replay tools exist. Neo second: Squire and Mandos have already done the structured view. |
-| D2 | Phase 1 sources: the manual only, or the manual plus public spoilers | **The manual and the in-game help only**, as you described. Spoilers come in phase 2. |
+| D2 | Phase 1 sources: the manual only, or the manual plus public spoilers | **The manual and the in-game help only**, as you described. Spoilers come in phase 2. *Superseded on 2026-11-08 by D8: the playing agent may read the game and Borg source, the specification, the issues, the deaths and the zoo's results as well. The manual stays required.* |
 | D3 | Where agent runs execute | **Locally** (the owner's machine) **or in a cloud session**; either way the models come from the active profile in `models.yaml` and the keys from the environment variables it names (amended 2026-11-08; see D7). The zoo imports the runs and verifies them by replay in CI. |
 | D4 | Debug-set probe scenarios | **Allowed, marked as interventions,** and kept out of survival figures. |
 | D5 | Adopt harness_imperial and the game-archaeologist method formally | **Reuse the claim lifecycle and the review rule now.** Adopt the harness only if the repository gets several agents working at once. |
@@ -274,4 +280,5 @@ D6 is reserved: it records which model does which job, once the model trial
 
 | # | Decision | Decided |
 |---|---|---|
+| D8 | What the playing agent may read | **Whatever helps it build the knowledge base**: the manual and the in-game help (required, so it knows the keys and commands), its own play, the game source including `lib/gamedata/` and `docs/hacking/`, the Borg source and its documentation, the Borg specification ([neo-angband-tracker `docs/c-borg/BORG_SPEC.md`](https://github.com/diegoami/neo-angband-tracker/blob/master/docs/c-borg/BORG_SPEC.md)), the recorded deaths ([better-borg-c `docs/deaths/`](https://github.com/diegoami/better-borg-c/tree/main/docs/deaths)), the open issues and the zoo's results. This supersedes D2 and the earlier rule in docs/SOURCES.md, which was not the owner's intent. What is asked instead is **provenance**: every claim names its sources and says whether it was read or seen. The purpose of the repository is to play and to grow the knowledge base the Borg reborn is built from. |
 | D7 | How models are configured | **By profile, in `models.yaml` at the root.** It holds the providers, the models per job and named profiles, and never a key; a provider names the environment variable that holds its key. Switching profile is one line: `BORG_AGENT_PROFILE`, or `profile:` in the git-ignored `models.local.yaml`, else `default_profile`. This replaces the `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` variables and the planned `providers.json`. **The profile is the only model rule in this repository**: the owner's general model rule, which asks their local quota service (quota-tracker) for a recommendation, does not apply here, and this repository does not use that service, locally or in the cloud. |

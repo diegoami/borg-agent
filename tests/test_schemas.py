@@ -19,7 +19,8 @@ NAMES = ('observation', 'action', 'run-record', 'claim')
 # repository's own, which R5 names.
 ZOO_OUTCOMES = {'death', 'completion', 'turn_cap', 'stalled', 'wall_timeout', 'crash',
                 'harness_failure', 'config_error', 'decision_cap'}
-AGENT_OUTCOMES = {'agent_stopped', 'budget_cap'}
+# 'saved' is the runner's own, for a run stopped at a save (T08 needs it).
+AGENT_OUTCOMES = {'agent_stopped', 'budget_cap', 'saved'}
 
 
 def load(path):
@@ -110,8 +111,15 @@ def test_the_claim_follows_the_lifecycle_of_r4():
     assert set(claim['properties']['area']['enum']) == {
         'monster', 'item', 'spell', 'class', 'race', 'town', 'dungeon', 'mechanic',
         'danger', 'tactic', 'readiness'}
+    # Decision D8: the agent may read the game and Borg source, the
+    # specification, the deaths and the issues, so each has a basis of its own
+    # and a 'static:' basis must name its reference.
     assert set(claim['properties']['basis']['properties']['kind']['enum']) == {
-        'manual', 'observed', 'quantified', 'intervened', 'static:game-source', 'static:borg-source'}
+        'manual', 'observed', 'quantified', 'intervened', 'static:game-source',
+        'static:borg-source', 'static:borg-spec', 'static:deaths', 'static:issue'}
+    assert set(claim['properties']['sources']['items']['enum']) == {
+        'manual', 'in-game', 'own-play', 'knowledge-base', 'game-source',
+        'borg-source', 'borg-spec', 'deaths', 'issue', 'zoo-results'}
     for required in ('evidence', 'confidence', 'phase', 'sources', 'engine'):
         assert required in claim['required']
     assert claim['properties']['evidence']['minItems'] == 1

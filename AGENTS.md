@@ -39,19 +39,34 @@ starts.
 
 ## Choosing the work
 
-Take the first task in PLAN.md's status table whose status is `todo`, whose
-"Needs" are `done` or in an open PR you can stack on (RULES 5), and which
-runs in your kind of session. Set its row to `in progress` with your branch
-in your first commit.
+PLAN.md's milestone table says which tasks belong to the milestone in
+progress. **Work only inside that milestone.** Take the first task of it
+whose status is `todo`, whose "Needs" are `done` or in an open PR you can
+stack on (RULES 5), and which runs in your kind of session. Set its row to
+`in progress` with your branch in your first commit.
 
 At the end of a task:
 1. tests pass (`python -m pytest -q`, and the task's own checks);
 2. PLAN.md's row and docs/HANDOVER.md are updated: what was done, what was
    found, what is left, and anything the owner has to decide;
-3. a PR is open, with what changed, how it was checked, and what was not
-   checked.
+3. a PR says what changed, how it was checked and what was not checked;
+4. **you merge it yourself** once CI is green (RULES 1) — nothing waits for
+   the owner inside a milestone.
 
-Then take the next task, or stop if the stack is at three unmerged PRs.
+Then take the next task of the same milestone.
+
+**When the milestone's last task is merged, stop.** Do not start the next
+milestone. Open the review PR instead (RULES 7):
+
+```sh
+gh pr create --base reviewed --head main --title "Milestone N review: ..."
+```
+
+Its diff is everything since the last review, because `reviewed` stands at
+the last reviewed state of `main`. Say in the body what each task delivered,
+what was verified, what was not checked and what the owner has to decide, and
+give the prompt a reviewer needs. The owner merges that PR; a later session
+turns the findings into a task.
 
 ## Choosing models
 
@@ -107,7 +122,19 @@ keys come from the environment, which the owner fills from
 `~/.config/ai-keys.env`.
 
 Heavy local runs take the lock `/tmp/angband-validation.lock` with `flock`,
-as the owner's other Angband work does.
+as the owner's other Angband work does. Every run in this repository takes it
+itself, so
+
+```sh
+.venv/bin/python -m pytest -q -m slow                      # locks itself
+flock /tmp/angband-validation.lock .venv/bin/python -m pytest -q -m slow
+```
+
+both work: an outer `flock` is detected (the lock is already held by an
+ancestor, so the runs inside do not take it again). `BORG_AGENT_NO_LOCK=1`
+skips it altogether, and `BORG_AGENT_LOCK` points it at another file. A run
+that waits more than ten minutes for the lock gives up and says which process
+is holding it, rather than hanging.
 
 ## Where things are
 
@@ -117,7 +144,7 @@ as the owner's other Angband work does.
 | `models.yaml` | the providers, the models per job and the profiles (no keys) |
 | `scripts/setup.sh` | tools check and pinned clones into `vendor/` |
 | `src/borg_agent/` | the Python package: connector, executor, mind, records, knowledge |
-| `bridge/` | the C patch applied to the pinned game tree (from T03) |
+| `bridge/` | the C patch applied to the pinned game tree (T03); see [docs/BRIDGE.md](docs/BRIDGE.md) |
 | `schemas/` | JSON Schemas (from T02) |
 | `knowledge/` | claims, JSON Lines and their Markdown views (from T07) |
 | `docs/reports/` | pilot and experiment reports |

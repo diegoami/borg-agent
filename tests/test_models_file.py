@@ -118,3 +118,36 @@ def test_the_file_holds_no_key():
 def test_the_local_override_is_ignored_by_git():
     # It holds the owner's chosen profile on their machine; it is never committed.
     assert 'models.local.yaml' in (ROOT / '.gitignore').read_text().split()
+
+
+def test_the_trial_can_always_pair_a_reviewer_of_another_family():
+    # Review finding 8: T09 must never pair a consolidator with a reviewer of
+    # its own family (R4.3), so for every consolidate candidate there has to be
+    # a review candidate of a different family.
+    candidates = {}
+    for job in ('consolidate', 'review'):
+        block, inside = [], False
+        for line in top_level('trial'):
+            if re.fullmatch(r'  (\w+):', line):
+                inside = line.strip().rstrip(':') == job
+                continue
+            if inside:
+                block.append(line)
+        candidates[job] = [mapping for _name, mapping in entries(block)]
+    assert candidates['consolidate'] and candidates['review']
+    reviewer_families = {c['family'] for c in candidates['review']}
+    for consolidator in candidates['consolidate']:
+        others = reviewer_families - {consolidator['family']}
+        assert others, (consolidator, reviewer_families)
+
+
+def test_every_job_has_trial_candidates():
+    for job in ('play', 'consolidate', 'review'):
+        block, inside = [], False
+        for line in top_level('trial'):
+            if re.fullmatch(r'  (\w+):', line):
+                inside = line.strip().rstrip(':') == job
+                continue
+            if inside:
+                block.append(line)
+        assert entries(block), job
