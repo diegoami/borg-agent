@@ -50,7 +50,7 @@ def test_plan_status_table():
 
 def test_every_task_belongs_to_a_milestone():
     milestones = {row[0].strip('*').split('.')[0] for row in milestone_rows()}
-    assert milestones == {'1', '2', '3', '4'}, milestones
+    assert milestones == {'1', '2', '3', '4', '5'}, milestones
     for task, _title, milestone, _needs, _cloud, _status in plan_rows():
         assert milestone in milestones, (task, milestone)
 
@@ -78,9 +78,10 @@ def test_mode_c_comes_before_the_trial():
     The order lives in the milestone table's task cell, because that is what a
     session reads to pick up its next task (AGENTS.md).
     """
-    cells = [row[2] for row in milestone_rows() if row[0].startswith('**4.')]
-    assert len(cells) == 1, cells
-    order = re.findall(r'T\d\d', cells[0])
+    # The order runs across the milestone rows in the table's own order, since
+    # the trial moved to a later milestone when the play redesign went in
+    # front of it.
+    order = [task for row in milestone_rows() for task in re.findall(r'T\d\d', row[2])]
     assert order.index('T22') < order.index('T09'), order
     assert 'D11' in (ROOT / 'docs/REQUIREMENTS.md').read_text()
 
