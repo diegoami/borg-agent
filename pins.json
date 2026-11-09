@@ -34,12 +34,12 @@
       "commit": "ce27f5edc5adbb8365d7567f2e05ca11352b92c7",
       "role": "The Rust Borg this repository's knowledge is for - the \"Borg reborn\". Pinned at the commit that carries better-borg-c milestone 7 (impact v7); the owner is building milestone 8 as this is written, so expect to move this pin and say so in the handover. Nothing reads it yet: it is here so a claim can cite a fixed version (decision D8), and because borg-rs/src/borg.rs holds the same inkey_hack connection the bridge attaches to on the C side. A claim says which side of the port it is about, because the two are not always on the same milestone."
     },
-    "strategy-manual": {
+    "c-borg-reference": {
       "repository": "diegoami/neo-angband-tracker",
       "commit": "471e1214cdf457c8035878a13c34cb6b9669b434",
       "branch": "c-borg-reference",
-      "path": "docs/strategy/README.md",
-      "role": "The Angband strategy manual (docs/strategy/ on the c-borg-reference branch): an index and six appendices (monsters, uniques, monster spells, artifacts, ego items, objects) generated from lib/gamedata by docs/strategy/tools/gen_appendices.py. That branch is angband/angband e473720 (the original pin) plus three documentation commits, and its lib/gamedata is byte-identical to the better-borg-c and original pins. The appendices are generated; the README's prose was written by a model and links to eight chapters that are not in the tree. A source for the playing agent at the owner's request (2026-11-09); a claim read in it is static:strategy-manual, never documented."
+      "path": "docs/user-manual.md",
+      "role": "The c-borg-reference branch of neo-angband-tracker: angband/angband e473720 (the original pin) plus three documentation commits, with lib/gamedata byte-identical to the better-borg-c and original pins. Two of its documents are sources for the playing agent, at the owner's request (2026-11-09): docs/strategy/, a strategy manual whose six appendices (monsters, uniques, monster spells, artifacts, ego items, objects) are generated from lib/gamedata by docs/strategy/tools/gen_appendices.py and whose README links to eight chapters that are not in the tree; and docs/user-manual.md, a single-file manual of the whole game (about 3,700 lines) whose tables were extracted from lib/gamedata. Both were written by a model on 2026-11-09. They are not the game's manual: a claim read in them is static:strategy-manual or static:user-manual, never documented."
     }
   },
   "manual": {
@@ -122,9 +122,15 @@
       ]
     },
     "strategy_manual": {
-      "pin": "strategy-manual",
+      "pin": "c-borg-reference",
       "paths": [
         "docs/strategy/"
+      ]
+    },
+    "user_manual": {
+      "pin": "c-borg-reference",
+      "paths": [
+        "docs/user-manual.md"
       ]
     },
     "manual_online": {

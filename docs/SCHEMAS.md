@@ -97,7 +97,7 @@ The schema enforces what it can:
   since a model never promotes its own claim past `hypothesis` (R4.3);
 - a claim read in a source (`static:game-source`, `static:borg-source`,
   `static:borg-spec`, `static:deaths`, `static:issue`,
-  `static:strategy-manual`) names its reference:
+  `static:strategy-manual`, `static:user-manual`) names its reference:
   the file and the pinned commit, the specification's section, the death's id,
   or the issue's number and the date it was read. Any phase may use such a
   basis (decision D8); what matters is that the record says whether a fact was

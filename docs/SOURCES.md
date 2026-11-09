@@ -25,7 +25,8 @@ the record says which it was.
 | the Borg source and its documentation | the same pins (`src/borg/`, `docs/hacking/borg.rst`) |
 | the Borg specification | the `borg-spec` pin: `docs/c-borg/BORG_SPEC.md` in diegoami/neo-angband-tracker |
 | the Rust remake, as it stands | the `borg-rs` pin: 59 Borg modules under `borg-rs/src/`, its docs and its harness. This is the Borg reborn the knowledge is for. The pin moves as the remake does; a claim says **which side of the port and which milestone** it is about, because the two sides are not always on the same one |
-| **the strategy manual** | the `strategy-manual` pin: `docs/strategy/` on the `c-borg-reference` branch of diegoami/neo-angband-tracker — an index and six appendices (monsters, uniques, monster spells, artifacts, ego items, objects). Added at the owner's request, 2026-11-09; see below |
+| **the strategy manual** | the `c-borg-reference` pin: `docs/strategy/` on the `c-borg-reference` branch of diegoami/neo-angband-tracker — an index and six appendices (monsters, uniques, monster spells, artifacts, ego items, objects). Added at the owner's request, 2026-11-09; see below |
+| **the user manual** | the `c-borg-reference` pin: `docs/user-manual.md`, a single-file manual of the whole game (about 3,700 lines: commands in both keysets, birth, stores, objects, combat, magic, every spell list, options, the Borg's commands and `borg.txt`). Added at the owner's request, 2026-11-09; see below |
 | **the online command reference** | <https://angband.readthedocs.io/en/latest/command.html>, the upstream rendering of `docs/command.rst`. Added at the owner's request, 2026-11-09. Read it at a pin: on that date angband/angband's `master` stood at `e473720` (the `original` pin), and `docs/command.rst` is byte-identical there and at the `better-borg-c` pin, so a claim cites that file as `manual`, not the moving URL |
 | the recorded deaths | `docs/deaths/` at the `better-borg-c` pin (nine cases there; more on its `main`) |
 | the open issues of the related repositories | the trackers themselves; a claim records the issue number and the date it was read |
@@ -42,7 +43,7 @@ Nothing on that list is forbidden. Two things are still asked of it:
    the same as seeing it happen. A claim's basis says which it is, and a
    `quantified` claim still needs its counted trials.
 
-### The strategy manual: what it is and how far to trust it
+### The strategy manual and the user manual: what they are and how far to trust them
 
 - Its six appendices are **generated** from `lib/gamedata/` by
   `docs/strategy/tools/gen_appendices.py`, and the branch's `lib/gamedata/`
@@ -53,9 +54,15 @@ Nothing on that list is forbidden. Two things are still asked of it:
   model, and it links to **eight chapters (`01-mechanics.md` to
   `08-phase-strategy.md`) that are not in the tree**. Treat the rules as
   advice to test, not facts.
-- It is **not the manual**. A claim read in it has the basis
-  `static:strategy-manual` and the source `strategy-manual`, and it never makes
-  a claim `documented`. Where a number matters, check it against
+- **The user manual** (`docs/user-manual.md`, same pin) was also written by a
+  model the same day, from the branch's `src/`, `lib/gamedata/` and `docs/`;
+  its tables were extracted from `lib/gamedata/`. Where it and the game's own
+  manual (the `manual` paths) disagree, the game's manual wins and the
+  disagreement is worth a note. A spot-check of its key table against
+  `docs/command.rst` found them in agreement.
+- Neither is **the manual**. A claim read in one has the basis
+  `static:strategy-manual` or `static:user-manual` and the matching source
+  name, and it never makes a claim `documented`. Where a number matters, check it against
   `lib/gamedata/` or `src/` at the game pin and add `game-source`.
 
 ## What is still kept apart

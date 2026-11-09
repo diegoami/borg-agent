@@ -19,7 +19,8 @@ level and no PR open.*
   milestone 1's, T15 and T16 for milestone 2's.
 - **Milestone 3 is in progress.** T17 (the game pin to better-borg-c
   milestone 8), T18 (the borg-rs pin) and T19 (the strategy manual and the
-  online command reference as sources) are done. **T06 is next**: the
+  online command reference as sources) and T20 (the user manual as a source)
+  are done. **T06 is next**: the
   `models.yaml` loader, the prompt pack and the three minds. Then T07 (the
   knowledge store) and T08 (the post-mortem start).
 - **What works end to end:** the pinned game builds; the stock Borg plays it
@@ -97,13 +98,29 @@ pin will move. It is one line in `pins.json`; nothing reads borg-rs yet.
   accepted a run cut short at the end; the exact-length comparison it replaced
   had been catching that without anyone intending it.
 
+## 2026-11-09: T20, the user manual is a source
+
+The owner, after T19: add `docs/user-manual.md` too. The pin is now named
+**`c-borg-reference`** (it serves both documents); `sources.user_manual` reads
+the file there; `claim@1` gains `user-manual` and `static:user-manual`. Like
+the strategy manual it was written by a model, so it is never the basis of a
+`documented` claim, and where it disagrees with the game's own manual the
+game's manual wins. Only its key table was spot-checked (it agreed with
+`docs/command.rst`).
+
+**For T06's prompt pack:** the agent now has three manual-like texts — the
+game's manual (required), the user manual and the strategy manual. The pack
+should name which it loads and keep the game's manual first; the user manual is
+a convenient single file, but it is the one that could be wrong.
+
 ## 2026-11-09: T19, the strategy manual and the online command reference
 
 The owner asked for two more sources: `docs/strategy/` on the
 `c-borg-reference` branch of diegoami/neo-angband-tracker, and
 <https://angband.readthedocs.io/en/latest/command.html>.
 
-- **`strategy-manual` pin** at `471e1214`, read as `docs/strategy/`: an index
+- **`strategy-manual` pin** (renamed `c-borg-reference` in T20) at `471e1214`,
+  read as `docs/strategy/`: an index
   and six generated appendices (monsters, uniques, monster spells, artifacts,
   egos, objects). The branch is the `original` pin plus three doc commits; its
   `lib/gamedata/` equals the game pin's, and a test compares them, so the
@@ -119,8 +136,7 @@ The owner asked for two more sources: `docs/strategy/` on the
   upstream `master` (`e473720`) on this date. readthedocs is **not reachable
   from the cloud session's network**, so the rendered page was not read here;
   a session that needs it as a web page needs `angband.readthedocs.io` allowed.
-- Not added, though on the same branch: `docs/user-manual.md`, a single-file
-  manual (3,700 lines) a model wrote the same day. The owner may want it too.
+- `docs/user-manual.md` on the same branch was added next, in T20.
 - The run-record examples still list the pins of before T18 (no `borg-rs`, no
   `strategy-manual`); `scripts/refresh-examples.py` regenerates them.
 

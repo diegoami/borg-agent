@@ -167,8 +167,9 @@ Each **claim** has:
 - its **basis**: `manual`, `observed`, `quantified N of M`, `intervened`,
   `static:game-source`, `static:borg-source`, `static:borg-spec`,
   `static:deaths` or `static:issue` — in any phase (decision D8), since what
-  matters is that the record says which; `static:strategy-manual` joined them
-  when the owner added the strategy manual (2026-11-09, T19);
+  matters is that the record says which; `static:strategy-manual` and
+  `static:user-manual` joined them when the owner added those two documents
+  (2026-11-09, T19 and T20);
 - its **evidence**: run ids, seeds and turns, each one replayable (R5);
 - a **confidence** line in words: what the claim rests on, and which
   alternative explanations were ruled out;

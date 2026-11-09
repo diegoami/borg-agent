@@ -152,10 +152,10 @@ def test_the_strategy_manual_is_pinned_and_readable():
     from borg_agent import pins
 
     data = json.loads((ROOT / 'pins.json').read_text())
-    assert data['sources']['strategy_manual'] == {'pin': 'strategy-manual',
-                                                  'paths': ['docs/strategy/']}
-    commit = pins.pin('strategy-manual')['commit']
-    listing = pins.git('strategy-manual', 'ls-tree', '--name-only',
+    assert data['sources']['strategy_manual'] == {'pin': 'c-borg-reference',
+                                                   'paths': ['docs/strategy/']}
+    commit = pins.pin('c-borg-reference')['commit']
+    listing = pins.git('c-borg-reference', 'ls-tree', '--name-only',
                        commit + ':docs/strategy').decode().split()
     for appendix in ('A1-monster-compendium.md', 'A2-uniques.md', 'A3-monster-spells.md',
                      'A4-artifacts.md', 'A5-ego-items.md', 'A6-objects.md', 'README.md'):
@@ -165,7 +165,7 @@ def test_the_strategy_manual_is_pinned_and_readable():
     def gamedata(name, at):
         rows = pins.git(name, 'ls-tree', at + ':lib/gamedata').decode().splitlines()
         return {row.split('\t')[1]: row.split()[2] for row in rows}
-    assert gamedata('strategy-manual', commit) == gamedata(
+    assert gamedata('c-borg-reference', commit) == gamedata(
         'better-borg-c', pins.pin('better-borg-c')['commit'])
 
 
@@ -180,3 +180,18 @@ def test_the_online_command_page_is_read_at_a_pin():
     assert pinned['path'] in pins.pins()['manual']['paths']
     assert pinned['pin'] == pins.pins()['manual']['pin']
     assert b'Command Descriptions' in pins.show(pinned['pin'], pinned['path'])
+
+
+def test_the_user_manual_is_pinned_and_readable():
+    """The owner's addition of 2026-11-09: docs/user-manual.md on c-borg-reference."""
+    from borg_agent import pins
+
+    data = json.loads((ROOT / 'pins.json').read_text())
+    assert data['sources']['user_manual'] == {'pin': 'c-borg-reference',
+                                              'paths': ['docs/user-manual.md']}
+    text = pins.show('c-borg-reference', 'docs/user-manual.md').decode()
+    assert text.startswith('# Angband')
+    for heading in ('## 10. Command reference', '## 28. The Borg'):
+        assert heading in text, heading
+    # Its tables come from lib/gamedata, so it describes the game we play only
+    # while the test above finds that data equal to the game pin's.
