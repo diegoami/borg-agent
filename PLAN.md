@@ -4,6 +4,38 @@ The requirements are in [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md). Where
 this plan and the requirements differ, the requirements win; say so in your
 PR and propose a fix to whichever is wrong.
 
+## Frozen (2026-11-09)
+
+**No task is in progress and none should be started.** The owner froze the
+repository after the pivot, because the analyser it now intends
+([docs/DEATH-ANALYSIS-SPEC.md](docs/DEATH-ANALYSIS-SPEC.md)) has no honest
+input of **ours**: every run this repository made was a Warrior, and the
+milestone 8 tree gives Warriors a munchkin start by default (T34); with that
+off the same Warrior reached depth 2–3 in 30,000 turns without dying inside the
+cap, which is a descent problem rather than a survival one. The curated corpus
+is **not** uniformly polluted — see condition 2.
+
+It thaws when any of these is true, and [README.md](README.md) says the same:
+
+1. **borg-rs plays and dies** — the Borg reborn is the subject the knowledge is
+   for, and its deaths are the input the analyser wants;
+2. **a munchkin-free death corpus exists**, and three cases already qualify:
+   the default touches only Warriors, Druids and Rangers, so D0007 (Mage),
+   D0008 (Priest) and D0012 (Paladin) are honest by their own records, while
+   D0009 (Necromancer) is munchkin on purpose and the nine Warrior/Druid/Ranger
+   cases cannot be told apart because the records omit
+   `borg_munchkin_by_class`. `index.json`'s 36 hand-written leads are the
+   validation set either way;
+3. **deaths are found in ordinary play** — nothing here has looked past 30,000
+   turns, below depth 3, or at a class other than Warrior;
+4. **a player that descends** — an agent reading the manual plays, descends and
+   dies, which makes the corpus the analyser wants.
+
+Milestones 1–4 are built and merged. Milestone 5 holds the pivot: T34 (the
+munchkin finding) and T35 (the specification). T36 to T38 — the extractor, the
+skill, and the measurement against those 36 leads — are what a thaw starts
+with.
+
 ## Milestones, and when we stop for a review
 
 A **milestone** is a named set of tasks. Inside a milestone a session works
@@ -38,7 +70,8 @@ gh pr create --base reviewed --head main --title "Milestone N review: <what it d
 | **2. The connection** | an agent plays through the Borg's connection, every run replays exactly, and the executor's primitives exist | T03, T13 (D8), T04, T05, T12, T14, T15, T16 | **reviewed and merged** on 2026-11-09 ([#15](https://github.com/diegoami/borg-agent/pull/15), reviewed twice); `reviewed` stands at that merge |
 | **3. The mind and the knowledge base** | a model plays, and what it learns becomes claims with evidence | T06, T07, T08, and the pins and sources T17 to T21 | **reviewed and merged** on 2026-11-09 ([#41](https://github.com/diegoami/borg-agent/pull/41), ten findings); `reviewed` stands at that merge |
 | **4. Probe, trial and pilot** | the milestone 3 findings are closed, a question is answered in counted trials for any character, the agent can play a class as that class, a person can read a run, and **how the agent plays is specified** before more is built on it | T23, T22 (D11), T24, T25, T11, T26, T27, T29, T30, **T31** (the spec, which absorbs T28) | **in progress** |
-| **5. The play redesign** | the agent plays by the specification: the game's own words, the game's own router, and the mind making every choice — then the trial and the pilot on a surface worth measuring | T32 (implement T31), T33 (measure it against the old surface), then T09, T10 | **next**, once the owner settles T31's open questions |
+| ~~5. The play redesign~~ | dropped by the owner's pivot of 2026-11-09, before any of it was built. [T31](#t31-the-playing-specification) stays as the record of what was wrong and what the fix would have been | — | **dropped** |
+| **5. The death replay analyser** | a Borg death in, **leads** out: a deterministic extractor here and a skill with the game's own knowledge, no model keys, for the Borg reborn to reuse | T34, T35 (the spec) — then T36 (the extractor), T37 (the skill), T38 (measured against the 36 leads a person wrote) | **specified; frozen** until there is a Borg worth analysing |
 | later | the Neo adapter, mode C probes at scale (the first one is T22), phase 2 (the Borg archaeologist) and phase 3 (the reconciler) | — | not started |
 
 Milestones 1 to 4 together are the goal the requirements set for this stage:
@@ -84,7 +117,9 @@ branch), `in review` (with the PR), `done` (merged).
 | T27 | Keep the model's reasoning | 4 | T06 | yes | in review |
 | T29 | The action surface: magic, items, and a refusal that is not fatal | 4 | T22 | yes | done (#50) |
 | T30 | A viewer for one run ([#51](https://github.com/diegoami/borg-agent/issues/51)) | 4 | T04, T27 | yes | in review |
-| T31 | The playing specification ([docs/PLAY-SPEC.md](docs/PLAY-SPEC.md)) | 4 | T29 | yes | in review |
+| T31 | The playing specification ([docs/PLAY-SPEC.md](docs/PLAY-SPEC.md)) | 4 | T29 | yes | done (#52) |
+| T34 | No munchkin mode, and what that showed | 5 | T01 | yes | in review |
+| T35 | The death analyser specification ([docs/DEATH-ANALYSIS-SPEC.md](docs/DEATH-ANALYSIS-SPEC.md)) | 5 | T34 | yes | in review |
 
 ### T01. Build and play the pinned game headless
 
@@ -457,6 +492,95 @@ harness offered", and the notes say why, because a reader would otherwise take
 them for facts about the classes. The obvious next probe is the Mage's question
 asked again **with magic**, which is a new probe id and the first thing T28's
 `fighting` state will have something to choose between.
+
+### T34. No munchkin mode, and what that showed
+
+Found while researching the deaths for T35: our `borg.txt` said only
+`borg_cheat_death = FALSE` and `borg_respawn_winners = FALSE`, and the
+milestone 8 tree's default `borg_munchkin_by_class = TRUE` **turns a munchkin
+start on for Warriors, Druids and Rangers** even when munchkin start itself is
+off. The Borg's own comment says why:
+
+> *Warriors, Druids and Rangers survive their first levels more often with a
+> munchkin start. When borg.txt leaves the munchkin start off and
+> `borg_munchkin_by_class` is on, these classes use it anyway, stair-scumming
+> at `borg_munchkin_class_depth`.*
+
+Our cohort birth is a Human **Warrior**. So every Borg run this repository made
+before 2026-11-09 was a munchkin run — the traces say "Power Diving", "Power
+Climb (needing to sell)" and "Creating an object '& Rapier~'" — against R1.6
+and RULES 14, which forbid it. (The **Mage** runs were not: the rule names
+three classes and Mage is not one.)
+
+Settings are explicit now, and the gate is the trace's own effective-options
+line rather than what we asked for — the zoo checks its runs the same way and
+calls a mismatch `config_error`.
+
+**What turning it off showed**, and it is the most interesting thing in this
+task:
+
+| | munchkin (as we had it) | munchkin off (as the rules require) |
+|---|---|---|
+| seed 7, cap 5,000, trace | `a6ffbae0…` | **`835fb972…`** |
+| seed 3 at cap 30,000 | **died**, green naga, turn 15,714 | survives |
+| twelve seeds at cap 30,000 | — | **no deaths at all** |
+| depth after 30,000 turns | deep enough to meet nagas | **2–3**, character level 4 |
+| the whole slow suite | 142 s | 33 s |
+
+So the munchkin start was what made this Borg descend *and* what killed it.
+Without it, twelve seeds reach depth 2–3 in 30,000 turns and nothing dies.
+Two things follow:
+
+1. **T08's death case is gone.** The gate skips unless a seed is configured,
+   and a death to work from now comes from better-borg-c's curated corpus or
+   the zoo — which is where T35's pivot takes its input anyway.
+2. **The owner has a decision to make** (recorded as the open question in the
+   handover): the rules say no munchkin, and this Borg is tuned to use it for
+   three classes. Either our Borg-derived evidence always says "munchkin off,
+   which this Borg is not tuned for", or the rule is reconsidered for the
+   *Borg's* own runs as against the agent's. It also means **our runs are not
+   comparable with the zoo's**, whose `default` profile is the tree's defaults
+   — munchkin included.
+
+### T35. The death analyser specification
+
+The owner's pivot, 2026-11-09: *"what we could build is a tool that using the
+knowledge of the game could analyze death replays and produce leads of what
+could be improved in a situation… the output would be leads, not certainty…
+No more playing."* And: *"we do not need even external LLM keys, we would just
+build a skill, with fixed context containing the rules of game, strategic
+manual and so on."*
+
+[**docs/DEATH-ANALYSIS-SPEC.md**](docs/DEATH-ANALYSIS-SPEC.md) is the
+specification; T36 and T37 build it. Two pieces: a **deterministic extractor**
+here (artefacts in, a feature report out, no model) and a **skill** with fixed
+pinned context (the manual, `docs/c-manual/`, the Borg specification, the
+Borg's own source, the corpus conventions, `borg-rs`) that turns features into
+leads. No API key, no `models.yaml`, no budget.
+
+What the research found, and why the pivot is more tractable than the playing
+agent ever was:
+
+- **the Borg logs its own reasoning**, and our observer already copies it into
+  every trace — 1,563 note lines in one death. They parse: its own danger
+  estimate (`Danger:p=36`), its intent and why (`Fleeing… (scaryguy)`), its
+  pathing cost (`Flowing toward stairs at cost 51`), the target's true hit
+  points, the weapon with its dice, and every blow (`HIT_BY`, `MISS`);
+- **the curated corpus is rich**: thirteen cases with `record.json`,
+  `assessment.json`, `events.log`, and state snapshots at 5, 12, 25, 40, 60,
+  82 and 105 turns before death, each with the full gear list and the Borg's
+  own `fleeing`/`leaving`/`avoidance` flags;
+- **there is a validation set nobody has to invent**: `index.json`'s **36
+  action keys** are leads written by hand, and `aggregate-deaths.py` only
+  collects them. Nothing generates them. The tool's measure is how many of
+  those it proposes, and what it proposes that nobody wrote;
+- **a lead is testable with machinery that already exists**: `branch` replays
+  from a turn with an alternative, which is exactly what the owner did by hand
+  for D0013 from turn 3651.
+
+Five open questions are at the end of the spec, the sharp one being whether the
+curated corpus is itself munchkin-mode runs (T34), which their settings lines
+will say.
 
 ### T31. The playing specification
 

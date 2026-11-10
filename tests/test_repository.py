@@ -82,7 +82,11 @@ def test_mode_c_comes_before_the_trial():
     # the trial moved to a later milestone when the play redesign went in
     # front of it.
     order = [task for row in milestone_rows() for task in re.findall(r'T\d\d', row[2])]
-    assert order.index('T22') < order.index('T09'), order
+    assert 'T22' in order
+    # The trial left the milestone tables with the owner's pivot of 2026-11-09
+    # (no more playing). While it is listed anywhere, the probe comes first.
+    if 'T09' in order:
+        assert order.index('T22') < order.index('T09'), order
     assert 'D11' in (ROOT / 'docs/REQUIREMENTS.md').read_text()
 
 

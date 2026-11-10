@@ -156,6 +156,11 @@ def test_a_borg_death_is_reproduced_and_then_taken_over(tmp_path):
     """
     seed = int(os.environ.get('BORG_AGENT_DEATH_SEED', '0'))
     if not seed:
+        # T34: with munchkin off -- which the requirements demand -- no seed
+        # with a known death is left. Twelve seeds survived 30,000 turns, and
+        # the deaths we had were a munchkin Warrior's. A death to gate on now
+        # comes from better-borg-c's curated corpus or from the zoo, which is
+        # also where the pivot (docs/DEATH-ANALYSIS-SPEC.md) takes its input.
         pytest.skip('no seed with a known Borg death is configured '
                     '(BORG_AGENT_DEATH_SEED); see docs/POST-MORTEM.md')
     out = build.prepare(log=lambda *a: None)

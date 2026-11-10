@@ -6,9 +6,19 @@ merges.
 
 ## Purpose
 
+**Its product is knowledge, not wins** — knowledge a later Rust Borg can be
+built from, in a form a person can review, an experiment can check and a
+program can act on.
+
+*How* that knowledge is produced changed on 2026-11-09 (decision **D13**): not
+by an agent playing, but by **analysing the Borg's own deaths and emitting
+leads** — see [DEATH-ANALYSIS-SPEC.md](DEATH-ANALYSIS-SPEC.md). The repository
+is **frozen** until there is a Borg worth analysing (decision **D14**). What
+follows describes the playing agent, which is built, merged and no longer the
+intent; read it as the record of what exists.
+
 borg-agent plays Angband with a language model, or another learned policy, in
-place of the Borg's hand-written rules. **Its product is knowledge, not
-wins.** It writes down what it learns about the game in a form that a person
+place of the Borg's hand-written rules. It writes down what it learns about the game in a form that a person
 can review, an experiment can check, and a later Rust Borg (the "Borg reborn")
 can be built from.
 
@@ -296,3 +306,5 @@ D6 is reserved: it records which model does which job, once the model trial
 | D7 | How models are configured | **By profile, in `models.yaml` at the root.** It holds the providers, the models per job and named profiles, and never a key; a provider names the environment variable that holds its key. Switching profile is one line: `BORG_AGENT_PROFILE`, or `profile:` in the git-ignored `models.local.yaml`, else `default_profile`. This replaces the `BORG_AGENT_BASE_URL`, `BORG_AGENT_API_KEY` and `BORG_AGENT_MODEL` variables and the planned `providers.json`. **The profile is the only model rule in this repository**: the owner's general model rule, which asks their local quota service (quota-tracker) for a recommendation, does not apply here, and this repository does not use that service, locally or in the cloud. |
 | D11 | When mode C arrives | **Before the model trial.** Milestone 4 begins with a probe (PLAN.md T22), not with T09. Nothing leaves `hypothesis` without counted trials or a review by another family (R4.3), so a probe is the only promoter that is not another model — and T09 measures a consolidator by how many of its claims are **false**, which needs exactly that. The probe also needs no model, so it is the one task of milestone 4 that a cloud session can finish on its own. (2026-11-09) |
 | D12 | How the mind is asked | **By state, not by event.** The agent decides which situation it is in -- a prompt, fighting, panic, shopping, the town, standing at stairs, or exploring -- and the state decides the question: its own prompt template, its own allowed actions, its own knowledge filter, named in the record on every call. The stop reason that used to be the whole context becomes one input to that decision. **The thresholds that define a state are data in the versioned prompt pack**, not code in the executor (RULES 12), so what counted as "panic" in a run is always recoverable. The Borg's own structure (`borg-think-dungeon.c`) is worth copying; its thresholds are what this repository exists to measure. (2026-11-09; PLAN.md T28) |
+| D13 | How knowledge is produced | **By analysing deaths, not by playing.** A Borg death in, **leads** out: a deterministic extractor in this repository and a skill carrying the game's rules, the manuals and the Borg's specification as fixed, pinned context. **No model keys**, no `models.yaml` job, no budget. Leads are hypotheses with evidence pointers and a `how_to_test` that `branch` or a probe can settle; a lead is never a defect without a counted trial or a reproduced comparison. The reason: every *counted* claim the playing agent produced came from a probe rather than from play, and the Borg logs its own reasoning into every trace, which is a far richer input than a model's game. ([DEATH-ANALYSIS-SPEC.md](DEATH-ANALYSIS-SPEC.md), PLAN.md T35; 2026-11-09) |
+| D14 | The freeze | **Frozen on 2026-11-09, deliberately, and to be picked up again.** The analyser was taken to have no honest input: the milestone 8 tree defaults `borg_munchkin_by_class = TRUE`, every run this repository made was a Warrior, and so every one of them was a munchkin run; with munchkin off the same Warrior reached depth 2–3 in 30,000 turns without dying inside the cap. **The premise is narrower than that.** The default applies only to Warriors, Druids and Rangers — the Borg's own comment says "every other class plays as borg.txt says" — and of the thirteen curated deaths, D0007 (Mage), D0008 (Priest) and D0012 (Paladin) record `borg_munchkin_start: 0` with a class the default ignores, so they are honest; D0009 (Necromancer) records `1` and is munchkin deliberately; the nine Warrior/Druid/Ranger cases cannot be judged from the records, which omit `borg_munchkin_by_class`. The twelve-seed result is also about **descent**, not survival. It thaws when borg-rs plays and dies, when a munchkin-free corpus exists (three cases already do), when deaths are found in ordinary play, or when an agent that reads the manual descends and dies. (PLAN.md T34) |

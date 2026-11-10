@@ -1,5 +1,27 @@
 # Agent entry
 
+> ## This repository is frozen (2026-11-09)
+>
+> **Do not start a task.** The owner froze it deliberately, and it will be
+> picked up again. In one paragraph: the purpose is knowledge for the Borg
+> reborn; the way to produce it is now a **death replay analyser** — a Borg
+> death in, *leads* out, with no playing and no model keys
+> ([docs/DEATH-ANALYSIS-SPEC.md](docs/DEATH-ANALYSIS-SPEC.md)) — and its input
+> was thought not to exist, because every run *this repository* made was a
+> Warrior and the milestone 8 tree gives Warriors, Druids and Rangers a
+> munchkin start by default (`borg_munchkin_by_class`, T34), while with that
+> off the same Warrior reached only depth 2–3 in 30,000 turns. That premise is
+> narrower than it looked: the default ignores every other class, and three of
+> the thirteen curated deaths are confirmed honest.
+>
+> [README.md](README.md) says what unfreezes it. If you were sent here to
+> **build** something, the answer is almost certainly "not yet, and here is
+> why"; if you were sent to **read**, start with the README and the handover.
+>
+> What still works and is worth reusing, frozen or not: the build, the bridge,
+> `verify`/`branch` (which is how a lead gets tested), the probes, the claim
+> store, the run report.
+
 This file is for any session that works on this repository: a cloud
 session, a local one, or a different model. Read it first, then:
 1. [RULES.md](RULES.md);
@@ -38,6 +60,9 @@ missing packages. `.claude/settings.json` runs it when a Claude Code session
 starts.
 
 ## Choosing the work
+
+**While the repository is frozen there is no next task.** What follows is how
+the work ran, and how it will run again when the owner thaws it.
 
 PLAN.md's milestone table says which tasks belong to the milestone in
 progress. **Work only inside that milestone.** Take the first task of it
